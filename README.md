@@ -9,3 +9,5 @@ The best way to get things up and running is using a virtual environment:
 - Enter the virtual environment using `source venv/bin/activate`.
 - Install the requirements using `pip install requirements.txt`.
 - *To overcome import problems*, run `pip install -e .`, which will create links to your files (so you do not need to re-install after every change).
+
+We are currently setting up documentation to be rendered using GitHub Actions.
