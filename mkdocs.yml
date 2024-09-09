@@ -1,0 +1,57 @@
+site_name: Oraqle
+
+nav:
+  - index.md
+  - getting_started.md
+  - tutorial_running_exps.md
+  - API reference:
+    - api/circuits_api.md
+    - api/nodes_api.md
+    - api/code_generation_api.md
+    - api/pareto_fronts_api.md
+    - api/abstract_nodes_api.md
+    - api/addition_chains_api.md
+  - example_circuits.md
+  - config.md
+
+plugins:
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        options:
+          show_root_heading: true
+          allow_inspection: false
+          show_submodules: false
+          show_root_full_path: false
+          show_symbol_type_heading: true
+          # show_symbol_type_toc: true  This currently causes a bug
+          docstring_style: google
+          follow_wrapped_lines: true
+          crosslink_types: true  # Makes types clickable
+          crosslink_types_style: 'sphinx'  # Default or sphinx style
+          annotations_path: brief
+          inherited_members: true
+          members_order: source
+          show_if_no_docstring: true
+          separate_signature: false
+          show_source: false
+          docstring_section_style: list
+
+theme:
+  name: material
+  highlightjs: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.tasklist
+  - pymdownx.tabbed
+  - pymdownx.magiclink
+  - pymdownx.tilde
+  - toc:
+      permalink: true
+      toc_depth: 3

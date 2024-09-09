@@ -1,0 +1,55 @@
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+line-length = 100
+indent-width = 4
+target-version = "py38"
+
+[lint]
+preview = true
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = ["W", "E4", "E7", "E9", "F", "ERA001", "B", "D", "DOC", "PLW", "B", "SIM", "UP", "PLR", "RUF", "PIE"]
+ignore = ["E203", "E501", "E731", "D105", "W293", "PLR2004", "PLR6301"]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.per-file-ignores]
+"oraqle/experiments/*" = ["D", "DOC"]
+
+[lint.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
+
+[format]
+preview = true
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"

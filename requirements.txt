@@ -1,0 +1,7 @@
+sympy
+six
+galois>=0.3.8
+aeskeyschedule
+python-sat
+git+https://github.com/jellevos/fhegen.git
+matplotlib

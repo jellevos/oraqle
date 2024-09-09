@@ -1,1 +1,13 @@
 /venv
+*.dot
+.idea/**
+__pycache__/**
+/build
+.DS_Store
+*.egg-info*
+instructions.txt
+.ipynb_checkpoints/
+*.pdf
+*.pkl
+.sphinx_build/
+/dist

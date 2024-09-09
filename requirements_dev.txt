@@ -1,5 +1,9 @@
-flake8
 pytest
-black
-isort
-pep8-naming
+gensafeprime
+graphviz
+tabulate
+ruff
+mkdocs
+mkdocstrings[python]
+mkautodoc
+pymdown-extensions
