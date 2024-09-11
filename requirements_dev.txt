@@ -6,4 +6,5 @@ ruff
 mkdocs
 mkdocstrings[python]
 mkautodoc
+mkdocs-material
 pymdown-extensions
