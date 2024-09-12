@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you want to cite the compiler as a whole, please cite this work. See the citations page in the documentation for specific works e.g. about depth-aware arithmetization."
+authors:
+- family-names: "Vos"
+  given-names: "Jelle"
+  orcid: "https://orcid.org/0000-0002-3979-9740"
+- family-names: "Conti"
+  given-names: "Mauro"
+  orcid: "https://orcid.org/0000-0002-3612-1934"
+- family-names: "Erkin"
+  given-names: "Zekeriya"
+  orcid: "https://orcid.org/0000-0001-8932-4703"
+title: "Oraqle: A Depth-Aware Secure Computation Compiler"
+version: 0.1.0
+doi: 10.1145/3689945.3694808
+date-released: 2024-09-11
+url: "https://github.com/jellevos/oraqle"
