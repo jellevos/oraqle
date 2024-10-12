@@ -5,3 +5,4 @@ aeskeyschedule
 python-sat
 git+https://github.com/jellevos/fhegen.git
 matplotlib
+numpy==2.0.0
