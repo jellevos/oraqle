@@ -658,14 +658,14 @@ class Node(ABC):  # noqa: PLR0904
         return Equals(self, other_node, self._gf)
 
 
-class UnoverloadedWrapper:
+class UnoverloadedWrapper[N: Node]:
     """The `UnoverloadedWrapper` class wraps a `Node` such that hash(.) and x == y work as expected.
     
     !!! note
         The equality operator perform semantic equality!
     """
 
-    def __init__(self, node: Node) -> None:
+    def __init__(self, node: N) -> None:
         """Wrap `Node`."""
         self.node = node
 

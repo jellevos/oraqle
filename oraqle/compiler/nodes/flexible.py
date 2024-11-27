@@ -39,7 +39,7 @@ class FlexibleNode(Node):
         pass
 
 
-class CommutativeUniqueReducibleNode(FlexibleNode):
+class CommutativeUniqueReducibleNode[N: Node](FlexibleNode):
     """A node with an operation that is reducible without taking order into account: i.e. it has a binary operation that is associative and commutative.
 
     The operands are unique, i.e. the same operand will never appear twice.
@@ -47,7 +47,7 @@ class CommutativeUniqueReducibleNode(FlexibleNode):
 
     def __init__(
         self,
-        operands: Set[UnoverloadedWrapper],
+        operands: Set[UnoverloadedWrapper[N]],
         gf: Type[FieldArray],
     ):
         """Initialize a node with the given set as the operands. None of the operands can be a constant."""
@@ -56,11 +56,11 @@ class CommutativeUniqueReducibleNode(FlexibleNode):
         assert len(operands) > 1
         super().__init__(gf)
 
-    def apply_function_to_operands(self, function: Callable[[Node], None]):  # noqa: D102
+    def apply_function_to_operands(self, function: Callable[[N], None]):  # noqa: D102
         for operand in self._operands:
             function(operand.node)
 
-    def replace_operands_using_function(self, function: Callable[[Node], Node]):  # noqa: D102
+    def replace_operands_using_function(self, function: Callable[[N], N]):  # noqa: D102
         self._operands = {UnoverloadedWrapper(function(operand.node)) for operand in self._operands}
 
     def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:  # noqa: D102
