@@ -86,7 +86,7 @@ def add_chain_guaranteed(  # noqa: PLR0913, PLR0917
     # Apply CSE to the square & mutliply chain
     if precomputed_values is not None:
         for exp, depth in precomputed_values:
-            if (exp & (exp - 1)) == 0 and depth == math.log2(exp):
+            if exp > 0 and (exp & (exp - 1)) == 0 and depth == math.log2(exp):
                 sam_cost -= squaring_cost
 
     try:

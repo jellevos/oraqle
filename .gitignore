@@ -11,3 +11,4 @@ instructions.txt
 *.pkl
 .sphinx_build/
 /dist
+*.svg

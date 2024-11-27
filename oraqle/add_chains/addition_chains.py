@@ -281,3 +281,29 @@ def test_addition_chain_precomputed_no_depth_squaring():  # noqa: D103
         precomputed_values=((9, 3),),
     )
     assert chain == [(9, 9)]
+
+
+if __name__ == "__main__":
+    print(add_chain(
+        254,
+        None,
+        8.0,
+        0.5,
+        solver="glucose42",
+        encoding=1,
+        thurber=True,
+        min_size=11,
+        precomputed_values=None,
+    ))
+
+    print(add_chain(
+        254,
+        None,
+        7.5,
+        0.5,
+        solver="glucose42",
+        encoding=1,
+        thurber=True,
+        min_size=8,
+        precomputed_values=None,
+    ))

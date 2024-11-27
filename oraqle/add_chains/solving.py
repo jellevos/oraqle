@@ -83,7 +83,7 @@ def extract_indices(
 def solve_with_time_limit(wcnf: WCNF, solver: str, strict_cost_max: Optional[float], timeout_secs: float) -> Optional[List[int]]:
     """This code is adapted from pysat's internal code to stop when we have reached a maximum cost.
 
-    Raises:  # noqa: DOC502
+    Raises:
         TimeoutError: When a timeout occurs (after `timeout_secs` seconds)
 
     Returns:
@@ -136,4 +136,4 @@ def solve_with_time_limit(wcnf: WCNF, solver: str, strict_cost_max: Optional[flo
 
         return rc2.model
     except TimeoutError as err:
-        raise TimeoutError from err  # noqa: DOC501
+        raise TimeoutError from err
