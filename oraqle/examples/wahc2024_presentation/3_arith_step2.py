@@ -1,3 +1,4 @@
+"""Show the last step of arithmetization of a comparison circuit."""
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit

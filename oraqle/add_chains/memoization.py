@@ -12,7 +12,11 @@ ADDCHAIN_CACHE_PATH = "addchain_cache"
 
 # Adapted from: https://stackoverflow.com/questions/16463582/memoize-to-disk-python-persistent-memoization
 def cache_to_disk(file_name, ignore_args: Set[str]):
-    """This decorator caches the calls to this function in a file on disk, ignoring the arguments listed in `ignore_args`."""
+    """This decorator caches the calls to this function in a file on disk, ignoring the arguments listed in `ignore_args`.
+    
+    Returns:
+        A cached output
+    """
     d = shelve.open(file_name)  # noqa: SIM115
 
     def decorator(func):
@@ -36,7 +40,7 @@ def cache_to_disk(file_name, ignore_args: Set[str]):
 
         return wrapped_func
 
-    return decorator  # noqa: DOC201
+    return decorator
 
 
 if __name__ == "__main__":

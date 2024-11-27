@@ -1,3 +1,4 @@
+"""Renders a high-level comparison circuit."""
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit

@@ -1,3 +1,4 @@
+"""Renders two circuits, one with a balanced product tree and one with an imbalanced tree."""
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit

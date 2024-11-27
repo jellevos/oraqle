@@ -1,3 +1,4 @@
+"""Generates code for the comparison circuit."""
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit

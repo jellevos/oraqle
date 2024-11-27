@@ -1,3 +1,4 @@
+"""Show the first step of arithmetization of a comparison circuit."""
 from galois import GF
 
 from oraqle.compiler.boolean.bool_neg import Neg
