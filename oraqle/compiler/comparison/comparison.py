@@ -117,7 +117,7 @@ class StrictComparison(AbstractComparison):
 
     @property
     def _node_label(self) -> str:
-        return "<"
+        return "<" if self._less_than else ">"
 
     def _operation_inner(self, x, y) -> FieldArray:
         if self._less_than:

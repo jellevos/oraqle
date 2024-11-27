@@ -162,3 +162,18 @@ def test_add_chain_modp_precomputations():  # noqa: D103
         precomputed_values=((65, 5),),
     )
     assert chain == [(65, 65)]
+
+
+if __name__ == "__main__":
+    print(add_chain_modp(
+        254,
+        255,
+        None,
+        8.0,
+        0.5,
+        solver="glucose42",
+        encoding=1,
+        thurber=True,
+        min_size=11,
+        precomputed_values=None,
+    ))
