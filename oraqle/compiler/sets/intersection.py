@@ -2,7 +2,7 @@ from oraqle.compiler.circuit import ArithmeticCircuit
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.sets.bitset import BitSet, BitSetIntersection
-from oraqle.compiler.sets.set import AbstractSet, Set
+from oraqle.compiler.sets.set import AbstractSet, InputSet
 
 from galois import GF, FieldArray
 
@@ -16,12 +16,12 @@ class Intersection(CommutativeUniqueReducibleNode[AbstractSet]):
 
     @property
     def _node_label(self) -> str:
-        return "Intersection"
+        return "∩"
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: This should arithmetize differently when it is the output of the circuit (or it can be leaked)
         # TODO: In the future, this should try all possible arithmetizations for intersections. How do we prioritize? Do we return multiple results?
-        assert all(isinstance(s.node, (Set, BitSet)) for s in self._operands)
+        assert all(isinstance(s.node, (InputSet, BitSet)) for s in self._operands)
         return BitSetIntersection({UnoverloadedWrapper(BitSet.coerce_from(s.node)) for s in self._operands}, self._gf).arithmetize(strategy)  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
@@ -41,7 +41,7 @@ def intersection(*operands: AbstractSet) -> Intersection:
 
 if __name__ == '__main__':
     gf = GF(11)
-    sets = {UnoverloadedWrapper(Set(f"s{i}", gf, 100)) for i in range(3)}
+    sets = {UnoverloadedWrapper(InputSet(f"s{i}", gf, 100)) for i in range(3)}
     
     result = Intersection(sets, gf)
 

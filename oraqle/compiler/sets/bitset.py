@@ -4,24 +4,32 @@ from oraqle.compiler.boolean.bool_and import all_
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Input
-from oraqle.compiler.sets.set import AbstractSet, Set
+from oraqle.compiler.sets.set import AbstractSet, InputSet
 
 
 # FIXME: gf should be moved to arithmetization and Input should be abstract. Instead we should have integer Inputs. ShortInt should be what is currently Input.
 class BitSet(AbstractSet):
 
-    def __init__(self, name: str, gf: type[FieldArray], bits: List[Input]) -> None:  # TODO: Input should become Boolean
+    @property
+    def _hash_name(self) -> str:
+        return "bitset"
+
+    @property
+    def _node_label(self) -> str:
+        return "bitset"
+
+    def __init__(self, gf: type[FieldArray], bits: List[Input]) -> None:  # TODO: Input should become Boolean
         # TODO: Change constructor
-        super().__init__(name, gf)
+        super().__init__(gf, len(bits))
         self._bits = bits
 
     @classmethod
     def from_universe(cls, name: str, gf: type[FieldArray], universe_size: int) -> "BitSet":
-        return cls(name, gf, [Input(f"{name}_{i}", gf) for i in range(universe_size)])
+        return cls(gf, [Input(f"{name}_{i}", gf) for i in range(universe_size)])
 
     @classmethod
-    def coerce_from(cls, set: Union[Set, "BitSet"]) -> "BitSet":
-        if isinstance(set, Set):
+    def coerce_from(cls, set: Union[InputSet, "BitSet"]) -> "BitSet":
+        if isinstance(set, InputSet):
             return cls.from_universe(set._name, set._gf, set._universe_size)
         elif isinstance(set, BitSet):
             return set
@@ -46,7 +54,8 @@ class BitSetIntersection(CommutativeUniqueReducibleNode[BitSet]):
         # TODO: Turn all inputs into BitSets and TypeError if not possible
         # TODO: Do not arithmetize each bit separately
         bit_count = len(next(iter(self._operands)).node._bits)
-        return BitSet(" ∩ ".join(operand.node._name for operand in self._operands), self._gf, [all_(*(operand.node._bits[i] for operand in self._operands)) for i in range(bit_count)])
+        # " ∩ ".join(operand.node._name for operand in self._operands)
+        return BitSet(self._gf, [all_(*(operand.node._bits[i] for operand in self._operands)) for i in range(bit_count)])
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError()
