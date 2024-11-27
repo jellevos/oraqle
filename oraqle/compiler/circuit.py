@@ -56,6 +56,13 @@ class Circuit:
 
         subprocess.run(["dot", "-Tpdf", dot_file.name, "-o", file_name], check=True)
 
+    def to_svg(self, file_name: str):
+        """Saves an SVG file representing the circuit as a graph at the given `file_name`."""
+        with tempfile.NamedTemporaryFile(suffix=".dot", delete=False) as dot_file:
+            self.to_graph(dot_file.name)
+
+        subprocess.run(["dot", "-Tsvg", dot_file.name, "-o", file_name], check=True)
+
     def display_graph(self, metadata: Optional[dict] = None):
         """Displays the circuit in a Python notebook."""
         with tempfile.NamedTemporaryFile(suffix=".dot", delete=False) as dot_file:

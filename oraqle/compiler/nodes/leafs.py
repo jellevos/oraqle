@@ -106,7 +106,7 @@ class Constant(ArithmeticLeafNode):
 
     @property
     def _overriden_graphviz_attributes(self) -> dict:
-        return {"style": "filled", "fillcolor": "red", "shape": "circle"}
+        return {"style": "filled", "fillcolor": "grey80", "shape": "circle"}
 
     @property
     def _hash_name(self) -> str:
