@@ -11,26 +11,26 @@ from oraqle.compiler.nodes.fixed import FixedNode
 from oraqle.compiler.nodes.leafs import Constant
 
 
-class UnivariateNode(FixedNode):
-    """An abstract node with a single input."""
+class UnivariateNode[N: Node](FixedNode[N]):
+    """An abstract node with a single input of type N."""
 
     @property
     @abstractmethod
     def _node_shape(self) -> str:
         """Graphviz node shape."""
 
-    def __init__(self, node: Node, gf: Type[FieldArray]):
+    def __init__(self, node: N, gf: Type[FieldArray]):
         """Initialize a univariate node."""
         self._node = node
         assert not isinstance(node, Constant)
         super().__init__(gf)
 
     
-    def operands(self) -> List["Node"]:  # noqa: D102
+    def operands(self) -> List["N"]:  # noqa: D102
         return [self._node]
 
     
-    def set_operands(self, operands: List["Node"]):  # noqa: D102
+    def set_operands(self, operands: List["N"]):  # noqa: D102
         self._node = operands[0]
 
     @abstractmethod

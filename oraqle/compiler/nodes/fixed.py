@@ -7,25 +7,25 @@ from galois import FieldArray
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node
 
 
-class FixedNode(Node):
-    """A node with a fixed number of operands."""
+class FixedNode[N: Node](Node):
+    """A node with a fixed number of operands of the same type."""
 
     @abstractmethod
-    def operands(self) -> List["Node"]:
+    def operands(self) -> List[N]:
         """Returns the operands (children) of this node. The list can be empty."""
 
     @abstractmethod
-    def set_operands(self, operands: List["Node"]):
+    def set_operands(self, operands: List[N]):
         """Overwrites the operands of this node."""
         # TODO: Consider replacing this method with a graph traversal method that applies a function on all operands and replaces them.
 
     
-    def apply_function_to_operands(self, function: Callable[[Node], None]):  # noqa: D102
+    def apply_function_to_operands(self, function: Callable[[N], None]):  # noqa: D102
         for operand in self.operands():
             function(operand)
 
     
-    def replace_operands_using_function(self, function: Callable[[Node], Node]):  # noqa: D102
+    def replace_operands_using_function(self, function: Callable[[N], N]):  # noqa: D102
         self.set_operands([function(operand) for operand in self.operands()])
         # TODO: These caches should only be cleared if this is an ArithmeticNode
         self._multiplications = None

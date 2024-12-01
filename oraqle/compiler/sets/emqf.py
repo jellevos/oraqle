@@ -1,5 +1,5 @@
-from oraqle.compiler.sets.set import AbstractSet
+# from oraqle.compiler.sets.set import AbstractSet
 
 
-class EncryptedMembershipQueryFilter(AbstractSet):
-    pass
+# class EncryptedMembershipQueryFilter(AbstractSet):
+#     pass

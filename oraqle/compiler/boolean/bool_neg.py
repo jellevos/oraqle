@@ -2,12 +2,13 @@
 from galois import FieldArray
 
 from oraqle.compiler.arithmetic.subtraction import Subtraction
+from oraqle.compiler.boolean.bool import Boolean
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node
 from oraqle.compiler.nodes.leafs import Constant
 from oraqle.compiler.nodes.univariate import UnivariateNode
 
 
-class Neg(UnivariateNode):
+class Neg(UnivariateNode[Boolean]):
     """A node that negates a Boolean input."""
 
     @property
@@ -26,12 +27,12 @@ class Neg(UnivariateNode):
         assert input in {0, 1}
         return self._gf(not bool(input))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
-        return Subtraction(
+    def _arithmetize_inner(self, strategy: str) -> Boolean:
+        return Boolean(Subtraction(
             Constant(self._gf(1)), self._node.arithmetize(strategy), self._gf
-        ).arithmetize(strategy)
+        )).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        return Subtraction(Constant(self._gf(1)), self._node, self._gf).arithmetize_depth_aware(
+        return Boolean(Subtraction(Constant(self._gf(1)), self._node, self._gf)).arithmetize_depth_aware(
             cost_of_squaring
         )

@@ -1,36 +1,48 @@
-from typing import List, Type, Union
+from typing import List, Set, Type, Union
 from galois import FieldArray
 from oraqle.compiler.boolean.bool_and import all_
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.types import TypeNode
 from oraqle.compiler.sets.set import AbstractSet, InputSet
 
 
+
+class BitSet(TypeNode):
+
+    def query_constant(self, element: FieldArray) -> Boolean:
+        pass
+
+
 # FIXME: gf should be moved to arithmetization and Input should be abstract. Instead we should have integer Inputs. ShortInt should be what is currently Input.
-class BitSet(AbstractSet):
+class EncodeBitSet(AbstractSet):
 
     @property
     def _hash_name(self) -> str:
-        return "bitset"
+        return "encode_bitset"
 
     @property
     def _node_label(self) -> str:
-        return "bitset"
+        return "Encode bitset"
+    
+    def __init__(self, operands: Set[UnoverloadedWrapper[Node]], gf: Type[FieldArray], universe_size: int):
+        super().__init__(operands, gf, universe_size)
 
-    def __init__(self, gf: type[FieldArray], bits: List[Input]) -> None:  # TODO: Input should become Boolean
-        # TODO: Change constructor
-        super().__init__(gf, len(bits))
-        self._bits = bits
+    # def __init__(self, gf: type[FieldArray], universe_size: int) -> None:  # TODO: Input should become Boolean
+    #     # TODO: Change constructor
+    #     super().__init__(gf, universe_size)
+    #     self._bits = bits
 
-    @classmethod
-    def from_universe(cls, name: str, gf: type[FieldArray], universe_size: int) -> "BitSet":
-        return cls(gf, [Input(f"{name}_{i}", gf) for i in range(universe_size)])
+    # @classmethod
+    # def from_inputs(cls, name: str, gf: type[FieldArray], universe_size: int) -> "BitSet":
+    #     # TODO: Consider making this a separate class
+    #     return cls(gf, [Input(f"{name}_{i}", gf) for i in range(universe_size)])
 
     @classmethod
     def coerce_from(cls, set: Union[InputSet, "BitSet"]) -> "BitSet":
         if isinstance(set, InputSet):
-            return cls.from_universe(set._name, set._gf, set._universe_size)
+            return cls.from_inputs(set._name, set._gf, set._universe_size)
         elif isinstance(set, BitSet):
             return set
         else:
@@ -39,6 +51,7 @@ class BitSet(AbstractSet):
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: In the future, this might arithmetize the Booleans
         return self
+
 
 class BitSetIntersection(CommutativeUniqueReducibleNode[BitSet]):
 
