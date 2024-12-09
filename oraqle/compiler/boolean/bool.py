@@ -1,11 +1,10 @@
 from typing import Type
 from galois import FieldArray
 from oraqle.compiler.nodes.abstract import Node
-from oraqle.compiler.nodes.types import TypeNode
 
 
 # TODO: We should move __and__, __or__, etc. to this class instead of Node
-class Boolean(TypeNode):
+class Boolean(Node):
     """A Boolean node indicates that the wrapped Node is a Boolean."""
 
     # TODO: Consider implementing node name etc. in TypeNode (waar mogelijk). Iig voor rendering.
