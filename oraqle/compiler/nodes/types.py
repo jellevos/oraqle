@@ -39,7 +39,7 @@ class BundleTypeNode[N: Node](TypeNode):
     
     def __hash__(self) -> int:
         if self._hash is None:
-            self._hash = hash(self._operands)
+            self._hash = hash(tuple(self._operands))
 
         return self._hash
     

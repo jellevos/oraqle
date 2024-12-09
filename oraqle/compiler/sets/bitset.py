@@ -1,4 +1,4 @@
-from typing import List, Set, Type, Union
+from typing import List, Sequence, Set, Type, Union
 from galois import GF, FieldArray
 from oraqle.compiler.boolean.bool_and import all_
 from oraqle.compiler.circuit import Circuit
@@ -9,7 +9,7 @@ from oraqle.compiler.nodes.types import BundleTypeNode, TypeNode
 #from oraqle.compiler.sets.set import AbstractSet, InputSet
 
 
-
+# TODO: At some point we can implement __and__ for intersections
 class BitSet(BundleTypeNode[Node]):  # TODO: Node should become Boolean
 
     @property
@@ -25,6 +25,11 @@ class BitSet(BundleTypeNode[Node]):  # TODO: Node should become Boolean
     
     def contains_element(self, element: int) -> Node:  # TODO: Node should become Boolean
         return self[element - 1]
+    
+    @staticmethod
+    def intersection(*bitsets: "BitSet") -> "BitSet":
+        intersection = BitSetIntersection({UnoverloadedWrapper(bitset) for bitset in bitsets}, bitsets[0]._gf)
+        return intersection
 
 
 # FIXME: gf should be moved to arithmetization and Input should be abstract. Instead we should have integer Inputs. ShortInt should be what is currently Input.
@@ -65,32 +70,39 @@ class BitSet(BundleTypeNode[Node]):  # TODO: Node should become Boolean
 #         return self
 
 
-# class BitSetIntersection(CommutativeUniqueReducibleNode[BitSet]):
+class BitSetIntersection(CommutativeUniqueReducibleNode[BitSet], BitSet):
 
-#     @property
-#     def _hash_name(self) -> str:
-#         return "bitset_intersection"
+    @property
+    def _hash_name(self) -> str:
+        return "bitset_intersection"
 
-#     @property
-#     def _node_label(self) -> str:
-#         return "∩"
+    @property
+    def _node_label(self) -> str:
+        return "∩"
 
-#     def _arithmetize_inner(self, strategy: str) -> BitSet:
-#         # TODO: Turn all inputs into BitSets and TypeError if not possible
-#         # TODO: Do not arithmetize each bit separately
-#         bit_count = len(next(iter(self._operands)).node._bits)
-#         # " ∩ ".join(operand.node._name for operand in self._operands)
-#         return BitSet(self._gf, [all_(*(operand.node._bits[i] for operand in self._operands)) for i in range(bit_count)])
+    def _arithmetize_inner(self, strategy: str) -> BitSet:
+        bit_count = len(next(iter(self._operands)).node._operands)
+        # " ∩ ".join(operand.node._name for operand in self._operands)
+        return BitSet([all_(*(operand.node._operands[i] for operand in self._operands)) for i in range(bit_count)], self._gf)
     
-#     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-#         raise NotImplementedError()
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError()
     
-#     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
-#         # TODO: This should take sets as input
-#         raise NotImplementedError()
+    def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
+        # TODO: This should take sets as input
+        raise NotImplementedError()
 
 
 if __name__ == "__main__":
     gf = GF(11)
-    bits = [Input(f"b_{i}", gf) for i in range(10)]
-    circuit = Circuit([BitSet(bits, gf).contains_element(3)]).to_pdf("debug.pdf")
+
+    bits1 = [Input(f"b1_{i}", gf) for i in range(10)]
+    bitset1 = BitSet(bits1, gf)
+
+    bits2 = [Input(f"b2_{i}", gf) for i in range(10)]
+    bitset2 = BitSet(bits2, gf)
+
+    final_bitset = BitSet.intersection(bitset1, bitset2)
+
+    # TODO: Only check contains for elements in server's set
+    circuit = Circuit([final_bitset.contains_element(3)]).to_pdf("debug.pdf")
