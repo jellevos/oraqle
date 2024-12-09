@@ -207,7 +207,10 @@ if __name__ == "__main__":
     bits2 = [Input(f"b2_{i}", gf) for i in range(10)]
     bitset2 = BitSetContainer(bits2, gf)
 
-    final_bitset = BitSet.intersection(bitset1, bitset2)
+    bits3 = [Input(f"b3_{i}", gf) for i in range(10)]
+    bitset3 = BitSetContainer(bits3, gf)
+
+    final_bitset = BitSet.intersection(bitset1, bitset2, bitset3)
 
     # TODO: Only check contains for elements in server's set
     circuit = Circuit([final_bitset.contains_element(3)])

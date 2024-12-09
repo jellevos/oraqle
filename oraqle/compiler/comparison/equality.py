@@ -3,6 +3,7 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.arithmetic.subtraction import Subtraction
+from oraqle.compiler.boolean.bool import Boolean
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node
 from oraqle.compiler.nodes.binary_arithmetic import CommutativeBinaryNode
@@ -10,7 +11,7 @@ from oraqle.compiler.nodes.leafs import Input
 from oraqle.compiler.nodes.univariate import UnivariateNode
 
 
-class IsNonZero(UnivariateNode):
+class IsNonZero(UnivariateNode, Boolean):
     """This node represents a zero check: x == 0."""
 
     @property
@@ -37,7 +38,7 @@ class IsNonZero(UnivariateNode):
         )
 
 
-class Equals(CommutativeBinaryNode):
+class Equals(CommutativeBinaryNode, Boolean):
     """This node represents an equality operation: x == y."""
 
     @property

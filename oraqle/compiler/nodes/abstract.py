@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Ty
 
 from galois import FieldArray
 
+from oraqle.compiler.boolean.bool import Boolean
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction
 
@@ -516,69 +517,7 @@ class Node(ABC):  # noqa: PLR0904
 
         return self.mul(other)
 
-    def bool_or(self, other: "Node", flatten=True) -> "Node":
-        """Performs an OR operation between `self` and `other`, possibly flattening the result into an OR operation between many operands.
-
-        It is possible to disable flattening by setting `flatten=False`.
-        
-        Returns:
-            A possibly flattened `Or` node or a `Constant` representing self & other.
-        """
-        from oraqle.compiler.boolean.bool_or import Or
-        from oraqle.compiler.nodes.leafs import Constant
-
-        if flatten and isinstance(other, Or):
-            return other.or_flatten(self)
-
-        if isinstance(other, Constant):
-            if bool(other._value):
-                return Constant(self._gf(1))
-            else:
-                return self
-
-        if self.is_equivalent(other):
-            return self
-        else:
-            return Or({UnoverloadedWrapper(self), UnoverloadedWrapper(other)}, self._gf)
-
-    def __or__(self, other) -> "Node":
-        if not isinstance(other, Node):
-            raise Exception(f"The RHS of this OR is not a Node: {self} | {other}")
-
-        return self.bool_or(other)
-
-    def bool_and(self, other: "Node", flatten=True) -> "Node":
-        """Performs an AND operation between `self` and `other`, possibly flattening the result into an AND operation between many operands.
-
-        It is possible to disable flattening by setting `flatten=False`.
-        
-        Returns:
-            A possibly flattened `And` node or a `Constant` representing self & other.
-        """
-        from oraqle.compiler.boolean.bool_and import And
-        from oraqle.compiler.nodes.leafs import Constant
-
-        if flatten and isinstance(other, And):
-            return other.and_flatten(self)
-
-        if isinstance(other, Constant):
-            if bool(other._value):
-                return self
-            else:
-                return Constant(self._gf(0))
-
-        if self.is_equivalent(other):
-            return self
-        else:
-            return And({UnoverloadedWrapper(self), UnoverloadedWrapper(other)}, self._gf)
-
-    def __and__(self, other) -> "Node":
-        if not isinstance(other, Node):
-            raise Exception(f"The RHS of this AND is not a Node: {self} & {other}")
-
-        return self.bool_and(other)
-
-    def __lt__(self, other) -> "Node":
+    def __lt__(self, other) -> Boolean:
         other_node = try_to_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this < cannot be made into a Node: {self} < {other}")
@@ -587,7 +526,7 @@ class Node(ABC):  # noqa: PLR0904
 
         return StrictComparison(self, other_node, less_than=True, gf=self._gf)
 
-    def __gt__(self, other) -> "Node":
+    def __gt__(self, other) -> Boolean:
         other_node = try_to_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this > cannot be made into a Node: {self} > {other}")
@@ -596,7 +535,7 @@ class Node(ABC):  # noqa: PLR0904
 
         return StrictComparison(self, other_node, less_than=False, gf=self._gf)
 
-    def __le__(self, other) -> "Node":
+    def __le__(self, other) -> Boolean:
         other_node = try_to_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this <= cannot be made into a Node: {self} <= {other}")
@@ -605,7 +544,7 @@ class Node(ABC):  # noqa: PLR0904
 
         return Comparison(self, other_node, less_than=True, gf=self._gf)
 
-    def __ge__(self, other) -> "Node":
+    def __ge__(self, other) -> Boolean:
         other_node = try_to_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this >= cannot be made into a Node: {self} >= {other}")
@@ -618,11 +557,6 @@ class Node(ABC):  # noqa: PLR0904
         from oraqle.compiler.nodes.leafs import Constant
 
         return Constant(-self._gf(1)) * self
-
-    def __invert__(self) -> "Node":
-        from oraqle.compiler.boolean.bool_neg import Neg
-
-        return Neg(self, self._gf)
 
     def __pow__(self, other) -> "Node":
         if not isinstance(other, int):
@@ -650,7 +584,7 @@ class Node(ABC):  # noqa: PLR0904
 
         return Subtraction(other_node, self, self._gf)
 
-    def __eq__(self, other) -> "Node":
+    def __eq__(self, other) -> Boolean:
         other_node = try_to_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this == cannot be made into a Node: {self} == {other}")

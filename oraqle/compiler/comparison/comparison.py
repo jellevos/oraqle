@@ -4,6 +4,7 @@ from typing import Type
 from galois import GF, FieldArray
 
 from oraqle.compiler.arithmetic.subtraction import Subtraction
+from oraqle.compiler.boolean.bool import Boolean
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.in_upper_half import IliashenkoZuccaInUpperHalf, InUpperHalf
@@ -12,7 +13,7 @@ from oraqle.compiler.nodes.leafs import Constant, Input
 from oraqle.compiler.nodes.non_commutative import NonCommutativeBinaryNode
 
 
-class AbstractComparison(NonCommutativeBinaryNode):
+class AbstractComparison(NonCommutativeBinaryNode, Boolean):
     """An abstract class for comparisons, representing that they can be flipped: i.e. x > y <=> y < x."""
 
     def __init__(self, left, right, less_than: bool, gf: Type[FieldArray]):

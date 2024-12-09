@@ -8,7 +8,7 @@ from oraqle.compiler.nodes.leafs import Constant
 from oraqle.compiler.nodes.univariate import UnivariateNode
 
 
-class Neg(UnivariateNode[Boolean]):
+class Neg(UnivariateNode[Boolean], Boolean):
     """A node that negates a Boolean input."""
 
     @property
@@ -28,11 +28,12 @@ class Neg(UnivariateNode[Boolean]):
         return self._gf(not bool(input))
 
     def _arithmetize_inner(self, strategy: str) -> Boolean:
-        return Boolean(Subtraction(
+        return Subtraction(
             Constant(self._gf(1)), self._node.arithmetize(strategy), self._gf
-        )).arithmetize(strategy)
+        ).arithmetize(strategy)  # type: ignore
 
+    # FIXME: CostParetoFront should be generic
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        return Boolean(Subtraction(Constant(self._gf(1)), self._node, self._gf)).arithmetize_depth_aware(
+        return Subtraction(Constant(self._gf(1)), self._node, self._gf).arithmetize_depth_aware(
             cost_of_squaring
         )
