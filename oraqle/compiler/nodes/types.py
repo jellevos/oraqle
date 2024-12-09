@@ -54,37 +54,11 @@ class BundleTypeNode[N: Node](TypeNode):
             operand_ids = [operand.to_graph(graph_builder) for operand in self._operands]
             graph_builder.add_cluster(operand_ids, label=self._node_label)
             self._to_graph_cache = -1
-            
+
         return self._to_graph_cache
 
 
-class BitSet(BundleTypeNode[Node]):  # TODO: Make Boolean
-    
-    @property
-    def _hash_name(self) -> str:
-        return "bitset"
-
-    @property
-    def _node_label(self) -> str:
-        return "Bitset"
-    
-    def __getitem__(self, index):
-        return self._operands[index]
-    
-    def contains_element(self, element: int) -> Node:
-        return self[element - 1]
-
-
-if __name__ == "__main__":
-    gf = GF(11)
-    bits = [Input(f"b_{i}", gf) for i in range(10)]
-    circuit = Circuit([BitSet(bits, gf).contains_element(3)]).to_pdf("debug.pdf")
-
-
+# TODO:
 # InvisibleTypeNode
 # - single Node
 # - invisible: forwards arrow
-
-# BundleTypeNode
-# - ordered list
-# - draws group around nodes
