@@ -339,6 +339,8 @@ class Node(ABC):  # noqa: PLR0904
     def to_graph(self, graph_builder: DotFile) -> int:
         """Adds this node to the graph as well as its edges.
 
+        The special value -1 is returned when no node was created.
+
         Returns:
             The identifier of this `Node` in the `DotFile`.
         """

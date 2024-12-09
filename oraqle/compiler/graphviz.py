@@ -1,5 +1,5 @@
 """This module contains classes and functions for visualizing circuits using graphviz."""
-from typing import Dict, List, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 expensive_style = {"shape": "diamond"}
 
@@ -11,6 +11,7 @@ class DotFile:
         """Initialize an empty DotFile."""
         self._nodes: List[Dict[str, str]] = []
         self._links: List[Tuple[int, int, Dict[str, str]]] = []
+        self._clusters: List[Tuple[Sequence[int], Dict[str, str]]] = []
 
     def add_node(self, **kwargs) -> int:
         """Adds a node to the file. The keyword arguments are directly put into the DOT file.
@@ -27,7 +28,14 @@ class DotFile:
 
     def add_link(self, from_id: int, to_id: int, **kwargs):
         """Adds an unformatted link between the nodes with `from_id` and `to_id`. The keyword arguments are directly put into the DOT file."""
+        assert from_id != -1
+        assert to_id != -1
         self._links.append((from_id, to_id, kwargs))
+
+    def add_cluster(self, ids: Sequence[int], **kwargs):
+        """Adds a cluster containings the nodes with the given IDs. The keyword arguments are directly put into the DOT file."""
+        assert -1 not in ids
+        self._clusters.append((ids, kwargs))
 
     def to_file(self, filename: str):
         """Writes the DOT file to the given filename as a directed graph called 'G'."""
@@ -52,5 +60,14 @@ class DotFile:
                     text += ",".join((f"{key}={value}" for key, value in attributes.items()))
                     text += "];\n"
                     file.write(text)
+
+            # Write all the clusters
+            for cluster_id, properties in enumerate(self._clusters):
+                ids, attributes = properties
+                text = f"subgraph cluster_{cluster_id} {{\n"
+                for id in ids:
+                    text += f"n{id};\n"
+                text += "}"
+                file.write(text)
 
             file.write("}\n")
