@@ -38,6 +38,7 @@ class ArithmeticLeafNode(FixedNode, ArithmeticNode):
 
 
 # TODO: Merge ArithmeticInput and Input using multiple inheritance
+# TODO: Consider renaming to ElementInput or something
 class Input(ArithmeticLeafNode):
     """Represents a named input to the arithmetic circuit."""
 
@@ -159,19 +160,6 @@ class Constant(ArithmeticLeafNode):
             return Constant(self._value * other._value)
 
         return other.mul(self, flatten)
-
-    
-    def bool_or(self, other: "Node", flatten=True) -> Node:  # noqa: D102
-        if isinstance(other, Constant):
-            return Constant(self._gf(bool(self._value) | bool(other._value)))
-
-        return other.bool_or(self, flatten)
-    
-    def bool_and(self, other: "Node", flatten=True) -> Node:  # noqa: D102
-        if isinstance(other, Constant):
-            return Constant(self._gf(bool(self._value) & bool(other._value)))
-
-        return other.bool_and(self, flatten)
     
     def create_instructions(  # noqa: D102
         self,
@@ -180,7 +168,7 @@ class Constant(ArithmeticLeafNode):
         stack_occupied: List[bool],
     ) -> Tuple[int]:
         raise NotImplementedError("The circuit is a constant.")
-
+    
 
 class DummyNode(FixedNode):
     """A DummyNode is a fixed node with no inputs and no behavior."""

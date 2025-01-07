@@ -362,13 +362,15 @@ class Product(CommutativeMultiplicityReducibleNode):
         return Product(counter, self._gf, self._constant)
 
 
-def _first_gf(*operands: Union[Node, int, bool]) -> Optional[Type[FieldArray]]:
+def _first_gf(*operands: Union[UnoverloadedWrapper, Node, int, bool]) -> Optional[Type[FieldArray]]:
     for operand in operands:
+        if isinstance(operand, UnoverloadedWrapper):
+            return operand.node._gf
         if isinstance(operand, Node):
             return operand._gf
 
 
-def sum_(*operands: Union[Node, int, bool]) -> Sum:
+def sum_(*operands: Union[UnoverloadedWrapper, Node, int, bool]) -> Sum:
     """Performs a sum between any number of nodes (or operands such as integers).
     
     Returns:
@@ -377,10 +379,10 @@ def sum_(*operands: Union[Node, int, bool]) -> Sum:
     assert len(operands) > 0
     gf = _first_gf(*operands)
     assert gf is not None
-    return Sum(Counter(UnoverloadedWrapper(_to_node(operand, gf)) for operand in operands), gf)
+    return Sum(Counter(operand if isinstance(operand, UnoverloadedWrapper) else UnoverloadedWrapper(_to_node(operand, gf)) for operand in operands), gf)
 
 
-def product_(*operands: Node) -> Product:
+def product_(*operands: Union[UnoverloadedWrapper, Node]) -> Product:
     """Performs a product between any number of nodes (or operands such as integers).
     
     Returns:
@@ -389,4 +391,4 @@ def product_(*operands: Node) -> Product:
     assert len(operands) > 0
     gf = _first_gf(*operands)
     assert gf is not None
-    return Product(Counter(UnoverloadedWrapper(_to_node(operand, gf)) for operand in operands), gf)
+    return Product(Counter(operand if isinstance(operand, UnoverloadedWrapper) else UnoverloadedWrapper(_to_node(operand, gf)) for operand in operands), gf)

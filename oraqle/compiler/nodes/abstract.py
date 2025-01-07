@@ -1,11 +1,14 @@
 """Module containing the most fundamental classes in the compiler."""
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import Counter
-from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Type, Union
 
 from galois import FieldArray
 
-from oraqle.compiler.boolean.bool import Boolean
+if TYPE_CHECKING:
+    from oraqle.compiler.boolean.bool import Boolean
+
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction
 
@@ -27,6 +30,7 @@ def select_stack_index(stack_occupied: List[bool]) -> int:
 
 
 # TODO: It would be great if we can move out this ParetoFront class, but it's hard to do without circular imports
+# TODO: Make this type generic
 class ParetoFront(ABC):
     """Abstract base class for ParetoFronts.
     
@@ -517,7 +521,7 @@ class Node(ABC):  # noqa: PLR0904
 
         return self.mul(other)
 
-    def __lt__(self, other) -> Boolean:
+    def __lt__(self, other) -> "Boolean":
         other_node = try_to_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this < cannot be made into a Node: {self} < {other}")
@@ -526,7 +530,7 @@ class Node(ABC):  # noqa: PLR0904
 
         return StrictComparison(self, other_node, less_than=True, gf=self._gf)
 
-    def __gt__(self, other) -> Boolean:
+    def __gt__(self, other) -> "Boolean":
         other_node = try_to_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this > cannot be made into a Node: {self} > {other}")
@@ -535,7 +539,7 @@ class Node(ABC):  # noqa: PLR0904
 
         return StrictComparison(self, other_node, less_than=False, gf=self._gf)
 
-    def __le__(self, other) -> Boolean:
+    def __le__(self, other) -> "Boolean":
         other_node = try_to_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this <= cannot be made into a Node: {self} <= {other}")
@@ -544,7 +548,7 @@ class Node(ABC):  # noqa: PLR0904
 
         return Comparison(self, other_node, less_than=True, gf=self._gf)
 
-    def __ge__(self, other) -> Boolean:
+    def __ge__(self, other) -> "Boolean":
         other_node = try_to_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this >= cannot be made into a Node: {self} >= {other}")

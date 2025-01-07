@@ -11,6 +11,7 @@ from galois import GF, FieldArray
 from oraqle.add_chains.addition_chains_front import gen_pareto_front
 from oraqle.add_chains.addition_chains_mod import chain_cost
 from oraqle.add_chains.solving import extract_indices
+from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, BooleanInput
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.comparison.equality import IsNonZero
 from oraqle.compiler.nodes.abstract import (
@@ -30,7 +31,7 @@ from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Constant, Input
 
 
-class And(CommutativeUniqueReducibleNode):
+class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
     """Performs an AND operation over several operands. The user must ensure that the operands are Booleans."""
 
     @property
@@ -171,7 +172,7 @@ class And(CommutativeUniqueReducibleNode):
 
         return front
 
-    def and_flatten(self, other: Node) -> Node:
+    def and_flatten(self, other: Boolean) -> Boolean:
         """Performs an AND operation with `other`, flattening the `And` node if either of the two is also an `And` and absorbing `Constant`s.
         
         Returns:
@@ -181,7 +182,7 @@ class And(CommutativeUniqueReducibleNode):
             if bool(other._value):
                 return self
             else:
-                return Constant(self._gf(0))
+                return BooleanConstant(self._gf(0))
 
         if isinstance(other, And):
             return And(self._operands | other._operands, self._gf)
@@ -194,8 +195,8 @@ class And(CommutativeUniqueReducibleNode):
 def test_evaluate_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = BooleanInput("a", gf)  # TODO: Define ReducedBooleanInput
+    b = BooleanInput("b", gf)
     node = (a & b).arithmetize("best-effort")
 
     assert node.evaluate({"a": gf(0), "b": gf(0)}) == gf(0)
@@ -210,8 +211,8 @@ def test_evaluate_mod3():  # noqa: D103
 def test_evaluate_arithmetized_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = BooleanInput("a", gf)
+    b = BooleanInput("b", gf)
     node = (a & b).arithmetize("best-effort")
 
     node.clear_cache(set())
@@ -227,8 +228,8 @@ def test_evaluate_arithmetized_mod3():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_mod2():  # noqa: D103
     gf = GF(2)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = BooleanInput("a", gf)
+    b = BooleanInput("b", gf)
     node = a & b
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 
@@ -246,8 +247,8 @@ def test_evaluate_arithmetized_depth_aware_mod2():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = BooleanInput("a", gf)
+    b = BooleanInput("b", gf)
     node = a & b
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 
@@ -368,7 +369,7 @@ class ProductNaryLogicNode(NaryLogicNode):
             _, result = _generate_multiplication_tree(((math.ceil(math.log2(operand.breadth)), operand.to_arithmetic_node(is_and, gf) if is_and else Neg(operand.to_arithmetic_node(is_and, gf), gf).arithmetize("best-effort").to_arithmetic()) for operand in self._operands), (1 for _ in range(len(self._operands))))  # type: ignore
 
             if not is_and:
-                result = Neg(result, gf)
+                result = Neg(result, gf)  # type: ignore
 
             self._arithmetic_node = result.arithmetize(
                 "best-effort"
@@ -422,11 +423,11 @@ class SumReduceNaryLogicNode(NaryLogicNode):
                         Counter(
                             {
                                 UnoverloadedWrapper(
-                                    Neg(operand.to_arithmetic_node(is_and, gf), gf)
+                                    Neg(operand.to_arithmetic_node(is_and, gf), gf)  # type: ignore
                                 ): 1
                                 for operand in self._operands
                             }
-                        ),
+                        ),  # type: ignore
                         gf,
                     )
                     .arithmetize("best-effort")
@@ -455,7 +456,7 @@ class SumReduceNaryLogicNode(NaryLogicNode):
             result = nodes[-1]
 
             if is_and:
-                result = Neg(result, gf).arithmetize("best-effort")
+                result = Neg(result, gf).arithmetize("best-effort")  # type: ignore
 
             self._arithmetic_node = result.to_arithmetic()  # TODO: This could be more elegant
             self._is_and = is_and
@@ -737,7 +738,7 @@ def minimize_depth_cost_recursive(  # noqa: PLR0912, PLR0914, PLR0915
     return output
 
 
-def all_(*operands: Node) -> And:
+def all_(*operands: Boolean) -> And:
     """Returns an `And` node that evaluates to true if any of the given `operands` evaluates to true."""
     assert len(operands) > 0
     return And(set(UnoverloadedWrapper(operand) for operand in operands), operands[0]._gf)

@@ -2,6 +2,7 @@ from typing import Tuple
 
 from galois import GF
 
+from oraqle.compiler.boolean.bool import cast_to_reduced_boolean
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import Node
 from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
@@ -19,11 +20,11 @@ def generate_nodes() -> Tuple[Node, Node]:
     z4 = Input("z4", gf)
 
     comparison = x < y
-    sum = sum_(z1, z2, z3, z4)
+    sum = cast_to_reduced_boolean(sum_(z1, z2, z3, z4))
     cse1 = comparison & sum
 
     comparison = y > x
-    sum = sum_(z3, z2, z4) + z1
+    sum = cast_to_reduced_boolean(sum_(z3, z2, z4) + z1)
     cse2 = sum & comparison
 
     return cse1, cse2

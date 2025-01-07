@@ -4,6 +4,7 @@ from typing import Set
 
 from galois import GF, FieldArray
 
+from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, BooleanInput
 from oraqle.compiler.boolean.bool_and import And, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
@@ -13,7 +14,7 @@ from oraqle.compiler.nodes.leafs import Constant, Input
 # TODO: Reduce code duplication between OR and AND
 
 
-class Or(CommutativeUniqueReducibleNode):
+class Or(CommutativeUniqueReducibleNode[Boolean], Boolean):
     """Performs an OR operation over several operands. The user must ensure that the operands are Booleans."""
 
     @property
@@ -87,7 +88,7 @@ class Or(CommutativeUniqueReducibleNode):
 
         return front
 
-    def or_flatten(self, other: Node) -> Node:
+    def or_flatten(self, other: Boolean) -> Boolean:
         """Performs an OR operation with `other`, flattening the `Or` node if either of the two is also an `Or` and absorbing `Constant`s.
         
         Returns:
@@ -95,7 +96,7 @@ class Or(CommutativeUniqueReducibleNode):
         """
         if isinstance(other, Constant):
             if bool(other._value):
-                return Constant(self._gf(1))
+                return BooleanConstant(self._gf(1))
             else:
                 return self
 
@@ -107,7 +108,7 @@ class Or(CommutativeUniqueReducibleNode):
         return Or(new_operands, self._gf)
 
 
-def any_(*operands: Node) -> Or:
+def any_(*operands: Boolean) -> Or:
     """Returns an `Or` node that evaluates to true if any of the given `operands` evaluates to true."""
     assert len(operands) > 0
     return Or(set(UnoverloadedWrapper(operand) for operand in operands), operands[0]._gf)
@@ -116,8 +117,8 @@ def any_(*operands: Node) -> Or:
 def test_evaluate_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = BooleanInput("a", gf)
+    b = BooleanInput("b", gf)
     node = a | b
 
     assert node.evaluate({"a": gf(0), "b": gf(0)}) == gf(0)
@@ -132,8 +133,8 @@ def test_evaluate_mod3():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_mod2():  # noqa: D103
     gf = GF(2)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = BooleanInput("a", gf)
+    b = BooleanInput("b", gf)
     node = a | b
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 
@@ -151,8 +152,8 @@ def test_evaluate_arithmetized_depth_aware_mod2():  # noqa: D103
 def test_evaluate_arithmetized_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = BooleanInput("a", gf)
+    b = BooleanInput("b", gf)
     node = (a | b).arithmetize("best-effort")
 
     node.clear_cache(set())
@@ -168,7 +169,7 @@ def test_evaluate_arithmetized_mod3():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_50_mod31():  # noqa: D103
     gf = GF(31)
 
-    xs = {Input(f"x{i}", gf) for i in range(50)}
+    xs = {BooleanInput(f"x{i}", gf) for i in range(50)}
     node = Or({UnoverloadedWrapper(x) for x in xs}, gf)
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 
