@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Callable, Dict, List, Sequence, Set, Type, Union
 from galois import GF, FieldArray
-from oraqle.compiler.boolean.bool import Boolean, BooleanInput
+from oraqle.compiler.boolean.bool import Boolean, BooleanInput, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean
 from oraqle.compiler.boolean.bool_and import all_
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
@@ -32,6 +32,7 @@ class BitSet(Node):  # TODO: Node should become Boolean
         return intersection
 
 
+# TODO: Reduce duplication
 class BitSetContainer(FixedNode[Boolean], BitSet):
 
     @property
@@ -76,13 +77,121 @@ class BitSetContainer(FixedNode[Boolean], BitSet):
     
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: Consider changing the arithmetize type
-        return BitSetContainer([bit.arithmetize(strategy) for bit in self._bits], self._gf)
+        return BitSetContainer([bit.arithmetize(strategy) for bit in self._bits], self._gf)  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
     
     def __len__(self) -> int:
         return len(self._bits)
+    
+
+# TODO: Should this be a FixedNode?
+class ReducedBitSet(FixedNode[BitSet], BitSet):
+    
+    @property
+    def _hash_name(self) -> str:
+        return "reduced_bitset"
+
+    @property
+    def _node_label(self) -> str:
+        return "Bitset"
+    
+    def __init__(self, bitset: BitSetContainer):
+        super().__init__(gf)
+        self._bitset = bitset
+
+    # def apply_function_to_operands(self, function: Callable[[Node], None]):
+    #     for operand in self._bits:
+    #         function(operand)
+
+    # def replace_operands_using_function(self, function: Callable[[Node], Node]):
+    #     self._bits = [function(operand) for operand in self._bits]
+    
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._hash_name, self._bitset))
+
+        return self._hash
+    
+    def is_equivalent(self, other: Node) -> bool:
+        if not isinstance(other, ReducedBitSet):
+            return False
+        
+        return self._bitset.is_equivalent(other._bitset)
+    
+    def operands(self) -> List[BitSet]:
+        return [self._bitset]
+    
+    def set_operands(self, operands: List[BitSet]):
+        self._bitset = operands[0]
+
+    def operation(self, operands: List[FieldArray]) -> FieldArray:
+        raise NotImplementedError("Incompatible: must return all operands")
+    
+    def _arithmetize_inner(self, strategy: str) -> Node:
+        # TODO: Consider changing the arithmetize type
+        return BitSetContainer([bit.transform_to_reduced_boolean().arithmetize(strategy) for bit in self._bitset._bits], self._gf)  # type: ignore
+    
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO")
+    
+    def __len__(self) -> int:
+        return len(self._bitset)
+    
+
+# TODO: Should this be a FixedNode?
+class InvUnreducedBitSet(FixedNode[BitSet], BitSet):
+    
+    @property
+    def _hash_name(self) -> str:
+        return "inv_unreduced_bitset"
+
+    @property
+    def _node_label(self) -> str:
+        return "Bitset"
+    
+    def __init__(self, bitset: BitSetContainer):
+        super().__init__(gf)
+        self._bitset = bitset
+
+    # def apply_function_to_operands(self, function: Callable[[Node], None]):
+    #     for operand in self._bits:
+    #         function(operand)
+
+    # def replace_operands_using_function(self, function: Callable[[Node], Node]):
+    #     self._bits = [function(operand) for operand in self._bits]
+    
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._hash_name, self._bitset))
+
+        return self._hash
+    
+    def is_equivalent(self, other: Node) -> bool:
+        if not isinstance(other, InvUnreducedBitSet):
+            return False
+        
+        return self._bitset.is_equivalent(other._bitset)
+    
+    def operands(self) -> List[BitSet]:
+        return [self._bitset]
+    
+    def set_operands(self, operands: List[BitSet]):
+        self._bitset = operands[0]
+
+    def operation(self, operands: List[FieldArray]) -> FieldArray:
+        raise NotImplementedError("Incompatible: must return all operands")
+    
+    def _arithmetize_inner(self, strategy: str) -> Node:
+        # TODO: Consider changing the arithmetize type
+        return BitSetContainer([bit.transform_to_inv_unreduced_boolean().arithmetize(strategy) for bit in self._bitset._bits], self._gf)  # type: ignore
+    
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO")
+    
+    def __len__(self) -> int:
+        return len(self._bitset)
 
 
 class BitSetIndex(Boolean):
@@ -131,6 +240,113 @@ class BitSetIndex(Boolean):
             return False
         
         return self._index == other._index and self._bitset.is_equivalent(other._bitset)
+    
+    def transform_to_reduced_boolean(self) -> ReducedBoolean:
+        return ReducedBitSetIndex(ReducedBitSet(self._bitset), self._index, self._gf)  # type: ignore
+    
+    def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
+        raise NotImplementedError("TODO!")
+    
+    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
+        return InvUnreducedBitSetIndex(InvUnreducedBitSet(self._bitset), self._index, self._gf)  # type: ignore
+
+
+# TODO: Reduce duplication
+class ReducedBitSetIndex(ReducedBoolean):
+    
+    @property
+    def _hash_name(self) -> str:
+        return "reduced_bitset_index"
+
+    @property
+    def _node_label(self) -> str:
+        return f"Bitset index #{self._index}"
+
+    def __init__(self, bitset: BitSet, index: int, gf: Type[FieldArray]):
+        super().__init__(gf)
+        self._bitset = bitset
+        self._index = index
+
+    def arithmetize(self, strategy: str) -> Node:
+        if self._arithmetize_cache is None:
+            arithmetized_bitset = self._bitset.arithmetize(strategy)
+            assert isinstance(arithmetized_bitset, BitSetContainer)
+            self._arithmetize_cache = arithmetized_bitset._bits[self._index]
+
+        return self._arithmetize_cache
+    
+    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO")
+    
+    def apply_function_to_operands(self, function: Callable[[Node], None]):
+        function(self._bitset)
+
+    def replace_operands_using_function(self, function: Callable[[Node], Node]):
+        self._bitset = function(self._bitset)
+
+    def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:
+        raise NotImplementedError("TODO: Requires refactors")
+    
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._hash_name, self._index, self._bitset))
+
+        return self._hash
+    
+    def is_equivalent(self, other: Node) -> bool:
+        if not isinstance(other, BitSetIndex):
+            return False
+        
+        return self._index == other._index and self._bitset.is_equivalent(other._bitset)
+
+
+class InvUnreducedBitSetIndex(InvUnreducedBoolean):
+    
+    @property
+    def _hash_name(self) -> str:
+        return "inv_unreduced_bitset_index"
+
+    @property
+    def _node_label(self) -> str:
+        return f"Bitset index #{self._index}"
+
+    def __init__(self, bitset: BitSet, index: int, gf: Type[FieldArray]):
+        super().__init__(gf)
+        self._bitset = bitset
+        self._index = index
+
+    def arithmetize(self, strategy: str) -> Node:
+        if self._arithmetize_cache is None:
+            arithmetized_bitset = self._bitset.arithmetize(strategy)
+            assert isinstance(arithmetized_bitset, BitSetContainer)
+            self._arithmetize_cache = arithmetized_bitset._bits[self._index]
+
+        return self._arithmetize_cache
+    
+    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO")
+    
+    def apply_function_to_operands(self, function: Callable[[Node], None]):
+        function(self._bitset)
+
+    def replace_operands_using_function(self, function: Callable[[Node], Node]):
+        self._bitset = function(self._bitset)
+
+    def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:
+        raise NotImplementedError("TODO: Requires refactors")
+    
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._hash_name, self._index, self._bitset))
+
+        return self._hash
+    
+    def is_equivalent(self, other: Node) -> bool:
+        if not isinstance(other, BitSetIndex):
+            return False
+        
+        return self._index == other._index and self._bitset.is_equivalent(other._bitset)
+
 
 
 # FIXME: gf should be moved to arithmetization and Input should be abstract. Instead we should have integer Inputs. ShortInt should be what is currently Input.
@@ -188,6 +404,7 @@ class BitSetIntersection(CommutativeUniqueReducibleNode[BitSet], BitSet):
     def _arithmetize_inner(self, strategy: str) -> BitSet:
         # TODO: Assert all lengths are equal? Or that they map the same universe?
         bit_count = len(self)
+        # TODO: After arithmetizing one of the bitsets, we can consider reusing that arithmetization for the rest (so not to run in O(n))
         return BitSetContainer([all_(*(operand.node[i] for operand in self._operands)).arithmetize(strategy) for i in range(bit_count)], self._gf)  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:

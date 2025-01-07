@@ -4,8 +4,8 @@ from typing import Type
 from galois import GF, FieldArray
 
 from oraqle.compiler.arithmetic.subtraction import Subtraction
-from oraqle.compiler.boolean.bool import Boolean
-from oraqle.compiler.boolean.bool_neg import Neg
+from oraqle.compiler.boolean.bool import Boolean, ReducedBoolean
+from oraqle.compiler.boolean.bool_neg import ReducedNeg
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.in_upper_half import IliashenkoZuccaInUpperHalf, InUpperHalf
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node, iterate_increasing_depth
@@ -13,7 +13,7 @@ from oraqle.compiler.nodes.leafs import Constant, Input
 from oraqle.compiler.nodes.non_commutative import NonCommutativeBinaryNode
 
 
-class AbstractComparison(NonCommutativeBinaryNode, Boolean):
+class AbstractComparison(NonCommutativeBinaryNode, ReducedBoolean):
     """An abstract class for comparisons, representing that they can be flipped: i.e. x > y <=> y < x."""
 
     def __init__(self, left, right, less_than: bool, gf: Type[FieldArray]):
@@ -148,7 +148,7 @@ class StrictComparison(AbstractComparison):
 
         # Test whether left and right are in the same range
         same_range = (left_is_small & right_is_small) + (
-            Neg(left_is_small, self._gf) & Neg(right_is_small, self._gf)
+            ReducedNeg(left_is_small, self._gf) & ReducedNeg(right_is_small, self._gf)
         )
 
         # Performs left < right on the reduced inputs, note that if both are in the upper half the difference is still small enough for a semi-comparison
@@ -156,7 +156,7 @@ class StrictComparison(AbstractComparison):
         result = same_range * comparison
 
         # Performs left < right when one if small and the other is large
-        right_is_larger = left_is_small & Neg(right_is_small, self._gf)
+        right_is_larger = left_is_small & ReducedNeg(right_is_small, self._gf)
         result += right_is_larger
 
         return result.arithmetize(strategy)
@@ -188,7 +188,7 @@ class StrictComparison(AbstractComparison):
 
                 # Test whether left and right are in the same range
                 same_range = (left_is_small & right_is_small) + (
-                    Neg(left_is_small, self._gf) & Neg(right_is_small, self._gf)
+                    ReducedNeg(left_is_small, self._gf) & ReducedNeg(right_is_small, self._gf)
                 )
 
                 # Performs left < right on the reduced inputs, note that if both are in the upper half the difference is still small enough for a semi-comparison
@@ -198,7 +198,7 @@ class StrictComparison(AbstractComparison):
                 result = same_range * comparison
 
                 # Performs left < right when one if small and the other is large
-                right_is_larger = left_is_small & Neg(right_is_small, self._gf)
+                right_is_larger = left_is_small & ReducedNeg(right_is_small, self._gf)
                 result += right_is_larger
 
                 front.add_front(result.arithmetize_depth_aware(cost_of_squaring))
@@ -226,7 +226,7 @@ class SemiComparison(AbstractComparison):
             return self._gf(int(int(x) >= int(y)))
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        return Neg(
+        return ReducedNeg(
             SemiStrictComparison(
                 self._left.arithmetize(strategy),
                 self._right.arithmetize(strategy),
@@ -237,7 +237,7 @@ class SemiComparison(AbstractComparison):
         ).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        return Neg(
+        return ReducedNeg(
             SemiStrictComparison(
                 self._left, self._right, less_than=not self._less_than, gf=self._gf
             ),
@@ -263,7 +263,7 @@ class Comparison(AbstractComparison):
             return self._gf(int(int(x) >= int(y)))
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        return Neg(
+        return ReducedNeg(
             StrictComparison(
                 self._left.arithmetize(strategy),
                 self._right.arithmetize(strategy),
@@ -274,7 +274,7 @@ class Comparison(AbstractComparison):
         ).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        return Neg(
+        return ReducedNeg(
             StrictComparison(self._left, self._right, less_than=not self._less_than, gf=self._gf),
             self._gf,
         ).arithmetize_depth_aware(cost_of_squaring)

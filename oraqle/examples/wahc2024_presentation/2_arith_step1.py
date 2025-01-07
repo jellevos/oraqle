@@ -1,7 +1,7 @@
 """Show the first step of arithmetization of a comparison circuit."""
 from galois import GF
 
-from oraqle.compiler.boolean.bool_neg import Neg
+from oraqle.compiler.boolean.bool_neg import ReducedNeg
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.comparison import SemiStrictComparison
 from oraqle.compiler.nodes.leafs import Constant, Input
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     # Test whether left and right are in the same range
     same_range = (left_is_small & right_is_small) + (
-        Neg(left_is_small, output._gf) & Neg(right_is_small, output._gf)
+        ReducedNeg(left_is_small, output._gf) & ReducedNeg(right_is_small, output._gf)
     )
 
     # Performs left < right on the reduced inputs, note that if both are in the upper half the difference is still small enough for a semi-comparison
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     result = same_range * comparison
 
     # Performs left < right when one if small and the other is large
-    right_is_larger = left_is_small & Neg(right_is_small, output._gf)
+    right_is_larger = left_is_small & ReducedNeg(right_is_small, output._gf)
     result += right_is_larger
 
 

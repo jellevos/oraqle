@@ -3,8 +3,8 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.arithmetic.subtraction import Subtraction
-from oraqle.compiler.boolean.bool import Boolean
-from oraqle.compiler.boolean.bool_neg import Neg
+from oraqle.compiler.boolean.bool import Boolean, InvUnreducedBoolean, ReducedBoolean, UnreducedBoolean
+from oraqle.compiler.boolean.bool_neg import Neg, ReducedNeg
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node
 from oraqle.compiler.nodes.binary_arithmetic import CommutativeBinaryNode
 from oraqle.compiler.nodes.leafs import Input
@@ -30,6 +30,40 @@ class IsNonZero(UnivariateNode, Boolean):
         return input != 0
 
     def _arithmetize_inner(self, strategy: str) -> Node:
+        return self.arithmetize_all_representations(strategy)
+    
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO!")
+    
+    def transform_to_reduced_boolean(self) -> ReducedBoolean:
+        return ReducedIsNonZero(self._node, self._gf)
+    
+    def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
+        raise NotImplementedError("TODO!")
+    
+    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
+        raise NotImplementedError("TODO!")
+    
+
+class ReducedIsNonZero(UnivariateNode, ReducedBoolean):
+    """This node represents a zero check: x == 0."""
+
+    @property
+    def _node_shape(self) -> str:
+        return "box"
+
+    @property
+    def _hash_name(self) -> str:
+        return "reduced_is_nonzero"
+
+    @property
+    def _node_label(self) -> str:
+        return "!= 0"
+    
+    def _operation_inner(self, input: FieldArray) -> FieldArray:
+        return input != 0
+    
+    def _arithmetize_inner(self, strategy: str) -> Node:
         return Power(self._node, self._gf.order - 1, self._gf).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
@@ -38,12 +72,43 @@ class IsNonZero(UnivariateNode, Boolean):
         )
 
 
+# TODO: UnreducedEquals MUST multiply with randomness
 class Equals(CommutativeBinaryNode, Boolean):
     """This node represents an equality operation: x == y."""
 
     @property
     def _hash_name(self) -> str:
         return "equals"
+
+    @property
+    def _node_label(self) -> str:
+        return "=="
+
+    def _operation_inner(self, x, y) -> FieldArray:
+        return self._gf(int(x == y))
+
+    def _arithmetize_inner(self, strategy: str) -> Node:
+        return self.arithmetize_all_representations(strategy)
+    
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO!")
+    
+    def transform_to_reduced_boolean(self) -> ReducedBoolean:
+        return ReducedEquals(self._left, self._right, self._gf)
+    
+    def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
+        raise NotImplementedError("TODO!")
+    
+    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
+        raise NotImplementedError("TODO!")
+    
+
+class ReducedEquals(CommutativeBinaryNode, ReducedBoolean):
+    """This node represents an equality operation: x == y."""
+
+    @property
+    def _hash_name(self) -> str:
+        return "reduced_equals"
 
     @property
     def _node_label(self) -> str:

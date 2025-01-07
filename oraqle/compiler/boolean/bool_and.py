@@ -11,8 +11,9 @@ from galois import GF, FieldArray
 from oraqle.add_chains.addition_chains_front import gen_pareto_front
 from oraqle.add_chains.addition_chains_mod import chain_cost
 from oraqle.add_chains.solving import extract_indices
-from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, BooleanInput
-from oraqle.compiler.boolean.bool_neg import Neg
+from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean
+from oraqle.compiler.boolean.bool_neg import Neg, ReducedNeg
+from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.equality import IsNonZero
 from oraqle.compiler.nodes.abstract import (
     ArithmeticNode,
@@ -25,6 +26,7 @@ from oraqle.compiler.nodes.arbitrary_arithmetic import (
     Product,
     Sum,
     _generate_multiplication_tree,
+    sum_,
 )
 from oraqle.compiler.nodes.binary_arithmetic import Multiplication
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
@@ -32,11 +34,89 @@ from oraqle.compiler.nodes.leafs import Constant, Input
 
 
 class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
-    """Performs an AND operation over several operands. The user must ensure that the operands are Booleans."""
 
     @property
     def _hash_name(self) -> str:
         return "and"
+
+    @property
+    def _node_label(self) -> str:
+        return "AND"
+    
+    def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
+        raise NotImplementedError()
+    
+    def _arithmetize_inner(self, strategy: str) -> Node:
+        # Choose the best of the reduced and unreduced implementations
+        reduced = self.transform_to_reduced_boolean().arithmetize(strategy)
+        inv_unreduced = self.transform_to_inv_unreduced_boolean().arithmetize(strategy)
+
+        # TODO: Consider multiplicative cost
+        if reduced.to_arithmetic().multiplicative_size() <= inv_unreduced.to_arithmetic().multiplicative_size():
+            return reduced
+        
+        return inv_unreduced
+
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO!")
+
+    def and_flatten(self, other: Boolean) -> Boolean:
+        """Performs an AND operation with `other`, flattening the `And` node if either of the two is also an `And` and absorbing `Constant`s.
+        
+        Returns:
+            An `And` node containing the flattened AND operation, or a `Constant` node.
+        """
+        if isinstance(other, BooleanConstant):
+            if bool(other._value):
+                return self
+            else:
+                return BooleanConstant(self._gf(0))
+
+        if isinstance(other, And):
+            return And(self._operands | other._operands, self._gf)
+
+        new_operands = self._operands.copy()
+        new_operands.add(UnoverloadedWrapper(other))
+        return And(new_operands, self._gf)
+    
+    def transform_to_reduced_boolean(self) -> ReducedBoolean:
+        return ReducedAnd({UnoverloadedWrapper(operand.node.transform_to_reduced_boolean()) for operand in self._operands}, self._gf)
+    
+    def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
+        raise NotImplementedError("TODO: This is typically not a smart operation to do (it is better to use other representations).")
+    
+    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
+        return InvUnreducedAnd({UnoverloadedWrapper(operand.node.transform_to_inv_unreduced_boolean()) for operand in self._operands}, self._gf)
+
+
+class InvUnreducedAnd(CommutativeUniqueReducibleNode[InvUnreducedBoolean], InvUnreducedBoolean):
+
+    @property
+    def _hash_name(self) -> str:
+        return "inv_unreduced_and"
+
+    @property
+    def _node_label(self) -> str:
+        return "AND"
+    
+    def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
+        return a + b
+
+    def _arithmetize_inner(self, strategy: str) -> Node:
+        # TODO: We need to randomize (i.e. make it a Sum with random multiplicities)
+        # TODO: Consider not supporting additions between Booleans unless they are cast to field elements
+        return sum_(*self._operands).arithmetize(strategy)
+
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO!")
+
+
+class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean):
+    """Performs an AND operation over several reduced Booleans."""
+
+    @property
+    def _hash_name(self) -> str:
+        return "reduced_and"
 
     @property
     def _node_label(self) -> str:
@@ -171,32 +251,15 @@ class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
             front.add_front(this_front)
 
         return front
-
-    def and_flatten(self, other: Boolean) -> Boolean:
-        """Performs an AND operation with `other`, flattening the `And` node if either of the two is also an `And` and absorbing `Constant`s.
-        
-        Returns:
-            An `And` node containing the flattened AND operation, or a `Constant` node.
-        """
-        if isinstance(other, Constant):
-            if bool(other._value):
-                return self
-            else:
-                return BooleanConstant(self._gf(0))
-
-        if isinstance(other, And):
-            return And(self._operands | other._operands, self._gf)
-
-        new_operands = self._operands.copy()
-        new_operands.add(UnoverloadedWrapper(other))
-        return And(new_operands, self._gf)
+    
+    # TODO: Consider implementing and_flatten
 
 
 def test_evaluate_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = BooleanInput("a", gf)  # TODO: Define ReducedBooleanInput
-    b = BooleanInput("b", gf)
+    a = ReducedBooleanInput("a", gf)  # TODO: Define ReducedBooleanInput
+    b = ReducedBooleanInput("b", gf)
     node = (a & b).arithmetize("best-effort")
 
     assert node.evaluate({"a": gf(0), "b": gf(0)}) == gf(0)
@@ -211,8 +274,8 @@ def test_evaluate_mod3():  # noqa: D103
 def test_evaluate_arithmetized_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = BooleanInput("a", gf)
-    b = BooleanInput("b", gf)
+    a = ReducedBooleanInput("a", gf)
+    b = ReducedBooleanInput("b", gf)
     node = (a & b).arithmetize("best-effort")
 
     node.clear_cache(set())
@@ -228,8 +291,8 @@ def test_evaluate_arithmetized_mod3():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_mod2():  # noqa: D103
     gf = GF(2)
 
-    a = BooleanInput("a", gf)
-    b = BooleanInput("b", gf)
+    a = ReducedBooleanInput("a", gf)
+    b = ReducedBooleanInput("b", gf)
     node = a & b
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 
@@ -247,8 +310,8 @@ def test_evaluate_arithmetized_depth_aware_mod2():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = BooleanInput("a", gf)
-    b = BooleanInput("b", gf)
+    a = ReducedBooleanInput("a", gf)
+    b = ReducedBooleanInput("b", gf)
     node = a & b
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 
@@ -267,7 +330,7 @@ def test_evaluate_arithmetized_depth_aware_7_mod5():  # noqa: D103
     gf = GF(5)
 
     xs = {Input(f"x{i}", gf) for i in range(7)}
-    node = And({UnoverloadedWrapper(x) for x in xs}, gf)  # type: ignore
+    node = ReducedAnd({UnoverloadedWrapper(x) for x in xs}, gf)  # type: ignore
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 
     for _, _, n in front:
@@ -283,7 +346,7 @@ def test_evaluate_arithmetized_depth_aware_50_mod31():  # noqa: D103
     gf = GF(31)
 
     xs = {Input(f"x{i}", gf) for i in range(50)}
-    node = And({UnoverloadedWrapper(x) for x in xs}, gf)  # type: ignore
+    node = ReducedAnd({UnoverloadedWrapper(x) for x in xs}, gf)  # type: ignore
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 
     for _, _, n in front:
@@ -366,10 +429,10 @@ class ProductNaryLogicNode(NaryLogicNode):
             self._arithmetic_node = None
 
         if self._arithmetic_node is None:
-            _, result = _generate_multiplication_tree(((math.ceil(math.log2(operand.breadth)), operand.to_arithmetic_node(is_and, gf) if is_and else Neg(operand.to_arithmetic_node(is_and, gf), gf).arithmetize("best-effort").to_arithmetic()) for operand in self._operands), (1 for _ in range(len(self._operands))))  # type: ignore
+            _, result = _generate_multiplication_tree(((math.ceil(math.log2(operand.breadth)), operand.to_arithmetic_node(is_and, gf) if is_and else ReducedNeg(operand.to_arithmetic_node(is_and, gf), gf).arithmetize("best-effort").to_arithmetic()) for operand in self._operands), (1 for _ in range(len(self._operands))))  # type: ignore
 
             if not is_and:
-                result = Neg(result, gf)  # type: ignore
+                result = ReducedNeg(result, gf)  # type: ignore
 
             self._arithmetic_node = result.arithmetize(
                 "best-effort"
@@ -423,7 +486,7 @@ class SumReduceNaryLogicNode(NaryLogicNode):
                         Counter(
                             {
                                 UnoverloadedWrapper(
-                                    Neg(operand.to_arithmetic_node(is_and, gf), gf)  # type: ignore
+                                    ReducedNeg(operand.to_arithmetic_node(is_and, gf), gf)  # type: ignore
                                 ): 1
                                 for operand in self._operands
                             }
@@ -456,7 +519,7 @@ class SumReduceNaryLogicNode(NaryLogicNode):
             result = nodes[-1]
 
             if is_and:
-                result = Neg(result, gf).arithmetize("best-effort")  # type: ignore
+                result = ReducedNeg(result, gf).arithmetize("best-effort")  # type: ignore
 
             self._arithmetic_node = result.to_arithmetic()  # TODO: This could be more elegant
             self._is_and = is_and

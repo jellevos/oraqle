@@ -2,7 +2,7 @@
 
 from galois import GF
 
-from oraqle.compiler.boolean.bool_and import And
+from oraqle.compiler.boolean.bool_and import ReducedAnd
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.leafs import Input
@@ -11,7 +11,7 @@ gf = GF(5)
 
 xs = [Input(f"x{i}", gf) for i in range(15)]
 
-output = And(set(UnoverloadedWrapper(x) for x in xs), gf)
+output = ReducedAnd(set(UnoverloadedWrapper(x) for x in xs), gf)
 
 circuit = Circuit(outputs=[output])
 circuit.to_graph("high_level_circuit.dot")

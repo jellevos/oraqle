@@ -2,8 +2,8 @@
 from typing import Type
 from galois import GF, FieldArray
 
-from oraqle.compiler.boolean.bool import BooleanInput
-from oraqle.compiler.boolean.bool_neg import Neg
+from oraqle.compiler.boolean.bool import ReducedBooleanInput
+from oraqle.compiler.boolean.bool_neg import ReducedNeg
 from oraqle.compiler.boolean.bool_or import any_
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes import Input
@@ -13,12 +13,12 @@ from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
 
 def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> Node:
     """Returns the cardio circuit from https://arxiv.org/abs/2101.07078."""
-    man = BooleanInput("man", gf)
-    woman = BooleanInput("woman", gf)
-    smoking = BooleanInput("smoking", gf)
+    man = ReducedBooleanInput("man", gf)
+    woman = ReducedBooleanInput("woman", gf)
+    smoking = ReducedBooleanInput("smoking", gf)
     age = Input("age", gf)
-    diabetic = BooleanInput("diabetic", gf)
-    hbp = BooleanInput("hbp", gf)
+    diabetic = ReducedBooleanInput("diabetic", gf)
+    hbp = ReducedBooleanInput("hbp", gf)
     cholesterol = Input("cholesterol", gf)
     weight = Input("weight", gf)
     height = Input("height", gf)
@@ -35,18 +35,18 @@ def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> Node:
         weight > (height - 90),  # This might underflow if the modulus is too small
         activity < 30,
         man & (alcohol > 3),
-        Neg(man, gf) & (alcohol > 2),
+        ReducedNeg(man, gf) & (alcohol > 2),
     )
 
 
 def construct_cardio_elevated_risk_circuit(gf: Type[FieldArray]) -> Node:
     """Returns a variant of the cardio circuit that returns a Boolean indicating whether any risk factor returned true."""
-    man = BooleanInput("man", gf)
-    woman = BooleanInput("woman", gf)
-    smoking = BooleanInput("smoking", gf)
+    man = ReducedBooleanInput("man", gf)
+    woman = ReducedBooleanInput("woman", gf)
+    smoking = ReducedBooleanInput("smoking", gf)
     age = Input("age", gf)
-    diabetic = BooleanInput("diabetic", gf)
-    hbp = BooleanInput("hbp", gf)
+    diabetic = ReducedBooleanInput("diabetic", gf)
+    hbp = ReducedBooleanInput("hbp", gf)
     cholesterol = Input("cholesterol", gf)
     weight = Input("weight", gf)
     height = Input("height", gf)
@@ -63,7 +63,7 @@ def construct_cardio_elevated_risk_circuit(gf: Type[FieldArray]) -> Node:
         weight > (height - 90),  # This might underflow if the modulus is too small
         activity < 30,
         man & (alcohol > 3),
-        Neg(man, gf) & (alcohol > 2),
+        ReducedNeg(man, gf) & (alcohol > 2),
     )
 
 

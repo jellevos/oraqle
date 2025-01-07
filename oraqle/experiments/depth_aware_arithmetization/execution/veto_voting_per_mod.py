@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from sympy import sieve
 
 from oraqle.compiler.boolean.bool_and import _minimum_cost
-from oraqle.compiler.boolean.bool_or import Or
+from oraqle.compiler.boolean.bool_or import ReducedOr
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import CostParetoFront, UnoverloadedWrapper
 from oraqle.compiler.nodes.leafs import Input
@@ -25,7 +25,7 @@ def generate_all_fronts():
             gf = GF(p)
             xs = [Input(f"x{i}", gf) for i in range(k)]
 
-            circuit = Circuit([Or(set(UnoverloadedWrapper(x) for x in xs), gf)])
+            circuit = Circuit([ReducedOr(set(UnoverloadedWrapper(x) for x in xs), gf)])
             front = circuit.arithmetize_depth_aware(cost_of_squaring=1.0)
 
             print(f"{k}.", end=" ")
