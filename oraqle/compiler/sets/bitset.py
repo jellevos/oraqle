@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Callable, Dict, List, Sequence, Set, Type, Union
 from galois import GF, FieldArray
+from oraqle.compiler.boolean.bool import Boolean, BooleanInput
 from oraqle.compiler.boolean.bool_and import all_
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
@@ -14,7 +15,7 @@ from oraqle.compiler.nodes.leafs import Input
 # TODO: At some point we can implement __and__ for intersections
 class BitSet(Node):  # TODO: Node should become Boolean
     
-    def __getitem__(self, index) -> Node:  # TODO: Make Boolean
+    def __getitem__(self, index) -> Boolean:
         assert 0 <= index < len(self)
         return BitSetIndex(self, index, self._gf)
     
@@ -22,7 +23,7 @@ class BitSet(Node):  # TODO: Node should become Boolean
     def __len__(self) -> int:
         pass
     
-    def contains_element(self, element: int) -> Node:  # TODO: Node should become Boolean
+    def contains_element(self, element: int) -> Boolean:
         return self[element - 1]
     
     @staticmethod
@@ -31,7 +32,7 @@ class BitSet(Node):  # TODO: Node should become Boolean
         return intersection
 
 
-class BitSetContainer(FixedNode[Node], BitSet):  # TODO: Boolean
+class BitSetContainer(FixedNode[Boolean], BitSet):
 
     @property
     def _hash_name(self) -> str:
@@ -41,7 +42,7 @@ class BitSetContainer(FixedNode[Node], BitSet):  # TODO: Boolean
     def _node_label(self) -> str:
         return "Bitset"
     
-    def __init__(self, bits: Sequence[Node], gf: Type[FieldArray]):
+    def __init__(self, bits: Sequence[Boolean], gf: Type[FieldArray]):
         super().__init__(gf)
         self._bits = list(bits)
 
@@ -64,10 +65,10 @@ class BitSetContainer(FixedNode[Node], BitSet):  # TODO: Boolean
         
         return all(a.is_equivalent(b) for a, b in zip(self._bits, other._bits))
     
-    def operands(self) -> List[Node]:
+    def operands(self) -> List[Boolean]:
         return self._bits
     
-    def set_operands(self, operands: List[Node]):
+    def set_operands(self, operands: List[Boolean]):
         self._bits = operands
 
     def operation(self, operands: List[FieldArray]) -> FieldArray:
@@ -84,7 +85,7 @@ class BitSetContainer(FixedNode[Node], BitSet):  # TODO: Boolean
         return len(self._bits)
 
 
-class BitSetIndex(Node):
+class BitSetIndex(Boolean):
 
     @property
     def _hash_name(self) -> str:
@@ -187,8 +188,7 @@ class BitSetIntersection(CommutativeUniqueReducibleNode[BitSet], BitSet):
     def _arithmetize_inner(self, strategy: str) -> BitSet:
         # TODO: Assert all lengths are equal? Or that they map the same universe?
         bit_count = len(self)
-        # " ∩ ".join(operand.node._name for operand in self._operands)
-        return BitSetContainer([all_(*(operand.node[i] for operand in self._operands)).arithmetize(strategy) for i in range(bit_count)], self._gf)
+        return BitSetContainer([all_(*(operand.node[i] for operand in self._operands)).arithmetize(strategy) for i in range(bit_count)], self._gf)  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError()
@@ -201,13 +201,13 @@ class BitSetIntersection(CommutativeUniqueReducibleNode[BitSet], BitSet):
 if __name__ == "__main__":
     gf = GF(11)
 
-    bits1 = [Input(f"b1_{i}", gf) for i in range(10)]
+    bits1 = [BooleanInput(f"b1_{i}", gf) for i in range(10)]
     bitset1 = BitSetContainer(bits1, gf)
 
-    bits2 = [Input(f"b2_{i}", gf) for i in range(10)]
+    bits2 = [BooleanInput(f"b2_{i}", gf) for i in range(10)]
     bitset2 = BitSetContainer(bits2, gf)
 
-    bits3 = [Input(f"b3_{i}", gf) for i in range(10)]
+    bits3 = [BooleanInput(f"b3_{i}", gf) for i in range(10)]
     bitset3 = BitSetContainer(bits3, gf)
 
     final_bitset = BitSet.intersection(bitset1, bitset2, bitset3)

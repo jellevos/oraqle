@@ -16,7 +16,7 @@ class InvUnreducedBool(Boolean):
 class UnreducedOr(Or):
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        # FIXME: Do we need to randomize (i.e. make it a Sum with random multiplicities?)
+        # TODO: We need to randomize (i.e. make it a Sum with random multiplicities)
         return sum_(*self._operands)
     
     # TODO: Depth-aware
@@ -25,7 +25,7 @@ class UnreducedOr(Or):
 class InvUnreducedAnd(And):
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        # FIXME: Do we need to randomize (i.e. make it a Sum with random multiplicities?)
+        # TODO: We need to randomize (i.e. make it a Sum with random multiplicities)
         return sum_(*self._operands)
 
     # TODO: Depth-aware
