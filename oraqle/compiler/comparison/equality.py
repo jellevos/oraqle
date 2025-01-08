@@ -3,7 +3,7 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.arithmetic.subtraction import Subtraction
-from oraqle.compiler.boolean.bool import Boolean, InvUnreducedBoolean, ReducedBoolean, UnreducedBoolean
+from oraqle.compiler.boolean.bool import Boolean, InvUnreducedBoolean, ReducedBoolean, UnreducedBoolean, cast_to_reduced_boolean
 from oraqle.compiler.boolean.bool_neg import Neg, ReducedNeg
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node
 from oraqle.compiler.nodes.binary_arithmetic import CommutativeBinaryNode
@@ -64,10 +64,10 @@ class ReducedIsNonZero(UnivariateNode, ReducedBoolean):
         return input != 0
     
     def _arithmetize_inner(self, strategy: str) -> Node:
-        return Power(self._node, self._gf.order - 1, self._gf).arithmetize(strategy)
+        return cast_to_reduced_boolean(Power(self._node, self._gf.order - 1, self._gf)).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        return Power(self._node, self._gf.order - 1, self._gf).arithmetize_depth_aware(
+        return cast_to_reduced_boolean(Power(self._node, self._gf.order - 1, self._gf)).arithmetize_depth_aware(
             cost_of_squaring
         )
 

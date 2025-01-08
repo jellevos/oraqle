@@ -11,10 +11,10 @@ from galois import GF, FieldArray
 from oraqle.add_chains.addition_chains_front import gen_pareto_front
 from oraqle.add_chains.addition_chains_mod import chain_cost
 from oraqle.add_chains.solving import extract_indices
-from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean
-from oraqle.compiler.boolean.bool_neg import Neg, ReducedNeg
+from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean, cast_to_inv_unreduced_boolean, cast_to_reduced_boolean
+from oraqle.compiler.boolean.bool_neg import ReducedNeg
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.comparison.equality import IsNonZero
+from oraqle.compiler.comparison.equality import ReducedIsNonZero
 from oraqle.compiler.nodes.abstract import (
     ArithmeticNode,
     CostParetoFront,
@@ -105,7 +105,7 @@ class InvUnreducedAnd(CommutativeUniqueReducibleNode[InvUnreducedBoolean], InvUn
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: We need to randomize (i.e. make it a Sum with random multiplicities)
         # TODO: Consider not supporting additions between Booleans unless they are cast to field elements
-        return sum_(*self._operands).arithmetize(strategy)
+        return cast_to_inv_unreduced_boolean(sum_(*self._operands)).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO!")
@@ -138,14 +138,14 @@ class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean)
             new_operands.add(UnoverloadedWrapper(new_operand))
 
         if len(new_operands) == 0:
-            return Constant(self._gf(1))
+            return BooleanConstant(self._gf(1))
         elif len(new_operands) == 1:
             return next(iter(new_operands)).node
 
         if strategy == "naive":
-            return Product(Counter({operand: 1 for operand in new_operands}), self._gf).arithmetize(
+            return cast_to_reduced_boolean(Product(Counter({operand: 1 for operand in new_operands}), self._gf).arithmetize(
                 strategy
-            )
+            ))
 
         # TODO: Calling to_arithmetic here should not be necessary if we can decide the predicted depth
         queue = [
@@ -174,12 +174,12 @@ class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean)
                     max_depth = popped.priority
 
                 if total_sum is None:
-                    total_sum = Neg(popped.item, self._gf)
+                    total_sum = ReducedNeg(popped.item, self._gf)
                 else:
-                    total_sum += Neg(popped.item, self._gf)
+                    total_sum += ReducedNeg(popped.item, self._gf)
 
             assert total_sum is not None
-            final_result = Neg(IsNonZero(total_sum, self._gf), self._gf).arithmetize(strategy)
+            final_result = ReducedNeg(ReducedIsNonZero(total_sum, self._gf), self._gf).arithmetize(strategy)
 
             assert max_depth is not None
             heappush(queue, _PrioritizedItem(max_depth, final_result))
@@ -187,21 +187,21 @@ class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean)
         if len(queue) == 1:
             return heappop(queue).item
 
-        dummy_node = Input("dummy_node", self._gf)
-        is_non_zero = IsNonZero(dummy_node, self._gf).arithmetize(strategy).to_arithmetic()
+        dummy_node = ReducedBooleanInput("dummy_node", self._gf)
+        is_non_zero = ReducedIsNonZero(dummy_node, self._gf).arithmetize(strategy).to_arithmetic()
         cost = is_non_zero.multiplicative_cost(
             1.0
         )  # FIXME: This needs to be the actual squaring cost
 
         if len(queue) - 1 < cost:
-            return Product(
+            return cast_to_reduced_boolean(Product(
                 Counter({UnoverloadedWrapper(operand.item): 1 for operand in queue}), self._gf
-            ).arithmetize(strategy)
+            )).arithmetize(strategy)
 
-        return Neg(
-            IsNonZero(
+        return ReducedNeg(
+            ReducedIsNonZero(
                 Sum(
-                    Counter({UnoverloadedWrapper(Neg(node.item, self._gf)): 1 for node in queue}),
+                    Counter({UnoverloadedWrapper(ReducedNeg(node.item, self._gf)): 1 for node in queue}),
                     self._gf,
                 ),
                 self._gf,
@@ -516,7 +516,7 @@ class SumReduceNaryLogicNode(NaryLogicNode):
             nodes = [result]
             for i, j in chain:
                 nodes.append(Multiplication(nodes[i], nodes[j], gf))  # type: ignore
-            result = nodes[-1]
+            result = cast_to_reduced_boolean(nodes[-1])
 
             if is_and:
                 result = ReducedNeg(result, gf).arithmetize("best-effort")  # type: ignore

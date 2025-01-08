@@ -4,7 +4,7 @@ from typing import Set
 
 from galois import GF, FieldArray
 
-from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean
+from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean, cast_to_unreduced_boolean
 from oraqle.compiler.boolean.bool_and import ReducedAnd, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import ReducedNeg
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
@@ -86,7 +86,7 @@ class UnreducedOr(CommutativeUniqueReducibleNode[UnreducedBoolean], UnreducedBoo
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: We need to randomize (i.e. make it a Sum with random multiplicities)
-        return sum_(*self._operands).arithmetize(strategy)
+        return cast_to_unreduced_boolean(sum_(*self._operands)).arithmetize(strategy)
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO!")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+import types
 from typing import Dict, Optional, Type
 from galois import GF, FieldArray
 from oraqle.compiler.circuit import Circuit
@@ -166,16 +167,16 @@ class BooleanConstant(Constant, Boolean):
 
 _class_cache = {}
 
-def _get_dynamic_class(name, bases, attrs):
+def _get_dynamic_class(name, bases):
     """Tracks dynamic classes so that cast_to_reduced_boolean on a specific class always returns the same dynamic Boolean class."""
     key = (name, bases)
     if key not in _class_cache:
-        _class_cache[key] = type(name, bases, attrs)
+        _class_cache[key] = types.new_class(name, bases)
     return _class_cache[key]
 
 
 def _cast_to[N: Node](node: Node, to: Type[N]) -> N:
-    CastedNode = _get_dynamic_class(f'{node.__class__.__name__}_{N.__name__}', (node.__class__, N), dict(node.__class__.__dict__))  # type: ignore
+    CastedNode = _get_dynamic_class(f'{node.__class__.__name__}_{to.__name__}', (node.__class__, to))  # type: ignore
     node.__class__ = CastedNode
     return node  # type: ignore
     
