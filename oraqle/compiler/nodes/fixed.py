@@ -4,7 +4,7 @@ from typing import Callable, Dict, List
 
 from galois import FieldArray
 
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node
 
 
 class FixedNode[N: Node](Node):
@@ -94,6 +94,17 @@ class FixedNode[N: Node](Node):
     @abstractmethod
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         pass
+
+    def arithmetize_extended(self) -> ExtendedArithmeticNode:
+        # TODO: Handle constants similarly as above
+        if self._arithmetize_extended_cache is None:
+            self._arithmetize_extended_cache = self._arithmetize_extended_inner()
+        
+        return self._arithmetize_extended_cache
+
+    def _arithmetize_extended_inner(self) -> "ExtendedArithmeticNode":
+        # TODO: Check if this is a good default implementation, add documentation
+        return self.arithmetize("best-effort").to_arithmetic()
 
 
 class BinaryNode(FixedNode):

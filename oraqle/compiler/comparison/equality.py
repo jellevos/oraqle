@@ -5,8 +5,9 @@ from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.boolean.bool import Boolean, InvUnreducedBoolean, ReducedBoolean, UnreducedBoolean, cast_to_reduced_boolean
 from oraqle.compiler.boolean.bool_neg import Neg, ReducedNeg
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node
 from oraqle.compiler.nodes.binary_arithmetic import CommutativeBinaryNode
+from oraqle.compiler.nodes.extended import Random, Reveal
 from oraqle.compiler.nodes.leafs import Input
 from oraqle.compiler.nodes.univariate import UnivariateNode
 
@@ -31,6 +32,17 @@ class IsNonZero(UnivariateNode, Boolean):
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         return self.arithmetize_all_representations(strategy)
+    
+    def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+        arithmetic = self.arithmetize_all_representations("best-effort")
+        extended_arithmetic = Reveal(Random(self._gf) * self._node.arithmetize()) == 0
+
+        if metric(extended_arithmetic) < metric(arithmetic):
+            return extended_arithmetic
+        
+        return arithmetic
+    
+        Keep in mind that this is just an example; it is not necessary for the thesis!!
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO!")

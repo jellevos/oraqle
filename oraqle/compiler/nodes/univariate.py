@@ -19,11 +19,11 @@ class UnivariateNode[N: Node](FixedNode[N]):
     def _node_shape(self) -> str:
         """Graphviz node shape."""
 
-    def __init__(self, node: N, gf: Type[FieldArray]):
+    def __init__(self, node: N):
         """Initialize a univariate node."""
         self._node = node
         assert not isinstance(node, Constant)
-        super().__init__(gf)
+        super().__init__(node._gf)
 
     
     def operands(self) -> List["N"]:  # noqa: D102

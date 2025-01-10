@@ -78,7 +78,6 @@ class SemiStrictComparison(AbstractComparison):
 
         return InUpperHalf(
             Subtraction(left.arithmetize(strategy), right.arithmetize(strategy), self._gf),
-            self._gf,
         ).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
@@ -100,7 +99,6 @@ class SemiStrictComparison(AbstractComparison):
 
             sub_front = InUpperHalf(
                 Subtraction(left_node, right_node, self._gf),
-                self._gf,
             ).arithmetize_depth_aware(cost_of_squaring)
 
             front.add_front(sub_front)
@@ -148,7 +146,7 @@ class StrictComparison(AbstractComparison):
 
         # Test whether left and right are in the same range
         same_range = (left_is_small & right_is_small) + (
-            ReducedNeg(left_is_small, self._gf) & ReducedNeg(right_is_small, self._gf)
+            ReducedNeg(left_is_small) & ReducedNeg(right_is_small)
         )
 
         # Performs left < right on the reduced inputs, note that if both are in the upper half the difference is still small enough for a semi-comparison
@@ -156,7 +154,7 @@ class StrictComparison(AbstractComparison):
         result = same_range * comparison
 
         # Performs left < right when one if small and the other is large
-        right_is_larger = left_is_small & ReducedNeg(right_is_small, self._gf)
+        right_is_larger = left_is_small & ReducedNeg(right_is_small)
         result += right_is_larger
 
         return result.arithmetize(strategy)
@@ -188,7 +186,7 @@ class StrictComparison(AbstractComparison):
 
                 # Test whether left and right are in the same range
                 same_range = (left_is_small & right_is_small) + (
-                    ReducedNeg(left_is_small, self._gf) & ReducedNeg(right_is_small, self._gf)
+                    ReducedNeg(left_is_small) & ReducedNeg(right_is_small)
                 )
 
                 # Performs left < right on the reduced inputs, note that if both are in the upper half the difference is still small enough for a semi-comparison
@@ -198,7 +196,7 @@ class StrictComparison(AbstractComparison):
                 result = same_range * comparison
 
                 # Performs left < right when one if small and the other is large
-                right_is_larger = left_is_small & ReducedNeg(right_is_small, self._gf)
+                right_is_larger = left_is_small & ReducedNeg(right_is_small)
                 result += right_is_larger
 
                 front.add_front(result.arithmetize_depth_aware(cost_of_squaring))
@@ -233,7 +231,6 @@ class SemiComparison(AbstractComparison):
                 less_than=not self._less_than,
                 gf=self._gf,
             ),
-            self._gf,
         ).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
@@ -241,7 +238,6 @@ class SemiComparison(AbstractComparison):
             SemiStrictComparison(
                 self._left, self._right, less_than=not self._less_than, gf=self._gf
             ),
-            self._gf,
         ).arithmetize_depth_aware(cost_of_squaring)
 
 
@@ -270,13 +266,11 @@ class Comparison(AbstractComparison):
                 less_than=not self._less_than,
                 gf=self._gf,
             ),
-            self._gf,
         ).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         return ReducedNeg(
             StrictComparison(self._left, self._right, less_than=not self._less_than, gf=self._gf),
-            self._gf,
         ).arithmetize_depth_aware(cost_of_squaring)
 
 
@@ -328,7 +322,6 @@ class IliashenkoZuccaSemiLessThan(NonCommutativeBinaryNode):
             Subtraction(
                 self._left.arithmetize(strategy), self._right.arithmetize(strategy), self._gf
             ),
-            self._gf,
         ).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:

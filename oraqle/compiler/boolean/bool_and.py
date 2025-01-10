@@ -104,6 +104,7 @@ class InvUnreducedAnd(CommutativeUniqueReducibleNode[InvUnreducedBoolean], InvUn
         return a + b
 
     def _arithmetize_inner(self, strategy: str) -> Node:
+        Randomize!
         # TODO: We need to randomize (i.e. make it a Sum with random multiplicities)
         # TODO: Consider not supporting additions between Booleans unless they are cast to field elements
         return cast_to_inv_unreduced_boolean(sum_(*self._operands)).arithmetize(strategy)
@@ -175,12 +176,12 @@ class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean)
                     max_depth = popped.priority
 
                 if total_sum is None:
-                    total_sum = ReducedNeg(popped.item, self._gf)
+                    total_sum = ReducedNeg(popped.item)
                 else:
-                    total_sum += ReducedNeg(popped.item, self._gf)
+                    total_sum += ReducedNeg(popped.item)
 
             assert total_sum is not None
-            final_result = ReducedNeg(ReducedIsNonZero(total_sum, self._gf), self._gf).arithmetize(strategy)
+            final_result = ReducedNeg(ReducedIsNonZero(total_sum)).arithmetize(strategy)
 
             assert max_depth is not None
             heappush(queue, _PrioritizedItem(max_depth, final_result))
@@ -189,7 +190,7 @@ class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean)
             return heappop(queue).item
 
         dummy_node = ReducedBooleanInput("dummy_node", self._gf)
-        is_non_zero = ReducedIsNonZero(dummy_node, self._gf).arithmetize(strategy).to_arithmetic()
+        is_non_zero = ReducedIsNonZero(dummy_node).arithmetize(strategy).to_arithmetic()
         cost = is_non_zero.multiplicative_cost(
             1.0
         )  # FIXME: This needs to be the actual squaring cost
@@ -202,12 +203,10 @@ class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean)
         return ReducedNeg(
             ReducedIsNonZero(
                 Sum(
-                    Counter({UnoverloadedWrapper(ReducedNeg(node.item, self._gf)): 1 for node in queue}),
+                    Counter({UnoverloadedWrapper(ReducedNeg(node.item)): 1 for node in queue}),
                     self._gf,
                 ),
-                self._gf,
             ),
-            self._gf,
         ).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:

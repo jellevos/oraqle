@@ -9,8 +9,8 @@ from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, Node
 from oraqle.compiler.nodes.fixed import FixedNode
 
 
-class ArithmeticLeafNode(FixedNode, ArithmeticNode):
-    """An ArithmeticLeafNode is an ArithmeticNode with no inputs."""
+class LeafNode(FixedNode):
+    """A LeafNode is a FixedNode with no inputs."""
 
     def operands(self) -> List[Node]:  # noqa: D102
         return []
@@ -35,6 +35,10 @@ class ArithmeticLeafNode(FixedNode, ArithmeticNode):
     
     def squarings(self) -> Set[int]:  # noqa: D102
         return set()
+    
+
+class ArithmeticLeafNode(LeafNode, ArithmeticNode):
+    """An ArithmeticLeafNode is an ArithmeticNode with no inputs."""    
 
 
 # TODO: Merge ArithmeticInput and Input using multiple inheritance

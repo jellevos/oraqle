@@ -33,7 +33,7 @@ class DotFile:
         self._links.append((from_id, to_id, kwargs))
 
     def add_cluster(self, ids: Sequence[int], **kwargs):
-        """Adds a cluster containings the nodes with the given IDs. The keyword arguments are directly put into the DOT file."""
+        """Adds a cluster containing the nodes with the given IDs. The keyword arguments are directly put into the DOT file."""
         assert -1 not in ids
         self._clusters.append((ids, kwargs))
 

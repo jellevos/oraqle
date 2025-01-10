@@ -8,6 +8,7 @@ from galois import FieldArray
 
 if TYPE_CHECKING:
     from oraqle.compiler.boolean.bool import Boolean
+    from oraqle.mpc.protocol import Protocol
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction
@@ -302,6 +303,7 @@ class Node(ABC):  # noqa: PLR0904
         self._instruction_cache: Optional[int] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
         self._parent_count_cache: Optional[int] = None
+        self._arithmetize_extended_cache: Optional[ExtendedArithmeticNode] = None
 
         self._hash = None
 
@@ -336,6 +338,7 @@ class Node(ABC):  # noqa: PLR0904
         self._instruction_cache: Optional[int] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
         self._parent_count_cache: Optional[int] = None
+        self._arithmetize_extended_cache: Optional[ExtendedArithmeticNode] = None
 
         self._hash = None
 
@@ -440,6 +443,19 @@ class Node(ABC):  # noqa: PLR0904
         raise Exception(
             f"This node does not have a direct arithmetic equivalent: {self}. Consider first calling `arithmetize`."
         )
+    
+    def arithmetize_extended(self) -> "ExtendedArithmeticNode":
+        """Arithmetizes this node as an extended arithmetic circuit, which includes random and reveal nodes.
+
+        The default implementation simply calls arithmetize, because every arithmetic circuit is also an extended arithmetic circuit.
+
+        Returns:
+            An ExtendedArithmeticNode that computes this Node.
+        """
+        # TODO: propagate known by?
+        # TODO: Add leak to? E.g. by adding reveal after it.
+
+        return self.arithmetize("best-effort").to_arithmetic()
 
     def add(self, other: "Node", flatten=True) -> "Node":
         """Performs a summation between `self` and `other`, possibly flattening any sums.
@@ -620,10 +636,21 @@ class UnoverloadedWrapper[N: Node]:
             return False
 
         return self.node.is_equivalent(other.node)
+    
+
+class ExtendedArithmeticNode(Node):
+    
+    @abstractmethod
+    def operands(self) -> List["ExtendedArithmeticNode"]:
+        """Returns the operands (children) of this node. The list can be empty. The nodes MUST be extended arithmetic nodes."""
+
+    @abstractmethod
+    def set_operands(self, operands: List["ExtendedArithmeticNode"]):
+        """Overwrites the operands of this node. The nodes MUST be extended arithmetic nodes."""
 
 
 # TODO: Do we need a separate class to distinguish nodes from arithmetic nodes (which only have arithmetic operands)?
-class ArithmeticNode(Node):
+class ArithmeticNode(ExtendedArithmeticNode):
     """Extension of Node to indicate that this is a node permitted in a purely arithmetic circuit (with binary additions and multiplications).
     
     The ArithmeticNode 'mixin' must always come before the base class in the class declaration.

@@ -250,7 +250,7 @@ def test_evaluate_mod7():  # noqa: D103
     gf = GF(7)
 
     x = Input("x", gf)
-    node = InUpperHalf(x, gf)
+    node = InUpperHalf(x)
 
     for i in range(3):
         assert node.evaluate({"x": gf(i)}) == gf(0)
@@ -264,7 +264,7 @@ def test_evaluate_arithmetized_mod7():  # noqa: D103
     gf = GF(7)
 
     x = Input("x", gf)
-    node = InUpperHalf(x, gf).arithmetize("best-effort")
+    node = InUpperHalf(x).arithmetize("best-effort")
     node.clear_cache(set())
 
     for i in range(3):

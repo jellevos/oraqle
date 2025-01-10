@@ -17,7 +17,7 @@ class Boolean(Node):
     def __invert__(self) -> "Node":
         from oraqle.compiler.boolean.bool_neg import Neg
 
-        return Neg(self, self._gf)
+        return Neg(self)
     
     def bool_or(self, other: "Boolean", flatten=True) -> "Boolean":
         """Performs an OR operation between `self` and `other`, possibly flattening the result into an OR operation between many operands.
@@ -210,6 +210,7 @@ def cast_to_inv_unreduced_boolean(node: Node) -> InvUnreducedBoolean:
     return _cast_to(node, InvUnreducedBoolean)
 
 
+# TODO: Think about the security of the transformations below
 class UnreducedBoolean(Boolean):
 
     def transform_to_reduced_boolean(self) -> ReducedBoolean:

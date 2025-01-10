@@ -117,7 +117,6 @@ class ReducedOr(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean):
                 },  # type: ignore
                 self._gf,
             ),
-            self._gf,
         ).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
