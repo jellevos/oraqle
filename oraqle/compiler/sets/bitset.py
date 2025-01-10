@@ -434,3 +434,7 @@ if __name__ == "__main__":
     circuit.to_pdf("debug.pdf")
     arithmetic_circuit = circuit.arithmetize()
     arithmetic_circuit.to_pdf("debug2.pdf")
+
+
+# TODO: Write tests
+# FIXME: Make it so that arithmetizing a single bit in the bitset does not arithmetize all the other bits

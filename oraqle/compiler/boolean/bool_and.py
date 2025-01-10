@@ -58,7 +58,8 @@ class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
         return inv_unreduced
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        raise NotImplementedError("TODO!")
+        # TODO: Currently only supports the reduced representation
+        return self.transform_to_reduced_boolean().arithmetize_depth_aware(cost_of_squaring)
 
     def and_flatten(self, other: Boolean) -> Boolean:
         """Performs an AND operation with `other`, flattening the `And` node if either of the two is also an `And` and absorbing `Constant`s.

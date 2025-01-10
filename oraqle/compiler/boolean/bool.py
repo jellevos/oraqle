@@ -121,7 +121,6 @@ class Boolean(Node):
         if best_arithmetization is None:
             raise Exception(f"Arithmetization failed, these were the caught errors: {errors}")
         
-        Circuit([best_arithmetization]).to_pdf(f"test_{best_arithmetization}.pdf")
         return best_arithmetization  # type: ignore
 
     
