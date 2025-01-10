@@ -35,7 +35,6 @@ class Neg(UnivariateNode[Boolean], Boolean):
         raise NotImplementedError("TODO!")
     
     def transform_to_reduced_boolean(self) -> ReducedBoolean:
-        Circuit([self._node]).to_pdf("debug.pdf")
         return ReducedNeg(self._node.transform_to_reduced_boolean(), self._gf)
     
     def transform_to_unreduced_boolean(self) -> UnreducedBoolean:

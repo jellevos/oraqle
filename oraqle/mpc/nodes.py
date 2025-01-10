@@ -1,6 +1,11 @@
 from typing import Set
 
+from galois import GF
+
+from oraqle.compiler.boolean.bool import ReducedBooleanInput
+from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import Node
+from oraqle.compiler.sets.bitset import BitSet, BitSetContainer
 from oraqle.mpc.parties import PartyId
 
 
@@ -14,14 +19,21 @@ class MpcNode:
         self._computed_by = computed_by
 
 
-
 if __name__ == "__main__":
-    # gf = GF(11)
-    # bits = [Input(f"b_{i}", gf) for i in range(10)]
-    # circuit = Circuit([BitSet(bits, gf).contains_element(3)]).to_pdf("debug.pdf")
+    # TODO: Add proper set intersection interface
+    gf = GF(11)
+    
+    # TODO: Consider immediately creating a bitset (container) using bitset params/set params
+    party_bitsets = []
+    for party_id in range(5):
+        bits = [ReducedBooleanInput(f"b{party_id}_{i}", gf) for i in range(10)]
+        bitset = BitSetContainer(bits)
+        party_bitsets.append(bitset)
 
-    # TODO: Encode bitset, whose inputs are known by party 1
-    # TODO: Encode bitset, whose inputs are known by party 2
-    # TODO: Intersect bitsets, computed by both 1 and 2
-    # TODO: Query bitset on inputs known by party 1
-    pass
+    intersection = BitSet.intersection(*party_bitsets)
+
+    circuit = Circuit([intersection.contains_element(element) for element in [1, 4, 5, 9]])
+    circuit.to_pdf("debug.pdf")
+
+    arithmetic_circuit = circuit.arithmetize()
+    arithmetic_circuit.to_pdf("debug2.pdf")

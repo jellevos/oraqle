@@ -13,7 +13,7 @@ from oraqle.compiler.nodes.leafs import Input
 
 
 # TODO: At some point we can implement __and__ for intersections
-class BitSet(Node):  # TODO: Node should become Boolean
+class BitSet(Node):
     
     def __getitem__(self, index) -> Boolean:
         assert 0 <= index < len(self)
@@ -43,8 +43,8 @@ class BitSetContainer(FixedNode[Boolean], BitSet):
     def _node_label(self) -> str:
         return "Bitset"
     
-    def __init__(self, bits: Sequence[Boolean], gf: Type[FieldArray]):
-        super().__init__(gf)
+    def __init__(self, bits: Sequence[Boolean]):
+        super().__init__(bits[0]._gf)
         self._bits = list(bits)
 
     # def apply_function_to_operands(self, function: Callable[[Node], None]):
@@ -98,7 +98,7 @@ class ReducedBitSet(FixedNode[BitSet], BitSet):
         return "Bitset"
     
     def __init__(self, bitset: BitSetContainer):
-        super().__init__(gf)
+        super().__init__(bitset._gf)
         self._bitset = bitset
 
     # def apply_function_to_operands(self, function: Callable[[Node], None]):
@@ -131,7 +131,7 @@ class ReducedBitSet(FixedNode[BitSet], BitSet):
     
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: Consider changing the arithmetize type
-        return BitSetContainer([bit.transform_to_reduced_boolean().arithmetize(strategy) for bit in self._bitset._bits], self._gf)  # type: ignore
+        return BitSetContainer([bit.transform_to_reduced_boolean().arithmetize(strategy) for bit in self._bitset._bits])  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
@@ -152,7 +152,7 @@ class InvUnreducedBitSet(FixedNode[BitSet], BitSet):
         return "Bitset"
     
     def __init__(self, bitset: BitSetContainer):
-        super().__init__(gf)
+        super().__init__(bitset._gf)
         self._bitset = bitset
 
     # def apply_function_to_operands(self, function: Callable[[Node], None]):
@@ -185,7 +185,7 @@ class InvUnreducedBitSet(FixedNode[BitSet], BitSet):
     
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: Consider changing the arithmetize type
-        return BitSetContainer([bit.transform_to_inv_unreduced_boolean().arithmetize(strategy) for bit in self._bitset._bits], self._gf)  # type: ignore
+        return BitSetContainer([bit.transform_to_inv_unreduced_boolean().arithmetize(strategy) for bit in self._bitset._bits])  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
@@ -405,7 +405,7 @@ class BitSetIntersection(CommutativeUniqueReducibleNode[BitSet], BitSet):
         # TODO: Assert all lengths are equal? Or that they map the same universe?
         bit_count = len(self)
         # TODO: After arithmetizing one of the bitsets, we can consider reusing that arithmetization for the rest (so not to run in O(n))
-        return BitSetContainer([all_(*(operand.node[i] for operand in self._operands)).arithmetize(strategy) for i in range(bit_count)], self._gf)  # type: ignore
+        return BitSetContainer([all_(*(operand.node[i] for operand in self._operands)).arithmetize(strategy) for i in range(bit_count)])  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError()
@@ -419,13 +419,13 @@ if __name__ == "__main__":
     gf = GF(11)
 
     bits1 = [BooleanInput(f"b1_{i}", gf) for i in range(10)]
-    bitset1 = BitSetContainer(bits1, gf)
+    bitset1 = BitSetContainer(bits1)
 
     bits2 = [BooleanInput(f"b2_{i}", gf) for i in range(10)]
-    bitset2 = BitSetContainer(bits2, gf)
+    bitset2 = BitSetContainer(bits2)
 
     bits3 = [BooleanInput(f"b3_{i}", gf) for i in range(10)]
-    bitset3 = BitSetContainer(bits3, gf)
+    bitset3 = BitSetContainer(bits3)
 
     final_bitset = BitSet.intersection(bitset1, bitset2, bitset3)
 
