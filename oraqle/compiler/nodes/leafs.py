@@ -5,7 +5,7 @@ from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction, InputInstruction
-from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, Node, select_stack_index
+from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, ExtendedArithmeticNode, Node, select_stack_index
 from oraqle.compiler.nodes.fixed import FixedNode
 
 
@@ -24,6 +24,9 @@ class LeafNode(FixedNode):
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         return CostParetoFront.from_leaf(self, cost_of_squaring)
     
+    def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+        return self  # type: ignore
+    
     def multiplicative_depth(self) -> int:  # noqa: D102
         return 0
 
@@ -35,6 +38,9 @@ class LeafNode(FixedNode):
     
     def squarings(self) -> Set[int]:  # noqa: D102
         return set()
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
     
 
 class ArithmeticLeafNode(LeafNode, ArithmeticNode):

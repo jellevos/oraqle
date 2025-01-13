@@ -97,6 +97,9 @@ class ConstantAddition(UnivariateNode, ArithmeticNode):
         for _, _, node in self._node.arithmetize_depth_aware(cost_of_squaring):
             front.add(ConstantAddition(node, self._constant))
         return front
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     
     def to_graph(self, graph_builder: DotFile) -> int:  # noqa: D102
@@ -199,6 +202,9 @@ class ConstantMultiplication(UnivariateNode, ArithmeticNode):
         for _, _, node in self._node.arithmetize_depth_aware(cost_of_squaring):
             front.add(ConstantMultiplication(node, self._constant))
         return front
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     
     def to_graph(self, graph_builder: DotFile) -> int:  # noqa: D102

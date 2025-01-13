@@ -36,6 +36,9 @@ class Power(UnivariateNode):
 
     def _operation_inner(self, input: FieldArray, gf: Type[FieldArray]) -> FieldArray:
         return input**self._exponent  # type: ignore
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> "Node":
         if strategy == "naive":
@@ -91,6 +94,17 @@ class Power(UnivariateNode):
                 final_front.add(nodes[-1], depth=depth1 + depth2)
 
         return final_front
+    
+    # TODO: This is duplicated from arithmetized, can we somehow use arithmetize while still propagating using arithmetize_extended?
+    def _arithmetize_extended_inner(self) -> "Node":
+        addition_chain = add_chain_guaranteed(self._exponent, self._gf.characteristic - 1, squaring_cost=1.0)
+
+        nodes = [self._node.arithmetize_extended().to_arithmetic()]
+
+        for i, j in addition_chain:
+            nodes.append(Multiplication(nodes[i], nodes[j], self._gf))
+
+        return nodes[-1]
 
 
 def test_depth_aware_arithmetization():  # noqa: D103

@@ -66,7 +66,7 @@ class UnivariatePoly(UnivariateNode):
         """Initialize a univariate polynomial with the given coefficients from least to highest order."""
         self._coefficients = coefficients
         # TODO: We can reduce this polynomial if its degree is too high
-        super().__init__(node, gf)
+        super().__init__(node)
 
         self._custom_arithmetize_cache = None
 
@@ -99,6 +99,9 @@ class UnivariatePoly(UnivariateNode):
             x_pow *= input
 
         return result  # type: ignore
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         return self.arithmetize_custom(strategy)[0]

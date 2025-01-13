@@ -75,12 +75,19 @@ class BitSetContainer(FixedNode[Boolean], BitSet):
     def operation(self, operands: List[FieldArray]) -> FieldArray:
         raise NotImplementedError("Incompatible: must return all operands")
     
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+    
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: Consider changing the arithmetize type
-        return BitSetContainer([bit.arithmetize(strategy) for bit in self._bits], self._gf)  # type: ignore
+        return BitSetContainer([bit.arithmetize(strategy) for bit in self._bits])  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
+    
+    def _arithmetize_extended_inner(self) -> Node:
+        # TODO: Consider changing the arithmetize type
+        return BitSetContainer([bit.arithmetize_extended() for bit in self._bits])  # type: ignore
     
     def __len__(self) -> int:
         return len(self._bits)
@@ -129,12 +136,18 @@ class ReducedBitSet(FixedNode[BitSet], BitSet):
     def operation(self, operands: List[FieldArray]) -> FieldArray:
         raise NotImplementedError("Incompatible: must return all operands")
     
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+    
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: Consider changing the arithmetize type
         return BitSetContainer([bit.transform_to_reduced_boolean().arithmetize(strategy) for bit in self._bitset._bits])  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
+    
+    def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+        return BitSetContainer([bit.transform_to_reduced_boolean().arithmetize_extended() for bit in self._bitset._bits])  # type: ignore
     
     def __len__(self) -> int:
         return len(self._bitset)
@@ -183,12 +196,19 @@ class InvUnreducedBitSet(FixedNode[BitSet], BitSet):
     def operation(self, operands: List[FieldArray]) -> FieldArray:
         raise NotImplementedError("Incompatible: must return all operands")
     
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+    
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: Consider changing the arithmetize type
         return BitSetContainer([bit.transform_to_inv_unreduced_boolean().arithmetize(strategy) for bit in self._bitset._bits])  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
+    
+    def _arithmetize_extended_inner(self) -> Node:
+        # TODO: Consider changing the arithmetize type
+        return BitSetContainer([bit.transform_to_inv_unreduced_boolean().arithmetize_extended() for bit in self._bitset._bits])  # type: ignore
     
     def __len__(self) -> int:
         return len(self._bitset)
@@ -208,6 +228,9 @@ class BitSetIndex(Boolean):
         super().__init__(gf)
         self._bitset = bitset
         self._index = index
+
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def arithmetize(self, strategy: str) -> Node:
         if self._arithmetize_cache is None:
@@ -275,6 +298,9 @@ class ReducedBitSetIndex(ReducedBoolean):
         self._bitset = bitset
         self._index = index
 
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+
     def arithmetize(self, strategy: str) -> Node:
         if self._arithmetize_cache is None:
             arithmetized_bitset = self._bitset.arithmetize(strategy)
@@ -330,6 +356,9 @@ class InvUnreducedBitSetIndex(InvUnreducedBoolean):
         super().__init__(gf)
         self._bitset = bitset
         self._index = index
+
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def arithmetize(self, strategy: str) -> Node:
         if self._arithmetize_cache is None:
@@ -424,15 +453,19 @@ class BitSetIntersection(CommutativeUniqueReducibleNode[BitSet], BitSet):
     def __len__(self) -> int:
         # TODO: Compute once
         return len(next(iter(self._operands)).node)
-
-    def _arithmetize_inner(self, strategy: str) -> BitSet:
-        # TODO: Assert all lengths are equal? Or that they map the same universe?
-        bit_count = len(self)
-        # TODO: After arithmetizing one of the bitsets, we can consider reusing that arithmetization for the rest (so not to run in O(n))
-        return BitSetContainer([all_(*(operand.node[i] for operand in self._operands)).arithmetize(strategy) for i in range(bit_count)])  # type: ignore
     
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        raise NotImplementedError()
+    def _expansion(self) -> Node:
+        bit_count = len(self)
+        return BitSetContainer([all_(*(operand.node[i] for operand in self._operands)) for i in range(bit_count)])
+
+    # def _arithmetize_inner(self, strategy: str) -> BitSet:
+    #     # TODO: Assert all lengths are equal? Or that they map the same universe?
+    #     bit_count = len(self)
+    #     # TODO: After arithmetizing one of the bitsets, we can consider reusing that arithmetization for the rest (so not to run in O(n))
+    #     return BitSetContainer([all_(*(operand.node[i] for operand in self._operands)).arithmetize(strategy) for i in range(bit_count)])  # type: ignore
+    
+    # def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+    #     raise NotImplementedError()
     
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         # TODO: This should take sets as input

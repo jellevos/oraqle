@@ -29,6 +29,9 @@ class IsNonZero(UnivariateNode, Boolean):
 
     def _operation_inner(self, input: FieldArray) -> FieldArray:
         return input != 0
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         return self.arithmetize_all_representations(strategy)
@@ -74,13 +77,8 @@ class ReducedIsNonZero(UnivariateNode, ReducedBoolean):
     def _operation_inner(self, input: FieldArray) -> FieldArray:
         return input != 0
     
-    def _arithmetize_inner(self, strategy: str) -> Node:
-        return cast_to_reduced_boolean(Power(self._node, self._gf.order - 1, self._gf)).arithmetize(strategy)
-
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        return cast_to_reduced_boolean(Power(self._node, self._gf.order - 1, self._gf)).arithmetize_depth_aware(
-            cost_of_squaring
-        )
+    def _expansion(self) -> Node:
+        return cast_to_reduced_boolean(Power(self._node, self._gf.order - 1, self._gf))
 
 
 # TODO: UnreducedEquals MUST multiply with randomness
@@ -97,6 +95,9 @@ class Equals(CommutativeBinaryNode, Boolean):
 
     def _operation_inner(self, x, y) -> FieldArray:
         return self._gf(int(x == y))
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         return self.arithmetize_all_representations(strategy)
@@ -127,16 +128,11 @@ class ReducedEquals(CommutativeBinaryNode, ReducedBoolean):
 
     def _operation_inner(self, x, y) -> FieldArray:
         return self._gf(int(x == y))
-
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    
+    def _expansion(self) -> Node:
         return Neg(
             IsNonZero(Subtraction(self._left, self._right, self._gf))
-        ).arithmetize(strategy)
-
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        return Neg(
-            IsNonZero(Subtraction(self._left, self._right, self._gf))
-        ).arithmetize_depth_aware(cost_of_squaring)
+        )
 
 
 def test_evaluate_mod5():  # noqa: D103

@@ -44,6 +44,9 @@ class AbstractComparison(NonCommutativeBinaryNode, ReducedBoolean):
             return self._left.is_equivalent(other._right) and self._right.is_equivalent(other._left)
         else:
             return self._left.is_equivalent(other._left) and self._right.is_equivalent(other._right)
+        
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
 
 class SemiStrictComparison(AbstractComparison):
@@ -287,8 +290,8 @@ class T2SemiLessThan(NonCommutativeBinaryNode):
 
     def _operation_inner(self, x, y) -> FieldArray:
         return self._gf(int(int(x) < int(y)))
-
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    
+    def _expansion(self) -> Node:
         out = Constant(self._gf(0))
 
         p = self._gf.characteristic
@@ -297,10 +300,7 @@ class T2SemiLessThan(NonCommutativeBinaryNode):
                 p - 1
             )
 
-        return out.arithmetize(strategy)
-
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        raise NotImplementedError()
+        return out
 
 
 class IliashenkoZuccaSemiLessThan(NonCommutativeBinaryNode):
@@ -316,6 +316,9 @@ class IliashenkoZuccaSemiLessThan(NonCommutativeBinaryNode):
 
     def _operation_inner(self, x, y) -> FieldArray:
         return self._gf(int(int(x) < int(y)))
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         return IliashenkoZuccaInUpperHalf(

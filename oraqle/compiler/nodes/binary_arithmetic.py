@@ -12,6 +12,7 @@ from oraqle.compiler.instructions import (
 from oraqle.compiler.nodes.abstract import (
     ArithmeticNode,
     CostParetoFront,
+    ExtendedArithmeticNode,
     Node,
     iterate_increasing_depth,
     select_stack_index,
@@ -164,6 +165,10 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode):
                 )
 
         return self._instruction_cache, stack_counter
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+
 
 
 # FIXME: This order should probably change
@@ -242,8 +247,8 @@ class Multiplication(CommutativeArithmeticBinaryNode, ArithmeticNode):
         gf: Type[FieldArray],
     ):
         """Initialize a modular multiplication between `left` and `right`."""
-        assert isinstance(left, ArithmeticNode)
-        assert isinstance(right, ArithmeticNode)
+        assert isinstance(left, ExtendedArithmeticNode), left
+        assert isinstance(right, ExtendedArithmeticNode), right
 
         self._is_multiplication = True
         super().__init__(left, right, gf)

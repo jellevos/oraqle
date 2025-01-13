@@ -20,6 +20,9 @@ class Reveal(UnivariateNode, ExtendedArithmeticNode):
     def _node_label(self) -> str:
         return "Reveal"
     
+    def _expansion(self) -> Node:
+        raise NotImplementedError("Reveal cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+    
     def _arithmetize_inner(self, strategy: str) -> Node:
         raise NotImplementedError("Reveal cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
     
@@ -56,10 +59,10 @@ class SecretRandom(LeafNode, ExtendedArithmeticNode):
         return self._hash
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        raise NotImplementedError("Reveal cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+        raise NotImplementedError("SecretRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        raise NotImplementedError("Reveal cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+        raise NotImplementedError("SecretRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
     
     def is_equivalent(self, other: Node) -> bool:
         if not isinstance(other, self.__class__):
@@ -93,10 +96,10 @@ class PublicRandom(LeafNode, ExtendedArithmeticNode):
         return self._hash
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        raise NotImplementedError("Reveal cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+        raise NotImplementedError("PublicRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        raise NotImplementedError("Reveal cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+        raise NotImplementedError("PublicRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
     
     def is_equivalent(self, other: Node) -> bool:
         if not isinstance(other, self.__class__):

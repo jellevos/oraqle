@@ -161,6 +161,9 @@ class InUpperHalf(UnivariateNode):
 
         assert not final_front.is_empty()
         return final_front
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
 
 class IliashenkoZuccaInUpperHalf(UnivariateNode):
@@ -187,6 +190,9 @@ class IliashenkoZuccaInUpperHalf(UnivariateNode):
             return self._gf(0)
 
         return self._gf(1)
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         coefficients = []

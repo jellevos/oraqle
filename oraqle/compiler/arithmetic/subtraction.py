@@ -23,16 +23,11 @@ class Subtraction(NonCommutativeBinaryNode):
 
     def _operation_inner(self, x, y) -> FieldArray:
         return x - y
-
-    def _arithmetize_inner(self, strategy: str) -> Node:
-        # TODO: Reorganize the files: let the arithmetic folder only contain pure arithmetic (including add and mul) and move exponentiation elsewhere.
-        # TODO: For schemes that support subtraction we do not need to do this. We should only do this transformation during the compiler stage.
-        return (self._left.arithmetize(strategy) + (Constant(-self._gf(1)) * self._right.arithmetize(strategy))).arithmetize(strategy)  # type: ignore  # TODO: Should we always perform a final arithmetization in every node for constant folding? E.g. in Node?
-
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        result = self._left + (Constant(-self._gf(1)) * self._right)
-        front = result.arithmetize_depth_aware(cost_of_squaring)
-        return front
+    
+    # TODO: Reorganize the files: let the arithmetic folder only contain pure arithmetic (including add and mul) and move exponentiation elsewhere.
+    # TODO: For schemes that support subtraction we do not need to do this. We should only do this transformation during the compiler stage.
+    def _expansion(self) -> Node:
+        return self._left + Constant(-self._gf(1)) * self._right
 
 
 def test_evaluate_mod5():  # noqa: D103

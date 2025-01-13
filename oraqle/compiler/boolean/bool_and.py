@@ -48,6 +48,9 @@ class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         raise NotImplementedError()
     
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+    
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: Currently only supports the reduced representation
         return self.transform_to_reduced_boolean().arithmetize(strategy)
@@ -57,9 +60,13 @@ class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
         return self.transform_to_reduced_boolean().arithmetize_depth_aware(cost_of_squaring)
     
     def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+        print(list(operand.node for operand in self._operands))
         # Choose the best of the reduced and unreduced implementations
         reduced = self.transform_to_reduced_boolean().arithmetize_extended()
         inv_unreduced = self.transform_to_inv_unreduced_boolean().arithmetize_extended()
+
+        Circuit([reduced.to_arithmetic()]).to_pdf("reduced.pdf")
+        Circuit([inv_unreduced.to_arithmetic()]).to_pdf("inv_unreduced.pdf")
 
         # TODO: Consider multiplicative cost
         # TODO: Consider other metrics as well?
@@ -109,13 +116,19 @@ class InvUnreducedAnd(CommutativeUniqueReducibleNode[InvUnreducedBoolean], InvUn
     
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return a + b
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: Consider not supporting additions between Booleans unless they are cast to field elements
-        return cast_to_inv_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize(strategy)
+        raise NotImplementedError("This requires randomization")
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        raise NotImplementedError("TODO!")
+        raise NotImplementedError("This requires randomization")
+    
+    def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+        return cast_to_inv_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize_extended()
 
 
 class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean):
@@ -131,6 +144,9 @@ class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean)
 
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return self._gf(bool(a) & bool(b))
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> Node:  # noqa: PLR0911, PLR0912
         new_operands: Set[UnoverloadedWrapper] = set()
@@ -139,7 +155,7 @@ class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean)
 
             if isinstance(new_operand, Constant):
                 if not bool(new_operand._value):
-                    return Constant(self._gf(0))
+                    return BooleanConstant(self._gf(0))
                 continue
 
             new_operands.add(UnoverloadedWrapper(new_operand))
@@ -258,6 +274,84 @@ class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean)
         return front
     
     # TODO: Consider implementing and_flatten
+
+    # TODO: This is copied from arithmetize
+    def _arithmetize_extended_inner(self) -> Node:  # noqa: PLR0911, PLR0912
+        new_operands: Set[UnoverloadedWrapper] = set()
+        for operand in self._operands:
+            new_operand = operand.node.arithmetize_extended()
+
+            if isinstance(new_operand, Constant):
+                if not bool(new_operand._value):
+                    return BooleanConstant(self._gf(0))
+                continue
+
+            new_operands.add(UnoverloadedWrapper(new_operand))
+
+        if len(new_operands) == 0:
+            return BooleanConstant(self._gf(1))
+        elif len(new_operands) == 1:
+            return next(iter(new_operands)).node
+
+        # TODO: Calling to_arithmetic here should not be necessary if we can decide the predicted depth
+        queue = [
+            (
+                _PrioritizedItem(
+                    0, operand.node
+                )  # TODO: We should just maybe make a breadth method on Node
+                if isinstance(operand.node, Constant)
+                else _PrioritizedItem(
+                    operand.node.to_arithmetic().multiplicative_depth(), operand.node
+                )
+            )
+            for operand in new_operands
+        ]
+        heapify(queue)
+
+        while len(queue) > (self._gf._characteristic - 1):
+            total_sum = None
+            max_depth = None
+            for _ in range(self._gf._characteristic - 1):
+                if len(queue) == 0:
+                    break
+
+                popped = heappop(queue)
+                if max_depth is None or max_depth < popped.priority:
+                    max_depth = popped.priority
+
+                if total_sum is None:
+                    total_sum = ReducedNeg(popped.item)
+                else:
+                    total_sum += ReducedNeg(popped.item)
+
+            assert total_sum is not None
+            final_result = ReducedNeg(ReducedIsNonZero(total_sum)).arithmetize_extended()
+
+            assert max_depth is not None
+            heappush(queue, _PrioritizedItem(max_depth, final_result))
+
+        if len(queue) == 1:
+            return heappop(queue).item
+
+        dummy_node = ReducedBooleanInput("dummy_node", self._gf)
+        is_non_zero = ReducedIsNonZero(dummy_node).arithmetize_extended().to_arithmetic()
+        cost = is_non_zero.multiplicative_cost(
+            1.0
+        )  # FIXME: This needs to be the actual squaring cost
+
+        if len(queue) - 1 < cost:
+            return cast_to_reduced_boolean(Product(
+                Counter({UnoverloadedWrapper(operand.item): 1 for operand in queue}), self._gf
+            )).arithmetize_extended()
+
+        return ReducedNeg(
+            ReducedIsNonZero(
+                Sum(
+                    Counter({UnoverloadedWrapper(ReducedNeg(node.item)): 1 for node in queue}),
+                    self._gf,
+                ),
+            ),
+        ).arithmetize_extended()
 
 
 def test_evaluate_mod3():  # noqa: D103

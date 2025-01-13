@@ -454,6 +454,20 @@ class Node(ABC):  # noqa: PLR0904
         # TODO: propagate known by?
         # TODO: Add leak to? E.g. by adding reveal after it.
 
+    def _arithmetize_inner(self, strategy: str) -> "Node":
+        return self._expansion().arithmetize(strategy)
+
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        return self._expansion().arithmetize_depth_aware(cost_of_squaring)
+
+    def _arithmetize_extended_inner(self) -> "ExtendedArithmeticNode":
+        return self._expansion().arithmetize_extended()
+
+    # TODO: Consider if there is a better way to do this: some nodes do not work like this. Maybe those should be subclassed differently to ensure they implement arithmetization manually?
+    @abstractmethod
+    def _expansion(self) -> Node:
+        pass
+
     def add(self, other: "Node", flatten=True) -> "Node":
         """Performs a summation between `self` and `other`, possibly flattening any sums.
 
@@ -644,6 +658,9 @@ class ExtendedArithmeticNode(Node):
     @abstractmethod
     def set_operands(self, operands: List["ExtendedArithmeticNode"]):
         """Overwrites the operands of this node. The nodes MUST be extended arithmetic nodes."""
+
+    def to_arithmetic(self) -> "ArithmeticNode":  # noqa: D102
+        return self  # type: ignore
 
 
 # TODO: Do we need a separate class to distinguish nodes from arithmetic nodes (which only have arithmetic operands)?

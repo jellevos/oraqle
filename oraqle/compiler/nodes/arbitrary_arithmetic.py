@@ -188,6 +188,29 @@ class Sum(CommutativeMultiplicityReducibleNode):
         # FIXME: If empty, return Constant(0)
 
         return Sum(counter, self._gf, self._constant)
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+    
+    # TODO: This is copied from above
+    def _arithmetize_extended_inner(self) -> Node:
+        # TODO: Wrap exponents
+        new_operands = Counter()
+        new_constant = self._constant
+        for operand, count in self._operands.items():
+            new_operand = operand.node.arithmetize_extended()
+
+            if isinstance(new_operand, Constant):
+                new_constant += new_operand._value * count
+            else:
+                new_operands[UnoverloadedWrapper(new_operand)] += count
+
+        if len(new_operands) == 0:
+            return Constant(new_constant)  # type: ignore
+        elif sum(new_operands.values()) == 1 and new_constant == self._identity:
+            return next(iter(new_operands)).node
+
+        return Sum(new_operands, self._gf, new_constant)
 
 
 @dataclass(order=True)
@@ -360,6 +383,32 @@ class Product(CommutativeMultiplicityReducibleNode):
         counter = self._operands.copy()
         counter[UnoverloadedWrapper(other)] += 1  # type: ignore
         return Product(counter, self._gf, self._constant)
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+    
+    # TODO: This is copied from above
+    def _arithmetize_extended_inner(self) -> Node:
+        # TODO: Wrap exponents
+        new_operands = Counter()
+        new_constant = self._constant
+        for operand, count in self._operands.items():
+            new_operand = operand.node.arithmetize_extended()
+
+            if isinstance(new_operand, Constant):
+                new_constant *= new_operand._value**count
+            else:
+                new_operands[UnoverloadedWrapper(new_operand)] += count
+
+        if len(new_operands) == 0:
+            return Constant(new_constant)  # type: ignore
+        elif sum(new_operands.values()) == 1 and new_constant == self._identity:
+            return next(iter(new_operands)).node
+
+        if new_constant == 0:
+            return Constant(self._gf(0))
+
+        return Product(new_operands, self._gf, new_constant)  # type: ignore
 
 
 def _first_gf(*operands: Union[UnoverloadedWrapper, Node, int, bool]) -> Optional[Type[FieldArray]]:

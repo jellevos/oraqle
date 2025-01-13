@@ -2,7 +2,7 @@ from typing import Set
 
 from galois import GF
 
-from oraqle.compiler.boolean.bool import ReducedBooleanInput, _cast_to
+from oraqle.compiler.boolean.bool import BooleanInput, ReducedBooleanInput, _cast_to
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import Node
 from oraqle.compiler.sets.bitset import BitSet, BitSetContainer
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     party_bitsets = []
     for party_id in range(5):
         #bits = [to_mpc(ReducedBooleanInput(f"b{party_id}_{i}", gf), {PartyId(party_id)}, {PartyId(party_id)}, {PartyId(i) for i in range(5)}) for i in range(10)]
-        bits = [ReducedBooleanInput(f"b{party_id}_{i}", gf) for i in range(10)]
+        bits = [BooleanInput(f"b{party_id}_{i}", gf) for i in range(10)]
         bitset = BitSetContainer(bits)
         party_bitsets.append(bitset)
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     arithmetic_circuit = circuit.arithmetize()
     arithmetic_circuit.to_pdf("debug2.pdf")
 
-    extended_arithmetic_circuit = circuit.arithmetize()
+    extended_arithmetic_circuit = circuit.arithmetize_extended()
     extended_arithmetic_circuit.to_pdf("debug3.pdf")
 
     # TODO: After generating extended arithmetic circuits, schedule & assign

@@ -9,7 +9,7 @@ from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
-from oraqle.compiler.nodes.abstract import ArithmeticNode, Node
+from oraqle.compiler.nodes.abstract import ArithmeticNode, ExtendedArithmeticNode, Node
 
 
 class Circuit:
@@ -133,6 +133,23 @@ class Circuit:
 
         arithmetic_circuit._clear_cache()
         return front
+    
+    def arithmetize_extended(self) -> "ExtendedArithmeticCircuit":
+        """Performs *extended* arithmetization on this circuit by calling arithmetize_extended on all outputs.
+        
+        This replaces all high-level operations with extended arithmetic operations (constants, additions, multiplications, random, and reveal).
+        The current implementation only aims at reducing the total number of multiplications.
+
+        Returns:
+            An equivalent extended arithmetic circuit with low multiplicative size.
+        """
+        extended_arithmetic_circuit = ExtendedArithmeticCircuit(
+            [output.arithmetize_extended() for output in self._outputs]
+        )
+        # FIXME: Also call to_arithmetic
+        extended_arithmetic_circuit._clear_cache()
+
+        return extended_arithmetic_circuit
 
     def _clear_cache(self):
         already_cleared = set()
@@ -193,6 +210,16 @@ helib_postamble = """
 """
 
 
+class ExtendedArithmeticCircuit(Circuit):
+
+    def __init__(self, outputs: List[ExtendedArithmeticNode]):
+        """Initialize a circuit with the given `outputs`."""
+        assert len(outputs) > 0
+        self._outputs = outputs
+        self._gf = outputs[0]._gf
+
+
+# TODO: This should probably be a subclass of ExtendedArithmeticCircuit
 class ArithmeticCircuit(Circuit):
     """Represents an arithmetic circuit over a fixed finite field, so it only contains arithmetic nodes."""
 

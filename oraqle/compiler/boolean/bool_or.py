@@ -7,7 +7,7 @@ from galois import GF, FieldArray
 from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean, cast_to_unreduced_boolean
 from oraqle.compiler.boolean.bool_and import ReducedAnd, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import ReducedNeg
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
+from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node, UnoverloadedWrapper
 from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
 from oraqle.compiler.nodes.extended import PublicRandom, SecretRandom
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
@@ -28,6 +28,9 @@ class Or(CommutativeUniqueReducibleNode[Boolean], Boolean):
     
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         raise NotImplementedError()
+    
+    def _expansion(self) -> Node:
+        return super()._expansion()
     
     def _arithmetize_inner(self, strategy: str) -> Node:
         # Choose the best of the reduced and unreduced implementations
@@ -84,12 +87,18 @@ class UnreducedOr(CommutativeUniqueReducibleNode[UnreducedBoolean], UnreducedBoo
 
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return self._gf(a + b)
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        return cast_to_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize(strategy)
-    
+        raise NotImplementedError("This requires randomization")
+
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        raise NotImplementedError("TODO!")
+        raise NotImplementedError("This requires randomization")
+
+    def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+        return cast_to_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize_extended()
 
 
 class ReducedOr(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean):
@@ -105,6 +114,9 @@ class ReducedOr(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean):
 
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return self._gf(bool(a) | bool(b))
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         # FIXME: Handle what happens when arithmetize outputs a constant!
