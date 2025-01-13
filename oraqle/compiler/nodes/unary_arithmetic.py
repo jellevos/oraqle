@@ -36,7 +36,7 @@ class ConstantAddition(UnivariateNode, ArithmeticNode):
 
     def __init__(self, node: ArithmeticNode, constant: FieldArray):
         """Represents the operation `constant + node`."""
-        super().__init__(node, constant.__class__)
+        super().__init__(node)
         self._constant = constant
         assert constant != 0
 
@@ -136,7 +136,7 @@ class ConstantMultiplication(UnivariateNode, ArithmeticNode):
 
     def __init__(self, node: Node, constant: FieldArray):
         """Represents the operation `constant * node`."""
-        super().__init__(node, constant.__class__)
+        super().__init__(node)
         self._constant = constant
         assert constant != 0
         assert constant != 1

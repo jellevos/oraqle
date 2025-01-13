@@ -7,7 +7,7 @@ from oraqle.compiler.boolean.bool import Boolean, InvUnreducedBoolean, ReducedBo
 from oraqle.compiler.boolean.bool_neg import Neg, ReducedNeg
 from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node
 from oraqle.compiler.nodes.binary_arithmetic import CommutativeBinaryNode
-from oraqle.compiler.nodes.extended import Random, Reveal
+from oraqle.compiler.nodes.extended import SecretRandom, Reveal
 from oraqle.compiler.nodes.leafs import Input
 from oraqle.compiler.nodes.univariate import UnivariateNode
 
@@ -35,20 +35,19 @@ class IsNonZero(UnivariateNode, Boolean):
     
     def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
         arithmetic = self.arithmetize_all_representations("best-effort")
-        extended_arithmetic = Reveal(Random(self._gf) * self._node.arithmetize()) == 0
+        extended_arithmetic = (Reveal(SecretRandom(self._gf) * self._node.arithmetize()) == 0).arithmetize("best-effort")
 
-        if metric(extended_arithmetic) < metric(arithmetic):
-            return extended_arithmetic
+        # TODO: In the future, we can use a metric to decide if we want the extended arithmetic solution
+        # if metric(extended_arithmetic) < metric(arithmetic):
+        #     return extended_arithmetic
         
-        return arithmetic
-    
-        Keep in mind that this is just an example; it is not necessary for the thesis!!
+        return arithmetic  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO!")
     
     def transform_to_reduced_boolean(self) -> ReducedBoolean:
-        return ReducedIsNonZero(self._node, self._gf)
+        return ReducedIsNonZero(self._node)
     
     def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
         raise NotImplementedError("TODO!")
@@ -131,14 +130,12 @@ class ReducedEquals(CommutativeBinaryNode, ReducedBoolean):
 
     def _arithmetize_inner(self, strategy: str) -> Node:
         return Neg(
-            IsNonZero(Subtraction(self._left, self._right, self._gf), self._gf),
-            self._gf,
+            IsNonZero(Subtraction(self._left, self._right, self._gf))
         ).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         return Neg(
-            IsNonZero(Subtraction(self._left, self._right, self._gf), self._gf),
-            self._gf,
+            IsNonZero(Subtraction(self._left, self._right, self._gf))
         ).arithmetize_depth_aware(cost_of_squaring)
 
 

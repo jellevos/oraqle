@@ -444,18 +444,15 @@ class Node(ABC):  # noqa: PLR0904
             f"This node does not have a direct arithmetic equivalent: {self}. Consider first calling `arithmetize`."
         )
     
+    @abstractmethod
     def arithmetize_extended(self) -> "ExtendedArithmeticNode":
         """Arithmetizes this node as an extended arithmetic circuit, which includes random and reveal nodes.
-
-        The default implementation simply calls arithmetize, because every arithmetic circuit is also an extended arithmetic circuit.
 
         Returns:
             An ExtendedArithmeticNode that computes this Node.
         """
         # TODO: propagate known by?
         # TODO: Add leak to? E.g. by adding reveal after it.
-
-        return self.arithmetize("best-effort").to_arithmetic()
 
     def add(self, other: "Node", flatten=True) -> "Node":
         """Performs a summation between `self` and `other`, possibly flattening any sums.

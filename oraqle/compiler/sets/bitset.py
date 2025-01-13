@@ -4,7 +4,7 @@ from galois import GF, FieldArray
 from oraqle.compiler.boolean.bool import Boolean, BooleanInput, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean
 from oraqle.compiler.boolean.bool_and import all_
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
+from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node, UnoverloadedWrapper
 from oraqle.compiler.nodes.fixed import FixedNode
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Input
@@ -220,6 +220,14 @@ class BitSetIndex(Boolean):
     def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
     
+    def arithmetize_extended(self) -> ExtendedArithmeticNode:
+        if self._arithmetize_extended_cache is None:
+            arithmetized_bitset = self._bitset.arithmetize_extended()
+            assert isinstance(arithmetized_bitset, BitSetContainer)
+            self._arithmetize_extended_cache = arithmetized_bitset._bits[self._index]  # type: ignore
+
+        return self._arithmetize_extended_cache  # type: ignore
+    
     def apply_function_to_operands(self, function: Callable[[Node], None]):
         function(self._bitset)
 
@@ -278,6 +286,14 @@ class ReducedBitSetIndex(ReducedBoolean):
     def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
     
+    def arithmetize_extended(self) -> ExtendedArithmeticNode:
+        if self._arithmetize_extended_cache is None:
+            arithmetized_bitset = self._bitset.arithmetize_extended()
+            assert isinstance(arithmetized_bitset, BitSetContainer)
+            self._arithmetize_extended_cache = arithmetized_bitset._bits[self._index]  # type: ignore
+
+        return self._arithmetize_extended_cache  # type: ignore
+    
     def apply_function_to_operands(self, function: Callable[[Node], None]):
         function(self._bitset)
 
@@ -325,6 +341,14 @@ class InvUnreducedBitSetIndex(InvUnreducedBoolean):
     
     def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
+    
+    def arithmetize_extended(self) -> ExtendedArithmeticNode:
+        if self._arithmetize_extended_cache is None:
+            arithmetized_bitset = self._bitset.arithmetize_extended()
+            assert isinstance(arithmetized_bitset, BitSetContainer)
+            self._arithmetize_extended_cache = arithmetized_bitset._bits[self._index]  # type: ignore
+
+        return self._arithmetize_extended_cache  # type: ignore
     
     def apply_function_to_operands(self, function: Callable[[Node], None]):
         function(self._bitset)

@@ -83,6 +83,7 @@ class Boolean(Node):
 
     # TODO: Should we override the signature of arithmetize and depth_aware_arithmetize? Perhaps it is best done using generics
 
+    # TODO: This should probably return an ExtendedArithmetic node or something
     def arithmetize_all_representations(self, strategy: str) -> "Boolean":
         # TODO: Should this be cached?
 

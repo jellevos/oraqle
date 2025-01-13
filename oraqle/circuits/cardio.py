@@ -35,7 +35,7 @@ def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> Node:
         weight > (height - 90),  # This might underflow if the modulus is too small
         activity < 30,
         man & (alcohol > 3),
-        ReducedNeg(man, gf) & (alcohol > 2),
+        ReducedNeg(man) & (alcohol > 2),
     )
 
 
@@ -63,7 +63,7 @@ def construct_cardio_elevated_risk_circuit(gf: Type[FieldArray]) -> Node:
         weight > (height - 90),  # This might underflow if the modulus is too small
         activity < 30,
         man & (alcohol > 3),
-        ReducedNeg(man, gf) & (alcohol > 2),
+        ReducedNeg(man) & (alcohol > 2),
     )
 
 

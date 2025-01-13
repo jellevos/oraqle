@@ -9,7 +9,7 @@ from typing import Dict, Optional, Set, Type
 from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
+from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node, UnoverloadedWrapper
 from oraqle.compiler.nodes.leafs import Constant
 
 
@@ -36,6 +36,17 @@ class FlexibleNode(Node):
 
     @abstractmethod
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        pass
+
+    def arithmetize_extended(self) -> ExtendedArithmeticNode:
+        # TODO: Handle constants similarly to FixedNode?
+        if self._arithmetize_extended_cache is None:
+            self._arithmetize_extended_cache = self._arithmetize_extended_inner()
+        
+        return self._arithmetize_extended_cache
+
+    @abstractmethod
+    def _arithmetize_extended_inner(self) -> "ExtendedArithmeticNode":
         pass
 
 

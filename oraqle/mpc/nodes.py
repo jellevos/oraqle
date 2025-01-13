@@ -53,4 +53,7 @@ if __name__ == "__main__":
     arithmetic_circuit = circuit.arithmetize()
     arithmetic_circuit.to_pdf("debug2.pdf")
 
-    Forget this whole mpc folder for now: I want to first generate extended arithmetic circuits, which can then be assigned (maybe even using a MILP)
+    extended_arithmetic_circuit = circuit.arithmetize()
+    extended_arithmetic_circuit.to_pdf("debug3.pdf")
+
+    # TODO: After generating extended arithmetic circuits, schedule & assign

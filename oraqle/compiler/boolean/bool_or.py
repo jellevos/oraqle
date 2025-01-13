@@ -9,6 +9,7 @@ from oraqle.compiler.boolean.bool_and import ReducedAnd, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import ReducedNeg
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
 from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
+from oraqle.compiler.nodes.extended import PublicRandom, SecretRandom
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Constant, Input
 
@@ -85,8 +86,7 @@ class UnreducedOr(CommutativeUniqueReducibleNode[UnreducedBoolean], UnreducedBoo
         return self._gf(a + b)
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        # TODO: We need to randomize (i.e. make it a Sum with random multiplicities)
-        return cast_to_unreduced_boolean(sum_(*self._operands)).arithmetize(strategy)
+        return cast_to_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize(strategy)
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO!")

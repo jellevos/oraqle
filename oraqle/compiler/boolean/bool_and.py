@@ -18,6 +18,7 @@ from oraqle.compiler.comparison.equality import ReducedIsNonZero
 from oraqle.compiler.nodes.abstract import (
     ArithmeticNode,
     CostParetoFront,
+    ExtendedArithmeticNode,
     Node,
     UnoverloadedWrapper,
 )
@@ -29,6 +30,7 @@ from oraqle.compiler.nodes.arbitrary_arithmetic import (
     sum_,
 )
 from oraqle.compiler.nodes.binary_arithmetic import Multiplication
+from oraqle.compiler.nodes.extended import PublicRandom, SecretRandom
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Constant, Input
 
@@ -47,19 +49,24 @@ class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
         raise NotImplementedError()
     
     def _arithmetize_inner(self, strategy: str) -> Node:
-        # Choose the best of the reduced and unreduced implementations
-        reduced = self.transform_to_reduced_boolean().arithmetize(strategy)
-        inv_unreduced = self.transform_to_inv_unreduced_boolean().arithmetize(strategy)
-
-        # TODO: Consider multiplicative cost
-        if reduced.to_arithmetic().multiplicative_size() <= inv_unreduced.to_arithmetic().multiplicative_size():
-            return reduced
-        
-        return inv_unreduced
+        # TODO: Currently only supports the reduced representation
+        return self.transform_to_reduced_boolean().arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         # TODO: Currently only supports the reduced representation
         return self.transform_to_reduced_boolean().arithmetize_depth_aware(cost_of_squaring)
+    
+    def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+        # Choose the best of the reduced and unreduced implementations
+        reduced = self.transform_to_reduced_boolean().arithmetize_extended()
+        inv_unreduced = self.transform_to_inv_unreduced_boolean().arithmetize_extended()
+
+        # TODO: Consider multiplicative cost
+        # TODO: Consider other metrics as well?
+        if reduced.to_arithmetic().multiplicative_size() <= inv_unreduced.to_arithmetic().multiplicative_size():
+            return reduced
+        
+        return inv_unreduced
 
     def and_flatten(self, other: Boolean) -> Boolean:
         """Performs an AND operation with `other`, flattening the `And` node if either of the two is also an `And` and absorbing `Constant`s.
@@ -104,10 +111,8 @@ class InvUnreducedAnd(CommutativeUniqueReducibleNode[InvUnreducedBoolean], InvUn
         return a + b
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        Randomize!
-        # TODO: We need to randomize (i.e. make it a Sum with random multiplicities)
         # TODO: Consider not supporting additions between Booleans unless they are cast to field elements
-        return cast_to_inv_unreduced_boolean(sum_(*self._operands)).arithmetize(strategy)
+        return cast_to_inv_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO!")

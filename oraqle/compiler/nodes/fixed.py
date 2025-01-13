@@ -102,9 +102,9 @@ class FixedNode[N: Node](Node):
         
         return self._arithmetize_extended_cache
 
+    @abstractmethod
     def _arithmetize_extended_inner(self) -> "ExtendedArithmeticNode":
-        # TODO: Check if this is a good default implementation, add documentation
-        return self.arithmetize("best-effort").to_arithmetic()
+        pass
 
 
 class BinaryNode(FixedNode):

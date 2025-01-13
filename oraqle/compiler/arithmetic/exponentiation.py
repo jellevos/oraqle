@@ -32,7 +32,7 @@ class Power(UnivariateNode):
     def __init__(self, node: Node, exponent: int, gf: Type[FieldArray]):
         """Initialize a `Power` node that exponentiates `node` with `exponent`."""
         self._exponent = exponent
-        super().__init__(node, gf)
+        super().__init__(node)
 
     def _operation_inner(self, input: FieldArray, gf: Type[FieldArray]) -> FieldArray:
         return input**self._exponent  # type: ignore

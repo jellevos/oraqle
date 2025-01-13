@@ -74,7 +74,7 @@ class Circuit:
         import graphviz
         from IPython.display import display_png
 
-        src = graphviz.Source(file_content)
+        src = graphviz.Source(file_content)  # type: ignore
         display_png(src, metadata=metadata)
 
     def eliminate_subexpressions(self):
