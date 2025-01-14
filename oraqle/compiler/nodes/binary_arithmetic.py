@@ -17,6 +17,7 @@ from oraqle.compiler.nodes.abstract import (
     iterate_increasing_depth,
     select_stack_index,
 )
+from oraqle.compiler.nodes.extended import Random
 from oraqle.compiler.nodes.fixed import BinaryNode
 from oraqle.compiler.nodes.leafs import Constant
 
@@ -98,6 +99,10 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode):
         if isinstance(left, Constant) or isinstance(right, Constant):
             self._is_multiplication = False
             raise Exception("This should be a constant.")
+        
+        self._is_random = False
+        if isinstance(left, Random) or isinstance(right, Random):
+            self._is_random = True
 
     def multiplicative_depth(self) -> int:  # noqa: D102
         if self._depth_cache is None:

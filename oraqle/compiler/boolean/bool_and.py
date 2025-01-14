@@ -30,7 +30,7 @@ from oraqle.compiler.nodes.arbitrary_arithmetic import (
     sum_,
 )
 from oraqle.compiler.nodes.binary_arithmetic import Multiplication
-from oraqle.compiler.nodes.extended import PublicRandom, SecretRandom
+from oraqle.compiler.nodes.extended import Random
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Constant, Input
 
@@ -101,10 +101,11 @@ class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
         raise NotImplementedError("TODO: This is typically not a smart operation to do (it is better to use other representations).")
     
     def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
-        return InvUnreducedAnd({UnoverloadedWrapper(operand.node.transform_to_inv_unreduced_boolean()) for operand in self._operands}, self._gf)
+        # TODO: We can also make a veersion that inputs unreduced Booleans
+        return InvUnreducedAnd({UnoverloadedWrapper(operand.node.transform_to_reduced_boolean()) for operand in self._operands}, self._gf)
 
 
-class InvUnreducedAnd(CommutativeUniqueReducibleNode[InvUnreducedBoolean], InvUnreducedBoolean):
+class InvUnreducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], InvUnreducedBoolean):
 
     @property
     def _hash_name(self) -> str:
@@ -128,7 +129,8 @@ class InvUnreducedAnd(CommutativeUniqueReducibleNode[InvUnreducedBoolean], InvUn
         raise NotImplementedError("This requires randomization")
     
     def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
-        return cast_to_inv_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize_extended()
+        return cast_to_inv_unreduced_boolean(Random(self._gf) * sum_(*(ReducedNeg(operand.node) for operand in self._operands))).arithmetize_extended()
+        #return cast_to_inv_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize_extended()
 
 
 class ReducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean):

@@ -9,7 +9,7 @@ from oraqle.compiler.boolean.bool_and import ReducedAnd, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import ReducedNeg
 from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node, UnoverloadedWrapper
 from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
-from oraqle.compiler.nodes.extended import PublicRandom, SecretRandom
+from oraqle.compiler.nodes.extended import Random
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Constant, Input
 
@@ -98,7 +98,8 @@ class UnreducedOr(CommutativeUniqueReducibleNode[UnreducedBoolean], UnreducedBoo
         raise NotImplementedError("This requires randomization")
 
     def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
-        return cast_to_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize_extended()
+        # FIXME: Make this match the implementation for AND
+        return cast_to_unreduced_boolean(Random(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize_extended()
 
 
 class ReducedOr(CommutativeUniqueReducibleNode[ReducedBoolean], ReducedBoolean):

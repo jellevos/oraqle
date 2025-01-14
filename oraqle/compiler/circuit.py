@@ -144,7 +144,7 @@ class Circuit:
             An equivalent extended arithmetic circuit with low multiplicative size.
         """
         extended_arithmetic_circuit = ExtendedArithmeticCircuit(
-            [output.arithmetize_extended() for output in self._outputs]
+            [output.arithmetize_extended().to_arithmetic() for output in self._outputs]
         )
         # FIXME: Also call to_arithmetic
         extended_arithmetic_circuit._clear_cache()

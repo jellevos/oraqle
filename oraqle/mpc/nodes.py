@@ -33,6 +33,11 @@ def to_mpc(node: Node, known_by: Set[PartyId], leakable_to: Set[PartyId], comput
     return result
 
 
+def create_protocol(circuit: Circuit):
+    extended_arithmetic_circuit = circuit.arithmetize_extended()
+    
+
+
 if __name__ == "__main__":
     # TODO: Add proper set intersection interface
     gf = GF(11)
