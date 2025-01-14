@@ -210,7 +210,7 @@ class Sum(CommutativeMultiplicityReducibleNode):
         elif sum(new_operands.values()) == 1 and new_constant == self._identity:
             return next(iter(new_operands)).node
 
-        return Sum(new_operands, self._gf, new_constant)
+        return Sum(new_operands, self._gf, new_constant).to_arithmetic()  # TODO: To arithmetic is technically incorrect
 
 
 @dataclass(order=True)

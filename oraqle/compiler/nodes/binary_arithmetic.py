@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import List, Optional, Set, Tuple, Type
 
 from galois import FieldArray
+from pysat.formula import WCNF, IDPool
 
 from oraqle.compiler.instructions import (
     AdditionInstruction,
@@ -11,15 +12,17 @@ from oraqle.compiler.instructions import (
 )
 from oraqle.compiler.nodes.abstract import (
     ArithmeticNode,
+    SecureComputationCosts,
     CostParetoFront,
     ExtendedArithmeticNode,
     Node,
     iterate_increasing_depth,
     select_stack_index,
 )
-from oraqle.compiler.nodes.extended import Random
+from oraqle.compiler.nodes.extended import KnownRandom, UnknownRandom
 from oraqle.compiler.nodes.fixed import BinaryNode
 from oraqle.compiler.nodes.leafs import Constant
+from oraqle.mpc.parties import PartyId
 
 
 class CommutativeBinaryNode(BinaryNode):
@@ -76,7 +79,7 @@ class CommutativeBinaryNode(BinaryNode):
         ) or (self._left.is_equivalent(other._right) and self._right.is_equivalent(other._left))
 
 
-class CommutativeArithmeticBinaryNode(CommutativeBinaryNode):
+class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
     """This node has two operands and implements a commutative operation between arithmetic nodes."""
 
     def __init__(
@@ -101,7 +104,8 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode):
             raise Exception("This should be a constant.")
         
         self._is_random = False
-        if isinstance(left, Random) or isinstance(right, Random):
+        if isinstance(left, UnknownRandom) or isinstance(right, UnknownRandom):
+            assert not (isinstance(left, UnknownRandom) and isinstance(right, UnknownRandom))
             self._is_random = True
 
     def multiplicative_depth(self) -> int:  # noqa: D102
@@ -173,11 +177,77 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode):
     
     def _expansion(self) -> Node:
         raise NotImplementedError()
+    
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
+        for party_id in range(parties):
+            # We can compute a value if we hold both inputs
+            c = id_pool.id(("c", id(self), party_id))
+            h_left = id_pool.id(("h", id(self._left), party_id))
+            h_right = id_pool.id(("h", id(self._right), party_id))
+            wcnf.append([-c, h_left])
+            wcnf.append([-c, h_right])
 
+            # If we do not already know this value, then
+            if not PartyId(party_id) in self._known_by:
+                # We hold h if we compute it
+                h = id_pool.id(("h", id(self), party_id))
+                sources = [-h, c]
+                
+                # Or when it is sent by another party
+                for other_party_id in range(parties):
+                    if party_id == other_party_id:
+                        continue
+
+                    received = id_pool.id(("s", id(self), other_party_id, party_id))
+                    sources.append(received)
+
+                    # Add the cost for receiving a value from other_party_id
+                    wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
+                
+                # Add to WCNF
+                wcnf.append(sources)
+
+            # We can only send if we hold the value
+            for other_party_id in range(parties):
+                if party_id == other_party_id:
+                    continue
+
+                send = id_pool.id(("s", id(self), party_id, other_party_id))
+                wcnf.append([-send, h])
+
+                # Add the cost for sending a value to other_party_id
+                wcnf.append([-send], weight=costs[party_id].send(PartyId(other_party_id)))
+
+            # Add the computation cost
+            if self._is_multiplication:
+                wcnf.append([-c], weight=costs[party_id].multiplication)
+            else:
+                wcnf.append([-c], weight=costs[party_id].addition)
+
+    def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
+        if not self._is_random:
+            return self
+        
+        # TODO: Handle additions
+        assert self._is_multiplication
+        
+        if isinstance(self._left, UnknownRandom):
+            other = self._right
+        else:
+            other = self._left
+
+        from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
+        return sum_(*(Multiplication(KnownRandom(self._gf, {PartyId(party_id)}), other, self._gf) for party_id in range(party_count))).arithmetize_extended()
+
+    # TODO: Can we not fix this in the hierarchy
+    def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+        return self
+    
+    # TODO: Draw multiplications differently if they are random multiplications
 
 
 # FIXME: This order should probably change
-class Addition(CommutativeArithmeticBinaryNode, ArithmeticNode):
+class Addition(CommutativeArithmeticBinaryNode):
     """Performs modular addition of two previous nodes in an arithmetic circuit."""
 
     @property
@@ -230,7 +300,7 @@ class Addition(CommutativeArithmeticBinaryNode, ArithmeticNode):
         return front
 
 
-class Multiplication(CommutativeArithmeticBinaryNode, ArithmeticNode):
+class Multiplication(CommutativeArithmeticBinaryNode):
     """Performs modular multiplication of two previous nodes in an arithmetic circuit."""
 
     @property
@@ -272,3 +342,12 @@ class Multiplication(CommutativeArithmeticBinaryNode, ArithmeticNode):
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         return CostParetoFront.from_node(self, cost_of_squaring)
+
+    # def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+    #     assert self._is_random
+    #     if isinstance(self._left, UnknownRandom):
+    #         random = self._left
+    #     else:
+    #         random = self._right
+
+    #     return sum_()

@@ -30,7 +30,7 @@ from oraqle.compiler.nodes.arbitrary_arithmetic import (
     sum_,
 )
 from oraqle.compiler.nodes.binary_arithmetic import Multiplication
-from oraqle.compiler.nodes.extended import Random
+from oraqle.compiler.nodes.extended import UnknownRandom
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Constant, Input
 
@@ -129,7 +129,7 @@ class InvUnreducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], InvUnreduc
         raise NotImplementedError("This requires randomization")
     
     def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
-        return cast_to_inv_unreduced_boolean(Random(self._gf) * sum_(*(ReducedNeg(operand.node) for operand in self._operands))).arithmetize_extended()
+        return cast_to_inv_unreduced_boolean(UnknownRandom(self._gf) * sum_(*(ReducedNeg(operand.node) for operand in self._operands))).arithmetize_extended()
         #return cast_to_inv_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize_extended()
 
 

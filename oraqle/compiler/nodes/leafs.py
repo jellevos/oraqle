@@ -1,12 +1,14 @@
 """Module containing leaf nodes: i.e. nodes without an input."""
-from typing import Any, Dict, List, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 from galois import FieldArray
+from pysat.formula import WCNF, IDPool
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction, InputInstruction
-from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, ExtendedArithmeticNode, Node, select_stack_index
+from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, ExtendedArithmeticNode, Node, SecureComputationCosts, select_stack_index
 from oraqle.compiler.nodes.fixed import FixedNode
+from oraqle.mpc.parties import PartyId
 
 
 class LeafNode(FixedNode):
@@ -64,9 +66,9 @@ class Input(ArithmeticLeafNode):
     def _node_label(self) -> str:
         return self._name
 
-    def __init__(self, name: str, gf: Type[FieldArray]) -> None:
+    def __init__(self, name: str, gf: Type[FieldArray], known_by: Optional[Set[PartyId]] = None) -> None:
         """Initialize an input with the given `name`."""
-        super().__init__(gf)
+        super().__init__(gf, known_by)
         self._name = name
 
     
@@ -110,6 +112,14 @@ class Input(ArithmeticLeafNode):
             instructions.append(InputInstruction(self._instruction_cache, self._name))
 
         return self._instruction_cache, stack_counter
+    
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], party_count: int):
+        # TODO: I think we can leave this empty
+        pass
+
+    def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
+        # TODO: I think we can leave this empty
+        return self
 
 
 class Constant(ArithmeticLeafNode):
@@ -177,6 +187,12 @@ class Constant(ArithmeticLeafNode):
         stack_counter: int,
         stack_occupied: List[bool],
     ) -> Tuple[int]:
+        raise NotImplementedError("The circuit is a constant.")
+    
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
+        raise NotImplementedError("The circuit is a constant.")
+    
+    def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
         raise NotImplementedError("The circuit is a constant.")
     
 

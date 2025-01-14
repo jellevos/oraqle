@@ -7,7 +7,7 @@ from oraqle.compiler.boolean.bool import Boolean, InvUnreducedBoolean, ReducedBo
 from oraqle.compiler.boolean.bool_neg import Neg, ReducedNeg
 from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node
 from oraqle.compiler.nodes.binary_arithmetic import CommutativeBinaryNode
-from oraqle.compiler.nodes.extended import Random, Reveal
+from oraqle.compiler.nodes.extended import UnknownRandom, Reveal
 from oraqle.compiler.nodes.leafs import Input
 from oraqle.compiler.nodes.univariate import UnivariateNode
 
@@ -38,7 +38,8 @@ class IsNonZero(UnivariateNode, Boolean):
     
     def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
         arithmetic = self.arithmetize_all_representations("best-effort")
-        extended_arithmetic = (Reveal(Random(self._gf) * self._node.arithmetize()) == 0).arithmetize("best-effort")
+        # TODO: Reveal is not okay unless the output is allowed to be known
+        #extended_arithmetic = (Reveal(UnknownRandom(self._gf) * self._node.arithmetize()) == 0).arithmetize("best-effort")
 
         # TODO: In the future, we can use a metric to decide if we want the extended arithmetic solution
         # if metric(extended_arithmetic) < metric(arithmetic):

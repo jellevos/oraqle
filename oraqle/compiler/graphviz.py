@@ -11,7 +11,8 @@ class DotFile:
         """Initialize an empty DotFile."""
         self._nodes: List[Dict[str, str]] = []
         self._links: List[Tuple[int, int, Dict[str, str]]] = []
-        self._clusters: List[Tuple[Sequence[int], Dict[str, str]]] = []
+        #self._clusters: List[Tuple[Sequence[int], Dict[str, str]]] = []
+        self._clusters: List[List[int]] = []
 
     def add_node(self, **kwargs) -> int:
         """Adds a node to the file. The keyword arguments are directly put into the DOT file.
@@ -32,10 +33,17 @@ class DotFile:
         assert to_id != -1
         self._links.append((from_id, to_id, kwargs))
 
-    def add_cluster(self, ids: Sequence[int], **kwargs):
+    # def add_cluster(self, ids: Sequence[int], **kwargs):
+    #     """Adds a cluster containing the nodes with the given IDs. The keyword arguments are directly put into the DOT file."""
+    #     assert -1 not in ids
+    #     self._clusters.append((ids, kwargs))
+
+    def add_node_to_cluster(self, node_id: int, cluster_id: int, **kwargs):
         """Adds a cluster containing the nodes with the given IDs. The keyword arguments are directly put into the DOT file."""
-        assert -1 not in ids
-        self._clusters.append((ids, kwargs))
+        assert -1 != node_id
+        while cluster_id >= len(self._clusters):
+            self._clusters.append([])
+        self._clusters[cluster_id].append(node_id)
 
     def to_file(self, filename: str):
         """Writes the DOT file to the given filename as a directed graph called 'G'."""
@@ -62,11 +70,13 @@ class DotFile:
                     file.write(text)
 
             # Write all the clusters
-            for cluster_id, properties in enumerate(self._clusters):
-                ids, attributes = properties
+            #for cluster_id, properties in enumerate(self._clusters):
+            for cluster_id, ids in enumerate(self._clusters):
+                #ids, attributes = properties
                 text = f"subgraph cluster_{cluster_id} {{\n"
                 for id in ids:
                     text += f"n{id};\n"
+                text += f'label = "Cluster {cluster_id}"';
                 text += "}"
                 file.write(text)
 

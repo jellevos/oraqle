@@ -6,12 +6,16 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional,
 
 from galois import FieldArray
 
+from oraqle.mpc.parties import PartyId
+
 if TYPE_CHECKING:
     from oraqle.compiler.boolean.bool import Boolean
     from oraqle.mpc.protocol import Protocol
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction
+
+from pysat.formula import IDPool, WCNF
 
 
 def select_stack_index(stack_occupied: List[bool]) -> int:
@@ -28,6 +32,39 @@ def select_stack_index(stack_occupied: List[bool]) -> int:
     index = len(stack_occupied)
     stack_occupied.append(True)
     return index
+
+
+class SecureComputationCosts:
+    
+    def __init__(self, addition: float, multiplication: float, constant_add: float, constant_mul: float) -> None:
+        self._addition = addition
+        self._multiplication = multiplication
+        self._constant_addition = constant_add
+        self._constant_multiplication = constant_mul
+
+    @property
+    def addition(self) -> float:
+        return self._addition
+    
+    @property
+    def multiplication(self) -> float:
+        return self._multiplication
+    
+    @property
+    def constant_addition(self) -> float:
+        return self._constant_addition
+    
+    @property
+    def constant_multiplication(self) -> float:
+        return self._constant_multiplication
+    
+    @abstractmethod
+    def receive(self, from_party: PartyId) -> float:
+        pass
+
+    @abstractmethod
+    def send(self, to_party: PartyId) -> float:
+        pass
 
 
 # TODO: It would be great if we can move out this ParetoFront class, but it's hard to do without circular imports
@@ -293,7 +330,7 @@ class Node(ABC):  # noqa: PLR0904
     def _overriden_graphviz_attributes(self) -> dict:
         return {"style": "rounded,filled", "fillcolor": "cornsilk"}
 
-    def __init__(self, gf: Type[FieldArray]):
+    def __init__(self, gf: Type[FieldArray], known_by: Optional[Set[PartyId]] = None):
         """Creates a new node, of which the result is known by the parties identified by `known_by`, as well as those who know all input operands."""
         # TODO: We should probably make separate methods to clear individual caches
         self._evaluate_cache: Optional[FieldArray] = None
@@ -312,6 +349,15 @@ class Node(ABC):  # noqa: PLR0904
         self._parent_count = 0
 
         self._gf = gf
+
+        if known_by is None:
+            self._known_by = set()
+        else:
+            self._known_by = known_by
+
+        # TODO: These are only relevant to extended arithmetic nodes
+        self._replace_randomness_cache = None
+        self._added_constraints = False
 
     @abstractmethod
     def apply_function_to_operands(self, function: Callable[["Node"], None]):
@@ -341,6 +387,9 @@ class Node(ABC):  # noqa: PLR0904
         self._arithmetize_extended_cache: Optional[ExtendedArithmeticNode] = None
 
         self._hash = None
+
+        self._replace_randomness_cache = None
+        self._added_constraints = False
 
         already_cleared.add(id(self))
 
@@ -661,6 +710,27 @@ class ExtendedArithmeticNode(Node):
 
     def to_arithmetic(self) -> "ArithmeticNode":  # noqa: D102
         return self  # type: ignore
+    
+    @abstractmethod
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
+        pass
+
+    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
+        # TODO: We may not have to keep this cache, it might be done by apply_function_to_operands
+        if not self._added_constraints:
+            self._add_constraints_minimize_cost_formulation_inner(wcnf, id_pool, costs, parties)
+            self._added_constraints = True
+            self.apply_function_to_operands(lambda node: node._add_constraints_minimize_cost_formulation(wcnf, id_pool, costs, parties))  # type: ignore
+
+    def replace_randomness(self, party_count: int) -> ExtendedArithmeticNode:  # TODO: Think about types
+        if self._replace_randomness_cache is None:
+            self._replace_randomness_cache = self._replace_randomness_inner(party_count)
+        
+        return self._replace_randomness_cache
+
+    @abstractmethod
+    def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
+        pass
 
 
 # TODO: Do we need a separate class to distinguish nodes from arithmetic nodes (which only have arithmetic operands)?

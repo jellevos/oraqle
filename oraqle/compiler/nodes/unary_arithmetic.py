@@ -2,6 +2,7 @@
 from typing import List, Optional, Set, Tuple
 
 from galois import FieldArray
+from pysat.formula import WCNF, IDPool
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import (
@@ -9,13 +10,70 @@ from oraqle.compiler.instructions import (
     ConstantAdditionInstruction,
     ConstantMultiplicationInstruction,
 )
-from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, Node, select_stack_index
+from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, ExtendedArithmeticNode, Node, SecureComputationCosts, select_stack_index
 from oraqle.compiler.nodes.univariate import UnivariateNode
+from oraqle.mpc.parties import PartyId
 
 # TODO: There is (going to be) a lot of code duplication between these two classes
 
 
-class ConstantAddition(UnivariateNode, ArithmeticNode):
+class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNode):
+
+    def __init__(self, node: ArithmeticNode, is_constant_mul: bool):
+        super().__init__(node)
+        self._is_constant_mul = is_constant_mul
+
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
+        # TODO: Consider reducing duplication with bivariate arithmetic
+
+        for party_id in range(parties):
+            # We can compute a value if we hold both inputs
+            c = id_pool.id(("c", id(self), party_id))
+            h_operand = id_pool.id(("h", id(self._node), party_id))
+            wcnf.append([-c, h_operand])
+
+            # If we do not already know this value, then
+            if not PartyId(party_id) in self._known_by:
+                # We hold h if we compute it
+                h = id_pool.id(("h", id(self), party_id))
+                sources = [-h, c]
+                
+                # Or when it is sent by another party
+                for other_party_id in range(parties):
+                    if party_id == other_party_id:
+                        continue
+
+                    received = id_pool.id(("s", id(self), other_party_id, party_id))
+                    sources.append(received)
+
+                    # Add the cost for receiving a value from other_party_id
+                    wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
+                
+                # Add to WCNF
+                wcnf.append(sources)
+
+            # We can only send if we hold the value
+            for other_party_id in range(parties):
+                if party_id == other_party_id:
+                    continue
+
+                send = id_pool.id(("s", id(self), party_id, other_party_id))
+                wcnf.append([-send, h])
+
+                # Add the cost for sending a value to other_party_id
+                wcnf.append([-send], weight=costs[party_id].send(PartyId(other_party_id)))
+
+            # Add the computation cost
+            if self._is_constant_mul:
+                wcnf.append([-c], weight=costs[party_id].constant_multiplication)
+            else:
+                wcnf.append([-c], weight=costs[party_id].constant_addition)
+    
+    def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
+        raise NotImplementedError("TODO")
+
+
+class ConstantAddition(ConstantUnivariateArithmetic):
     """This node represents a multiplication of another node with a constant."""
 
     @property
@@ -36,7 +94,7 @@ class ConstantAddition(UnivariateNode, ArithmeticNode):
 
     def __init__(self, node: ArithmeticNode, constant: FieldArray):
         """Represents the operation `constant + node`."""
-        super().__init__(node)
+        super().__init__(node, is_constant_mul=False)
         self._constant = constant
         assert constant != 0
 
@@ -118,7 +176,7 @@ class ConstantAddition(UnivariateNode, ArithmeticNode):
         return self._to_graph_cache
 
 
-class ConstantMultiplication(UnivariateNode, ArithmeticNode):
+class ConstantMultiplication(ConstantUnivariateArithmetic):
     """This node represents a multiplication of another node with a constant."""
 
     @property
@@ -137,9 +195,9 @@ class ConstantMultiplication(UnivariateNode, ArithmeticNode):
     def _node_label(self) -> str:
         return "×"  # noqa: RUF001
 
-    def __init__(self, node: Node, constant: FieldArray):
+    def __init__(self, node: ArithmeticNode, constant: FieldArray):
         """Represents the operation `constant * node`."""
-        super().__init__(node)
+        super().__init__(node, is_constant_mul=True)
         self._constant = constant
         assert constant != 0
         assert constant != 1

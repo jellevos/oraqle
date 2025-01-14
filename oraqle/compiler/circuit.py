@@ -9,7 +9,9 @@ from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
-from oraqle.compiler.nodes.abstract import ArithmeticNode, ExtendedArithmeticNode, Node
+from oraqle.compiler.nodes.abstract import ArithmeticNode, ExtendedArithmeticNode, Node, SecureComputationCosts
+
+from pysat.formula import WCNF, IDPool
 
 
 class Circuit:
@@ -217,6 +219,16 @@ class ExtendedArithmeticCircuit(Circuit):
         assert len(outputs) > 0
         self._outputs = outputs
         self._gf = outputs[0]._gf
+
+    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], party_count: int):
+        for output in self._outputs:
+            output._add_constraints_minimize_cost_formulation(wcnf, id_pool, costs, party_count)
+        self._clear_cache()
+
+    def replace_randomness(self, party_count: int) -> "ExtendedArithmeticCircuit":  # TODO: Think if this is the right type
+        outputs = [output.replace_randomness(party_count) for output in self._outputs]
+        self._clear_cache()
+        return ExtendedArithmeticCircuit(outputs)
 
 
 # TODO: This should probably be a subclass of ExtendedArithmeticCircuit

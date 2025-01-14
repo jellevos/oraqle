@@ -1,9 +1,12 @@
 import random
-from typing import List, Type
+from typing import List, Optional, Set, Type
 from galois import FieldArray
-from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node
+from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node, SecureComputationCosts
 from oraqle.compiler.nodes.leafs import Constant, LeafNode
 from oraqle.compiler.nodes.univariate import UnivariateNode
+from oraqle.mpc.parties import PartyId
+
+from pysat.formula import WCNF, IDPool
 
 
 class Reveal(UnivariateNode, ExtendedArithmeticNode):
@@ -37,19 +40,19 @@ class Reveal(UnivariateNode, ExtendedArithmeticNode):
 
 # TODO: Reduce code duplication
 # TODO: We can consider creating NonZero randomness (we can still generate it as usual but with a small probability of incorrectness)
-class Random(LeafNode, ExtendedArithmeticNode):
+class UnknownRandom(LeafNode, ExtendedArithmeticNode):  # UnknownRandom(LeafNode):
 
-    @property
-    def _overriden_graphviz_attributes(self) -> dict:
-        return {"shape": "circle", "style": "filled", "fillcolor": "thistle"}
+    # @property
+    # def _overriden_graphviz_attributes(self) -> dict:
+    #     return {"shape": "circle", "style": "filled", "fillcolor": "thistle"}
 
-    @property
-    def _node_shape(self) -> str:
-        return "circle"
+    # @property
+    # def _node_shape(self) -> str:
+    #     return "circle"
     
     @property
     def _hash_name(self) -> str:
-        return "secret_random"
+        return "unknown_random"
 
     @property
     def _node_label(self) -> str:
@@ -63,10 +66,13 @@ class Random(LeafNode, ExtendedArithmeticNode):
         return self._hash
 
     def _arithmetize_inner(self, strategy: str) -> Node:
-        raise NotImplementedError("SecretRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+        raise NotImplementedError("UnknownRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        raise NotImplementedError("SecretRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+        raise NotImplementedError("UnknownRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+    
+    # def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+    #     raise NotImplementedError("TODO: Sum of KnownRandomness")
     
     def is_equivalent(self, other: Node) -> bool:
         if not isinstance(other, self.__class__):
@@ -76,6 +82,13 @@ class Random(LeafNode, ExtendedArithmeticNode):
     
     def operation(self, operands: List[FieldArray]) -> FieldArray:
         return self._gf.Random()
+    
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], party_count: int):
+        # TODO: I think we can leave this empty
+        pass
+
+    def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
+        raise NotImplementedError("TODO!")
     
 #     def __add__(self, other) -> Node:
 #         if isinstance(other, Constant):
@@ -90,7 +103,55 @@ class Random(LeafNode, ExtendedArithmeticNode):
 #             raise NotImplementedError("TODO")
         
 #         return RandomMultiplication(other)
+
+
+class KnownRandom(LeafNode, ExtendedArithmeticNode):
+
+    @property
+    def _overriden_graphviz_attributes(self) -> dict:
+        return {"shape": "circle", "style": "filled", "fillcolor": "thistle"}
+
+    @property
+    def _node_shape(self) -> str:
+        return "circle"
     
+    @property
+    def _hash_name(self) -> str:
+        return "known_random"
+
+    @property
+    def _node_label(self) -> str:
+        return f"Rand {self._known_by}"
+    
+    def __init__(self, gf: type[FieldArray], known_by: Optional[Set[PartyId]]):
+        super().__init__(gf, known_by)
+        self._hash = random.randint(-2**63, 2**63 - 1)
+    
+    def __hash__(self) -> int:
+        return self._hash
+
+    def _arithmetize_inner(self, strategy: str) -> Node:
+        raise NotImplementedError("KnownRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+    
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("KnownRandom cannot be arithmetized: arithmetic circuits only contain arithmetic operations.")
+    
+    def is_equivalent(self, other: Node) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+        
+        return self._hash == other._hash
+    
+    def operation(self, operands: List[FieldArray]) -> FieldArray:
+        return self._gf.Random()
+    
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], party_count: int):
+        # TODO: I think we can leave this empty
+        pass
+
+    def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
+        return self
+
 
 # class RandomAddition(CommutativeBinaryNode):
     
