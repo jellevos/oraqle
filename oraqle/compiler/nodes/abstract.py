@@ -2,7 +2,8 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Type, Union
+from dataclasses import dataclass, fields, replace
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Sequence, Set, Tuple, Type, Union
 
 from galois import FieldArray
 
@@ -16,6 +17,8 @@ from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction
 
 from pysat.formula import IDPool, WCNF
+
+from oraqle.compiler.graphviz import DotFile
 
 
 def select_stack_index(stack_occupied: List[bool]) -> int:
@@ -34,29 +37,48 @@ def select_stack_index(stack_occupied: List[bool]) -> int:
     return index
 
 
-class SecureComputationCosts:
+# TODO: Use a dataclass
+#@dataclass
+class ArithmeticCosts:
+    # addition: float
+    # multiplication: float
+    # scalar_add: float
+    # scalar_mul: float
+
+    def __init__(self, add: float, mul: float, scalar_add: float, scalar_mul: float) -> None:
+        self.addition: float = add
+        self.multiplication: float = mul
+        self.scalar_add: float = scalar_add
+        self.scalar_mul: float = scalar_mul
+
+    def __repr__(self) -> str:
+        return str((self.addition, self.multiplication, self.scalar_add, self.scalar_mul))
+
+    def __mul__(self, factor: float) -> ArithmeticCosts:
+        return ArithmeticCosts(self.addition * factor, self.multiplication * factor, self.scalar_add * factor, self.scalar_mul * factor)
+        #return replace(self, **{field.name: getattr(self, field.name) * factor for field in fields(self)})
+
+
+class ExtendedArithmeticCosts:
     
-    def __init__(self, addition: float, multiplication: float, constant_add: float, constant_mul: float) -> None:
-        self._addition = addition
-        self._multiplication = multiplication
-        self._constant_addition = constant_add
-        self._constant_multiplication = constant_mul
+    def __init__(self, arithmetic_costs: ArithmeticCosts) -> None:
+        self._arithmetic_costs = arithmetic_costs
 
     @property
     def addition(self) -> float:
-        return self._addition
+        return self._arithmetic_costs.addition
     
     @property
     def multiplication(self) -> float:
-        return self._multiplication
+        return self._arithmetic_costs.multiplication
     
     @property
-    def constant_addition(self) -> float:
-        return self._constant_addition
+    def scalar_add(self) -> float:
+        return self._arithmetic_costs.scalar_add
     
     @property
-    def constant_multiplication(self) -> float:
-        return self._constant_multiplication
+    def scalar_mul(self) -> float:
+        return self._arithmetic_costs.scalar_mul
     
     @abstractmethod
     def receive(self, from_party: PartyId) -> float:
@@ -358,6 +380,7 @@ class Node(ABC):  # noqa: PLR0904
         # TODO: These are only relevant to extended arithmetic nodes
         self._replace_randomness_cache = None
         self._added_constraints = False
+        self._assigned_to_cluster = False
 
     @abstractmethod
     def apply_function_to_operands(self, function: Callable[["Node"], None]):
@@ -390,6 +413,7 @@ class Node(ABC):  # noqa: PLR0904
 
         self._replace_randomness_cache = None
         self._added_constraints = False
+        self._assigned_to_cluster = False
 
         already_cleared.add(id(self))
 
@@ -712,10 +736,14 @@ class ExtendedArithmeticNode(Node):
         return self  # type: ignore
     
     @abstractmethod
-    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
+    def _computational_cost(self, costs: Sequence[ExtendedArithmeticCosts], party_id: PartyId) -> float:
+        pass
+    
+    @abstractmethod
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], parties: int):
         pass
 
-    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
+    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], parties: int):
         # TODO: We may not have to keep this cache, it might be done by apply_function_to_operands
         if not self._added_constraints:
             self._add_constraints_minimize_cost_formulation_inner(wcnf, id_pool, costs, parties)
@@ -730,6 +758,10 @@ class ExtendedArithmeticNode(Node):
 
     @abstractmethod
     def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
+        pass
+
+    @abstractmethod
+    def _assign_to_cluster(self, graph_builder: DotFile, party_count: int, result: List[int], id_pool: IDPool):
         pass
 
 

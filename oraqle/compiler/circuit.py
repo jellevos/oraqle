@@ -1,7 +1,7 @@
 """This module contains classes for representing circuits."""
 import subprocess
 import tempfile
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from fhegen.bgv import logqP
 from fhegen.util import estsecurity
@@ -9,9 +9,13 @@ from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
-from oraqle.compiler.nodes.abstract import ArithmeticNode, ExtendedArithmeticNode, Node, SecureComputationCosts
+from oraqle.compiler.nodes.abstract import ArithmeticNode, ExtendedArithmeticNode, Node, ExtendedArithmeticCosts
 
 from pysat.formula import WCNF, IDPool
+
+from oraqle.compiler.nodes.binary_arithmetic import Addition, Multiplication
+from oraqle.compiler.nodes.unary_arithmetic import ConstantAddition, ConstantMultiplication
+from oraqle.mpc.parties import PartyId
 
 
 class Circuit:
@@ -220,7 +224,7 @@ class ExtendedArithmeticCircuit(Circuit):
         self._outputs = outputs
         self._gf = outputs[0]._gf
 
-    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], party_count: int):
+    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int):
         for output in self._outputs:
             output._add_constraints_minimize_cost_formulation(wcnf, id_pool, costs, party_count)
         self._clear_cache()
@@ -229,6 +233,20 @@ class ExtendedArithmeticCircuit(Circuit):
         outputs = [output.replace_randomness(party_count) for output in self._outputs]
         self._clear_cache()
         return ExtendedArithmeticCircuit(outputs)
+    
+    def to_clustered_graph(self, file_name: str, party_count: int, result: List[int], id_pool: IDPool):
+        graph_builder = DotFile()
+
+        for output in self._outputs:
+            output._assign_to_cluster(graph_builder, party_count, result, id_pool)
+
+            graph_builder.add_link(
+                output.to_graph(graph_builder),
+                graph_builder.add_node(label="Output", shape="plain"),
+            )
+        self._clear_cache()
+
+        graph_builder.to_file(file_name)
 
 
 # TODO: This should probably be a subclass of ExtendedArithmeticCircuit

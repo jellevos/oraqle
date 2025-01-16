@@ -1,14 +1,16 @@
 import subprocess
-from typing import List, Set
+from typing import Any, List, Sequence, Set
 
 from galois import GF
 
-from oraqle.add_chains.solving import solve
+from oraqle.add_chains.solving import solve, solve_incremental
 from oraqle.compiler.boolean.bool import BooleanInput, ReducedBooleanInput, _cast_to
 from oraqle.compiler.circuit import Circuit, ExtendedArithmeticCircuit
 from oraqle.compiler.graphviz import DotFile
-from oraqle.compiler.nodes.abstract import ExtendedArithmeticNode, Node, SecureComputationCosts
+from oraqle.compiler.nodes.abstract import ArithmeticCosts, ExtendedArithmeticNode, Node, ExtendedArithmeticCosts
 from oraqle.compiler.nodes.binary_arithmetic import Addition, Multiplication
+from oraqle.compiler.nodes.extended import KnownRandom
+from oraqle.compiler.nodes.leafs import Constant, Input
 from oraqle.compiler.nodes.unary_arithmetic import ConstantAddition, ConstantMultiplication
 from oraqle.compiler.sets.bitset import BitSet, BitSetContainer
 from oraqle.mpc.parties import PartyId
@@ -16,38 +18,52 @@ from oraqle.mpc.parties import PartyId
 from pysat.formula import WCNF, IDPool
 
 
-class StarTopologyCosts(SecureComputationCosts):
+class LeaderCosts(ExtendedArithmeticCosts):
 
-    def __init__(self, addition: float, multiplication: float, receive_leader: float, receive_other: float, send_leader: float, send_other: float) -> None:
-        super().__init__(addition, multiplication, addition / 10, multiplication / 10)  # FIXME: This is incorrect!! Also input constant_add and constant_mul
-        self._receive_leader = receive_leader
-        self._receive_other = receive_other
-        self._send_leader = send_leader
-        self._send_other = send_other
+    def __init__(self, arithmetic_costs: ArithmeticCosts, receive: float, send: float) -> None:
+        super().__init__(arithmetic_costs)
+        self._receive = receive
+        self._send = send
+    
+    def receive(self, from_party: PartyId) -> float:
+        assert from_party != 0
+        return self._receive
+    
+    def send(self, to_party: PartyId) -> float:
+        assert to_party != 0
+        return self._send
+
+
+class NonLeaderCosts(ExtendedArithmeticCosts):
+
+    def __init__(self, arithmetic_costs: ArithmeticCosts, receive: float, send: float) -> None:
+        super().__init__(arithmetic_costs)
+        self._receive = receive
+        self._send = send
     
     def receive(self, from_party: PartyId) -> float:
         if from_party == 0:
-            return self._receive_leader
+            return self._receive
         
-        return self._receive_other
+        return float('inf')
     
     def send(self, to_party: PartyId) -> float:
         if to_party == 0:
-            return self._send_leader
+            return self._send
         
-        return self._send_other
+        return float('inf')
 
 
-def create_star_topology_costs(leader_add: float, leader_mul: float, leader_send: float, leader_receive: float, other_factor: float, other_com_factor: float, mesh_cost: float, party_count: int) -> List[StarTopologyCosts]:
-    parties = [StarTopologyCosts(leader_add, leader_mul, leader_send, leader_receive, leader_send, leader_receive)]
+def create_star_topology_costs(leader_arithmetic_costs: ArithmeticCosts, other_arithmetic_costs: ArithmeticCosts, leader_send: float, leader_receive: float, other_send: float, other_receive: float, party_count: int) -> List[ExtendedArithmeticCosts]:
+    parties: List[ExtendedArithmeticCosts] = [LeaderCosts(leader_arithmetic_costs, leader_send, leader_receive)]
 
     for _ in range(party_count - 1):
-        parties.append(StarTopologyCosts(leader_add * other_factor, leader_mul * other_factor, leader_receive * other_com_factor, mesh_cost, leader_send * other_com_factor, mesh_cost))
+        parties.append(NonLeaderCosts(other_arithmetic_costs, other_receive, other_send))
 
     return parties
 
 
-def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: int, precomputed_randomness: bool, max_colluders: int, costs: List[SecureComputationCosts]):
+def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: int, precomputed_randomness: bool, max_colluders: int, costs: Sequence[ExtendedArithmeticCosts]):
     # FIXME: Add collusion threshold to signature
 
     extended_arithmetic_circuit = circuit.arithmetize_extended()
@@ -70,7 +86,43 @@ def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: in
         party_zero = 0
         h = id_pool.id(("h", id(output), party_zero))
         wcnf.append([h])
+
+
+    # print('hard')
+    # for clause in wcnf.hard:
+    #     print(clause)
+    #     print([f"{'NOT ' if x < 0 else ''}{id_pool.obj(abs(x))}" for x in clause])
+    # print('soft')
+    # for clause in wcnf.soft:
+    #     print([f"{'NOT ' if x < 0 else ''}{id_pool.obj(abs(x))}" for x in clause])
+
+
+
+    # from pysat.examples.musx import MUSX
+    # musx = MUSX(wcnf, verbosity=0)
+    # res = musx.compute()
+    # print(res)
+    # for x in res:
+    #     print(id_pool.obj(x))
+
+
+
+    # from pysat.solvers import Solver
+    # # Check satisfiability of the hard clauses
+    # with Solver(name='glucose42') as solver:
+    #     for clause in wcnf.hard:
+    #         solver.add_clause(clause)
+    #     solver.solve()
+    #     satisfiable = solver.get_model()
+    #     print(satisfiable)
+    #     assert satisfiable is not None
+
+
+
+
     result = solve(wcnf, "glucose42", None)
+    #result = solve(wcnf, "cadical195", None)
+    #result = solve_incremental(wcnf)
     print(result)
     assert result is not None
 
@@ -78,53 +130,56 @@ def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: in
 
     # TODO: For now, let's just immediately encrypt for who knows it. Assert there is only one who knows it. So known_by => held_by
 
-    graph_builder = DotFile()
-    for output in processed_circuit._outputs:
-        for party_id in range(party_count):
-            def assign_to_cluster(node: ExtendedArithmeticNode):
-                # TODO: Do we need a cache?
-                node_id = node.to_graph(graph_builder)
-                
-                if isinstance(node, (Addition, Multiplication, ConstantAddition, ConstantMultiplication)):
-                    c = id_pool.id(("c", id(node), party_id))
-                    if result[c] > 0:
-                        graph_builder.add_node_to_cluster(node_id, party_id)
-                    # h = id_pool.id(("h", id(node), party_id))
-                    # if result[h] > 0:
-                    #     graph_builder.add_node_to_cluster(node_id, party_id)
-                else:
-                    if PartyId(party_id) in node._known_by:
-                        graph_builder.add_node_to_cluster(node_id, party_id)
-
-                node.apply_function_to_operands(assign_to_cluster)  # type: ignore
-
-            output.apply_function_to_operands(assign_to_cluster)  # type: ignore
-
-        graph_builder.add_link(
-            output.to_graph(graph_builder),
-            graph_builder.add_node(label="Output", shape="plain"),
-        )
-    
-    graph_builder.to_file("test.dot")
+    processed_circuit.to_clustered_graph("test.dot", party_count, result, id_pool)
     subprocess.run(["dot", "-Tpdf", "test.dot", "-o", "test.pdf"], check=True)
     processed_circuit._clear_cache()
 
+    # TODO: The backend should be threshold EC-ElGamal
+
 
 if __name__ == "__main__":
+    party_count = 3
+    gf = GF(11)
+
+    # a = Input("a", gf, {PartyId(0)})
+    # a_neg = (a * Constant(gf(10))) + 1
+
+    b = Input("b", gf, {PartyId(1)})
+    b_neg = (b * Constant(gf(10))) + 1
+
+    c = Input("c", gf, {PartyId(2)})
+    c_neg = (c * KnownRandom(gf, {PartyId(0)})) + 1
+
+    circuit = Circuit([(b_neg + c_neg) * KnownRandom(gf, {PartyId(1)})])
+    circuit.to_pdf("simple.pdf")
+    circuit = circuit.arithmetize_extended()
+    circuit.to_pdf("simple-arith.pdf")
+    
+    leader_arithmetic_costs = ArithmeticCosts(1., float('inf'), 1., 100.)
+    other_arithmetic_costs = leader_arithmetic_costs * 10.
+    print(leader_arithmetic_costs)
+    print(other_arithmetic_costs)
+    all_costs = create_star_topology_costs(leader_arithmetic_costs, other_arithmetic_costs, 1000., 1000., 2000., 2000., party_count)
+    minimize_total_protocol_cost(circuit, 0, False, party_count - 1, all_costs)
+
+
+
+    exit(0)
     # TODO: Add proper set intersection interface
     gf = GF(11)
     
     # TODO: Consider immediately creating a bitset (container) using bitset params/set params
+    party_count = 3
     party_bitsets = []
-    for party_id in range(5):
+    for party_id in range(party_count):
         #bits = [to_mpc(ReducedBooleanInput(f"b{party_id}_{i}", gf), {PartyId(party_id)}, {PartyId(party_id)}, {PartyId(i) for i in range(5)}) for i in range(10)]
-        bits = [BooleanInput(f"b{party_id}_{i}", gf, {PartyId(i)}) for i in range(10)]
+        bits = [BooleanInput(f"b{party_id}_{i}", gf, {PartyId(party_id)}) for i in range(10)]
         bitset = BitSetContainer(bits)
         party_bitsets.append(bitset)
 
     intersection = BitSet.intersection(*party_bitsets)
 
-    circuit = Circuit([intersection.contains_element(element) for element in [1, 4, 5, 9]])  # TODO: Currently we output to party 1
+    circuit = Circuit([intersection.contains_element(element) for element in [1]])#, 4, 5, 9]])  # TODO: Currently we output to party 1
     circuit.to_pdf("debug.pdf")
 
     arithmetic_circuit = circuit.arithmetize()
@@ -133,4 +188,9 @@ if __name__ == "__main__":
     extended_arithmetic_circuit = circuit.arithmetize_extended()
     extended_arithmetic_circuit.to_pdf("debug3.pdf")
 
-    minimize_total_protocol_cost(circuit, 0, False, 4, create_star_topology_costs(0.01, 1.00, 10., 10., 100., 1., 100000., 5))
+    leader_arithmetic_costs = ArithmeticCosts(1., float('inf'), 1., 100.)
+    other_arithmetic_costs = leader_arithmetic_costs * 10.
+    print(leader_arithmetic_costs)
+    print(other_arithmetic_costs)
+    all_costs = create_star_topology_costs(leader_arithmetic_costs, other_arithmetic_costs, 1000., 1000., 2000., 2000., party_count)
+    minimize_total_protocol_cost(circuit, 0, False, party_count - 1, all_costs)

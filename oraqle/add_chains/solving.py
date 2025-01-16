@@ -3,6 +3,7 @@ import math
 import signal
 from typing import List, Optional, Sequence, Tuple
 
+from pysat.examples.lsu import LSU
 from pysat.examples.rc2 import RC2
 from pysat.formula import WCNF
 
@@ -47,6 +48,17 @@ def solve(wcnf: WCNF, solver: str, strict_cost_max: Optional[float]) -> Optional
     rc2.model = sorted(rc2.model, key=abs)
 
     return rc2.model
+
+
+def solve_incremental(wcnf: WCNF) -> Optional[List[int]]:
+    lsu = LSU(wcnf, verbose=0)
+
+    model = None
+    while lsu.solve():
+        print(lsu.cost)
+        model = lsu.model
+    
+    return model
 
 
 def extract_indices(

@@ -1,10 +1,11 @@
 """Module containing binary arithmetic nodes: additions and multiplications between non-constant nodes."""
 from abc import abstractmethod
-from typing import List, Optional, Set, Tuple, Type
+from typing import List, Optional, Sequence, Set, Tuple, Type
 
 from galois import FieldArray
 from pysat.formula import WCNF, IDPool
 
+from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import (
     AdditionInstruction,
     ArithmeticInstruction,
@@ -12,7 +13,7 @@ from oraqle.compiler.instructions import (
 )
 from oraqle.compiler.nodes.abstract import (
     ArithmeticNode,
-    SecureComputationCosts,
+    ExtendedArithmeticCosts,
     CostParetoFront,
     ExtendedArithmeticNode,
     Node,
@@ -104,8 +105,8 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
             raise Exception("This should be a constant.")
         
         self._is_random = False
-        if isinstance(left, UnknownRandom) or isinstance(right, UnknownRandom):
-            assert not (isinstance(left, UnknownRandom) and isinstance(right, UnknownRandom))
+        if isinstance(left, (UnknownRandom, KnownRandom)) or isinstance(right, (UnknownRandom, KnownRandom)):
+            assert not (isinstance(left, (UnknownRandom, KnownRandom)) and isinstance(right, (UnknownRandom, KnownRandom)))
             self._is_random = True
 
     def multiplicative_depth(self) -> int:  # noqa: D102
@@ -178,8 +179,9 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
     def _expansion(self) -> Node:
         raise NotImplementedError()
     
-    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
-        for party_id in range(parties):
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int):
+        print("yeet", id(self), self)
+        for party_id in range(party_count):
             # We can compute a value if we hold both inputs
             c = id_pool.id(("c", id(self), party_id))
             h_left = id_pool.id(("h", id(self._left), party_id))
@@ -187,14 +189,15 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
             wcnf.append([-c, h_left])
             wcnf.append([-c, h_right])
 
+            h = id_pool.id(("h", id(self), party_id))
+
             # If we do not already know this value, then
             if not PartyId(party_id) in self._known_by:
                 # We hold h if we compute it
-                h = id_pool.id(("h", id(self), party_id))
                 sources = [-h, c]
                 
                 # Or when it is sent by another party
-                for other_party_id in range(parties):
+                for other_party_id in range(party_count):
                     if party_id == other_party_id:
                         continue
 
@@ -208,24 +211,30 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
                 wcnf.append(sources)
 
             # We can only send if we hold the value
-            for other_party_id in range(parties):
+            for other_party_id in range(party_count):
                 if party_id == other_party_id:
                     continue
 
                 send = id_pool.id(("s", id(self), party_id, other_party_id))
                 wcnf.append([-send, h])
 
+                # Prevent mutual communication of the same element
+                receive = id_pool.id(("s", id(self), other_party_id, party_id))
+                wcnf.append([-send, -receive])
+
                 # Add the cost for sending a value to other_party_id
                 wcnf.append([-send], weight=costs[party_id].send(PartyId(other_party_id)))
 
             # Add the computation cost
-            if self._is_multiplication:
-                wcnf.append([-c], weight=costs[party_id].multiplication)
-            else:
-                wcnf.append([-c], weight=costs[party_id].addition)
+            print(self, self._left, self._right, self._computational_cost(costs, PartyId(party_id)), party_id, self._known_by)
+            wcnf.append([-c], weight=self._computational_cost(costs, PartyId(party_id)))
 
     def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
         if not self._is_random:
+            return self
+        
+        if isinstance(self._left, KnownRandom) or isinstance(self._right, KnownRandom):
+            # TODO: Can we do more here?
             return self
         
         # TODO: Handle additions
@@ -237,13 +246,33 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
             other = self._left
 
         from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
-        return sum_(*(Multiplication(KnownRandom(self._gf, {PartyId(party_id)}), other, self._gf) for party_id in range(party_count))).arithmetize_extended()
+        return sum_(*(Multiplication(KnownRandom(self._gf, {PartyId(party_id)}), other, self._gf) for party_id in range(party_count))).arithmetize_extended()  # type: ignore
 
     # TODO: Can we not fix this in the hierarchy
     def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
         return self
     
     # TODO: Draw multiplications differently if they are random multiplications
+
+    def _assign_to_cluster(self, graph_builder: DotFile, party_count: int, result: List[int], id_pool: IDPool):
+        if not self._assigned_to_cluster:
+            for party_id in range(party_count):
+                node_id = self.to_graph(graph_builder)
+
+                for other_party_id in range(party_count):
+                    s = id_pool.id(("s", id(self), other_party_id, party_id))
+                    if (s-1) < len(result) and result[s - 1] > 0:
+                        print("I,", party_id, "received", self, "from", other_party_id)
+
+                c = id_pool.id(("c", id(self), party_id))
+                if result[c - 1] > 0:
+                    print('assigning', self, 'to', party_id)
+                    graph_builder.add_node_to_cluster(node_id, party_id)
+
+            self._left._assign_to_cluster(graph_builder, party_count, result, id_pool)
+            self._right._assign_to_cluster(graph_builder, party_count, result, id_pool)
+
+            self._assigned_to_cluster = True
 
 
 # FIXME: This order should probably change
@@ -298,6 +327,11 @@ class Addition(CommutativeArithmeticBinaryNode):
 
         assert not front.is_empty()
         return front
+    
+    def _computational_cost(self, costs: Sequence[ExtendedArithmeticCosts], party_id: PartyId) -> float:
+        assert not isinstance(self._left, Constant)
+        assert not isinstance(self._right, Constant)
+        return costs[party_id].addition
 
 
 class Multiplication(CommutativeArithmeticBinaryNode):
@@ -351,3 +385,12 @@ class Multiplication(CommutativeArithmeticBinaryNode):
     #         random = self._right
 
     #     return sum_()
+
+    def _computational_cost(self, costs: Sequence[ExtendedArithmeticCosts], party_id: PartyId) -> float:
+        assert not isinstance(self._left, Constant)
+        assert not isinstance(self._right, Constant)
+        
+        if self._is_random and ((isinstance(self._left, KnownRandom) and (party_id in self._left._known_by)) or (isinstance(self._right, KnownRandom) and (party_id in self._right._known_by))):
+            return costs[party_id].scalar_mul
+        
+        return costs[party_id].multiplication

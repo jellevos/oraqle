@@ -1,5 +1,5 @@
 """This module contains `ArithmeticNode`s with a single input: Constant additions and constant multiplications."""
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 from galois import FieldArray
 from pysat.formula import WCNF, IDPool
@@ -10,7 +10,7 @@ from oraqle.compiler.instructions import (
     ConstantAdditionInstruction,
     ConstantMultiplicationInstruction,
 )
-from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, ExtendedArithmeticNode, Node, SecureComputationCosts, select_stack_index
+from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, ExtendedArithmeticNode, Node, ExtendedArithmeticCosts, select_stack_index
 from oraqle.compiler.nodes.univariate import UnivariateNode
 from oraqle.mpc.parties import PartyId
 
@@ -23,7 +23,7 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
         super().__init__(node)
         self._is_constant_mul = is_constant_mul
 
-    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], parties: int):
         # TODO: Consider reducing duplication with bivariate arithmetic
 
         for party_id in range(parties):
@@ -32,10 +32,11 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
             h_operand = id_pool.id(("h", id(self._node), party_id))
             wcnf.append([-c, h_operand])
 
+            h = id_pool.id(("h", id(self), party_id))
+
             # If we do not already know this value, then
             if not PartyId(party_id) in self._known_by:
                 # We hold h if we compute it
-                h = id_pool.id(("h", id(self), party_id))
                 sources = [-h, c]
                 
                 # Or when it is sent by another party
@@ -60,17 +61,41 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
                 send = id_pool.id(("s", id(self), party_id, other_party_id))
                 wcnf.append([-send, h])
 
+                # Prevent mutual communication of the same element
+                receive = id_pool.id(("s", id(self), other_party_id, party_id))
+                wcnf.append([-send, -receive])
+
                 # Add the cost for sending a value to other_party_id
                 wcnf.append([-send], weight=costs[party_id].send(PartyId(other_party_id)))
 
             # Add the computation cost
+            # TODO: Use _computational_cost
             if self._is_constant_mul:
-                wcnf.append([-c], weight=costs[party_id].constant_multiplication)
+                wcnf.append([-c], weight=costs[party_id].scalar_mul)
             else:
-                wcnf.append([-c], weight=costs[party_id].constant_addition)
+                wcnf.append([-c], weight=costs[party_id].scalar_add)
     
     def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
         raise NotImplementedError("TODO")
+    
+    def _assign_to_cluster(self, graph_builder: DotFile, party_count: int, result: List[int], id_pool: IDPool):
+        if not self._assigned_to_cluster:
+            for party_id in range(party_count):
+                node_id = self.to_graph(graph_builder)
+
+                for other_party_id in range(party_count):
+                    s = id_pool.id(("s", id(self), other_party_id, party_id))
+                    if (s-1) < len(result) and result[s - 1] > 0:
+                        print("I,", party_id, "received", self, "from", other_party_id)
+
+                c = id_pool.id(("c", id(self), party_id))
+                if result[c - 1] > 0:
+                    print('assigning', self, 'to', party_id)
+                    graph_builder.add_node_to_cluster(node_id, party_id)
+
+            self._node._assign_to_cluster(graph_builder, party_count, result, id_pool)
+
+            self._assigned_to_cluster = True
 
 
 class ConstantAddition(ConstantUnivariateArithmetic):
@@ -158,7 +183,9 @@ class ConstantAddition(ConstantUnivariateArithmetic):
     
     def _expansion(self) -> Node:
         raise NotImplementedError()
-
+    
+    def _computational_cost(self, costs: Sequence[ExtendedArithmeticCosts], party_id: PartyId) -> float:
+        return costs[party_id].scalar_add
     
     def to_graph(self, graph_builder: DotFile) -> int:  # noqa: D102
         if self._to_graph_cache is None:
@@ -264,6 +291,8 @@ class ConstantMultiplication(ConstantUnivariateArithmetic):
     def _expansion(self) -> Node:
         raise NotImplementedError()
 
+    def _computational_cost(self, costs: Sequence[ExtendedArithmeticCosts], party_id: PartyId) -> float:
+        return costs[party_id].scalar_mul
     
     def to_graph(self, graph_builder: DotFile) -> int:  # noqa: D102
         if self._to_graph_cache is None:

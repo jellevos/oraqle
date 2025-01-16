@@ -264,18 +264,17 @@ class InvUnreducedBooleanConstant(BooleanConstant, InvUnreducedBoolean):
 # TODO: Define mappings from bool inputs True/False to Boolean representations
 class BooleanInput(Input, Boolean):
 
-    # TODO:
     def _arithmetize_inner(self, strategy: str) -> Node:
         return super()._arithmetize_inner(strategy)
 
     def transform_to_reduced_boolean(self) -> ReducedBoolean:
-        return ReducedBooleanInput(self._name, self._gf)
+        return ReducedBooleanInput(self._name, self._gf, self._known_by)
     
     def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
-        return UnreducedBooleanInput(self._name, self._gf)
+        return UnreducedBooleanInput(self._name, self._gf, self._known_by)
     
     def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
-        return InvUnreducedBooleanInput(self._name, self._gf)
+        return InvUnreducedBooleanInput(self._name, self._gf, self._known_by)
 
 
 class ReducedBooleanInput(Input, ReducedBoolean):

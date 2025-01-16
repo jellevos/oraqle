@@ -1,12 +1,12 @@
 """Module containing leaf nodes: i.e. nodes without an input."""
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type
 
 from galois import FieldArray
 from pysat.formula import WCNF, IDPool
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction, InputInstruction
-from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, ExtendedArithmeticNode, Node, SecureComputationCosts, select_stack_index
+from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, ExtendedArithmeticNode, Node, ExtendedArithmeticCosts, select_stack_index
 from oraqle.compiler.nodes.fixed import FixedNode
 from oraqle.mpc.parties import PartyId
 
@@ -45,8 +45,67 @@ class LeafNode(FixedNode):
         raise NotImplementedError()
     
 
-class ArithmeticLeafNode(LeafNode, ArithmeticNode):
-    """An ArithmeticLeafNode is an ArithmeticNode with no inputs."""    
+class ExtendedArithmeticLeafNode(LeafNode, ExtendedArithmeticNode):
+
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int):
+        print('leaf', self, self._known_by)
+
+        # We can only send if we hold the value
+        for party_id in range(party_count):
+            h = id_pool.id(("h", id(self), party_id))
+
+            # If we do not already know this value, then
+            if PartyId(party_id) not in self._known_by:
+                # We hold h if we compute it
+                sources = [-h]
+                
+                # Or when it is sent by another party
+                for other_party_id in range(party_count):
+                    if party_id == other_party_id:
+                        continue
+
+                    received = id_pool.id(("s", id(self), other_party_id, party_id))
+                    sources.append(received)
+
+                    # Add the cost for receiving a value from other_party_id
+                    wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
+                
+                # Add to WCNF
+                wcnf.append(sources)
+
+            for other_party_id in range(party_count):
+                if party_id == other_party_id:
+                    continue
+
+                # FIXME: Is this correct?
+                send = id_pool.id(("s", id(self), party_id, other_party_id))
+                wcnf.append([-send, h])
+
+                # Prevent mutual communication of the same element
+                receive = id_pool.id(("s", id(self), other_party_id, party_id))
+                wcnf.append([-send, -receive])
+
+                # Add the cost for sending a value to other_party_id
+                wcnf.append([-send], weight=costs[party_id].send(PartyId(other_party_id)))
+    
+    def _assign_to_cluster(self, graph_builder: DotFile, party_count: int, result: List[int], id_pool: IDPool):
+        if not self._assigned_to_cluster:
+            for party_id in range(party_count):
+                node_id = self.to_graph(graph_builder)
+
+                for other_party_id in range(party_count):
+                    s = id_pool.id(("s", id(self), other_party_id, party_id))
+                    if (s-1) < len(result) and result[s - 1] > 0:
+                        print("I,", party_id, "received", self, "from", other_party_id)
+
+                if PartyId(party_id) in self._known_by:
+                    graph_builder.add_node_to_cluster(node_id, party_id)
+
+            self._assigned_to_cluster = True
+    
+
+class ArithmeticLeafNode(ExtendedArithmeticLeafNode, ArithmeticNode):
+    """An ArithmeticLeafNode is an ArithmeticNode with no inputs."""
 
 
 # TODO: Merge ArithmeticInput and Input using multiple inheritance
@@ -113,9 +172,8 @@ class Input(ArithmeticLeafNode):
 
         return self._instruction_cache, stack_counter
     
-    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], party_count: int):
-        # TODO: I think we can leave this empty
-        pass
+    def _computational_cost(self, costs: Sequence[ExtendedArithmeticCosts], party_id: PartyId) -> float:
+        raise NotImplementedError("This is not an operation")
 
     def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
         # TODO: I think we can leave this empty
@@ -189,7 +247,10 @@ class Constant(ArithmeticLeafNode):
     ) -> Tuple[int]:
         raise NotImplementedError("The circuit is a constant.")
     
-    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: List[SecureComputationCosts], parties: int):
+    def _computational_cost(self, costs: Sequence[ExtendedArithmeticCosts], party_id: PartyId) -> float:
+        raise NotImplementedError("This is not an operation")
+    
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], parties: int):
         raise NotImplementedError("The circuit is a constant.")
     
     def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
