@@ -3,7 +3,7 @@ from typing import Any, List, Optional, Sequence, Set
 
 from galois import GF
 
-from oraqle.add_chains.solving import solve, solve_incremental
+from oraqle.add_chains.solving import solve
 from oraqle.compiler.boolean.bool import BooleanInput, ReducedBooleanInput, _cast_to
 from oraqle.compiler.circuit import Circuit, ExtendedArithmeticCircuit
 from oraqle.compiler.graphviz import DotFile
@@ -90,42 +90,8 @@ def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: in
         h = id_pool.id(("h", id(output), party_zero))
         wcnf.append([h])
 
-
-    # print('hard')
-    # for clause in wcnf.hard:
-    #     print(clause)
-    #     print([f"{'NOT ' if x < 0 else ''}{id_pool.obj(abs(x))}" for x in clause])
-    # print('soft')
-    # for clause in wcnf.soft:
-    #     print([f"{'NOT ' if x < 0 else ''}{id_pool.obj(abs(x))}" for x in clause])
-
-
-
-    # from pysat.examples.musx import MUSX
-    # musx = MUSX(wcnf, verbosity=0)
-    # res = musx.compute()
-    # print(res)
-    # for x in res:
-    #     print(id_pool.obj(x))
-
-
-
-    # from pysat.solvers import Solver
-    # # Check satisfiability of the hard clauses
-    # with Solver(name='glucose42') as solver:
-    #     for clause in wcnf.hard:
-    #         solver.add_clause(clause)
-    #     solver.solve()
-    #     satisfiable = solver.get_model()
-    #     print(satisfiable)
-    #     assert satisfiable is not None
-
-
-
-
     result = solve(wcnf, "glucose42", None)
     #result = solve(wcnf, "cadical195", None)
-    #result = solve_incremental(wcnf)
     print(result)
     assert result is not None
 

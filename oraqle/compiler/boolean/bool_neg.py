@@ -2,7 +2,7 @@
 from galois import FieldArray
 
 from oraqle.compiler.arithmetic.subtraction import Subtraction
-from oraqle.compiler.boolean.bool import Boolean, InvUnreducedBoolean, ReducedBoolean, UnreducedBoolean
+from oraqle.compiler.boolean.bool import Boolean, NegReducedBoolean, NegUnreducedBoolean, ReducedBoolean, UnreducedBoolean
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node
 from oraqle.compiler.nodes.leafs import Constant
@@ -43,10 +43,13 @@ class Neg(UnivariateNode[Boolean], Boolean):
     def transform_to_reduced_boolean(self) -> ReducedBoolean:
         return ReducedNeg(self._node.transform_to_reduced_boolean())
     
+    def transform_to_neg_reduced_boolean(self) -> NegReducedBoolean:
+        raise NotImplementedError("TODO!")
+    
     def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
         raise NotImplementedError("TODO!")
     
-    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
+    def transform_to_neg_unreduced_boolean(self) -> NegUnreducedBoolean:
         raise NotImplementedError("TODO!")
 
 

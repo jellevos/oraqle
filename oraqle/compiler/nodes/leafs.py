@@ -148,10 +148,8 @@ class Input(ArithmeticLeafNode):
     
     def to_graph(self, graph_builder: DotFile) -> int:  # noqa: D102
         if self._to_graph_cache is None:
-            label = self._name
-
             self._to_graph_cache = graph_builder.add_node(
-                label=label, **self._overriden_graphviz_attributes
+                label=self._node_label, **self._overriden_graphviz_attributes
             )
 
         return self._to_graph_cache

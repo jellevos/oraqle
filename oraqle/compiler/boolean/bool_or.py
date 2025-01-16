@@ -4,7 +4,7 @@ from typing import Set
 
 from galois import GF, FieldArray
 
-from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean, cast_to_unreduced_boolean
+from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, NegReducedBoolean, NegUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean, cast_to_unreduced_boolean
 from oraqle.compiler.boolean.bool_and import ReducedAnd, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import ReducedNeg
 from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node, UnoverloadedWrapper
@@ -68,10 +68,13 @@ class Or(CommutativeUniqueReducibleNode[Boolean], Boolean):
     def transform_to_reduced_boolean(self) -> ReducedBoolean:
         return ReducedOr({UnoverloadedWrapper(operand.node.transform_to_reduced_boolean()) for operand in self._operands}, self._gf)
     
+    def transform_to_neg_reduced_boolean(self) -> NegReducedBoolean:
+        raise NotImplementedError("TODO: This is typically not a smart operation to do (it is better to use other representations).")
+    
     def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
         return UnreducedOr({UnoverloadedWrapper(operand.node.transform_to_unreduced_boolean()) for operand in self._operands}, self._gf)
     
-    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
+    def transform_to_neg_unreduced_boolean(self) -> NegUnreducedBoolean:
         raise NotImplementedError("TODO: This is typically not a smart operation to do (it is better to use other representations).")
     
 

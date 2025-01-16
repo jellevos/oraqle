@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Callable, Dict, List, Sequence, Set, Type, Union
 from galois import GF, FieldArray
-from oraqle.compiler.boolean.bool import Boolean, BooleanInput, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean
+from oraqle.compiler.boolean.bool import Boolean, BooleanInput, NegReducedBoolean, NegUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean
 from oraqle.compiler.boolean.bool_and import all_
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node, UnoverloadedWrapper
@@ -154,11 +154,11 @@ class ReducedBitSet(FixedNode[BitSet], BitSet):
     
 
 # TODO: Should this be a FixedNode?
-class InvUnreducedBitSet(FixedNode[BitSet], BitSet):
+class NegReducedBitSet(FixedNode[BitSet], BitSet):
     
     @property
     def _hash_name(self) -> str:
-        return "inv_unreduced_bitset"
+        return "neg_reduced_bitset"
 
     @property
     def _node_label(self) -> str:
@@ -182,7 +182,7 @@ class InvUnreducedBitSet(FixedNode[BitSet], BitSet):
         return self._hash
     
     def is_equivalent(self, other: Node) -> bool:
-        if not isinstance(other, InvUnreducedBitSet):
+        if not isinstance(other, ReducedBitSet):
             return False
         
         return self._bitset.is_equivalent(other._bitset)
@@ -201,14 +201,74 @@ class InvUnreducedBitSet(FixedNode[BitSet], BitSet):
     
     def _arithmetize_inner(self, strategy: str) -> Node:
         # TODO: Consider changing the arithmetize type
-        return BitSetContainer([bit.transform_to_inv_unreduced_boolean().arithmetize(strategy) for bit in self._bitset._bits])  # type: ignore
+        return BitSetContainer([bit.transform_to_neg_reduced_boolean().arithmetize(strategy) for bit in self._bitset._bits])  # type: ignore
+    
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO")
+    
+    def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
+        return BitSetContainer([bit.transform_to_neg_reduced_boolean().arithmetize_extended() for bit in self._bitset._bits])  # type: ignore
+    
+    def __len__(self) -> int:
+        return len(self._bitset)
+    
+
+# TODO: Should this be a FixedNode?
+class NegUnreducedBitSet(FixedNode[BitSet], BitSet):
+    
+    @property
+    def _hash_name(self) -> str:
+        return "neg_unreduced_bitset"
+
+    @property
+    def _node_label(self) -> str:
+        return "Bitset"
+    
+    def __init__(self, bitset: BitSetContainer):
+        super().__init__(bitset._gf)
+        self._bitset = bitset
+
+    # def apply_function_to_operands(self, function: Callable[[Node], None]):
+    #     for operand in self._bits:
+    #         function(operand)
+
+    # def replace_operands_using_function(self, function: Callable[[Node], Node]):
+    #     self._bits = [function(operand) for operand in self._bits]
+    
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._hash_name, self._bitset))
+
+        return self._hash
+    
+    def is_equivalent(self, other: Node) -> bool:
+        if not isinstance(other, NegUnreducedBitSet):
+            return False
+        
+        return self._bitset.is_equivalent(other._bitset)
+    
+    def operands(self) -> List[BitSet]:
+        return [self._bitset]
+    
+    def set_operands(self, operands: List[BitSet]):
+        self._bitset = operands[0]
+
+    def operation(self, operands: List[FieldArray]) -> FieldArray:
+        raise NotImplementedError("Incompatible: must return all operands")
+    
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+    
+    def _arithmetize_inner(self, strategy: str) -> Node:
+        # TODO: Consider changing the arithmetize type
+        return BitSetContainer([bit.transform_to_neg_unreduced_boolean().arithmetize(strategy) for bit in self._bitset._bits])  # type: ignore
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
     
     def _arithmetize_extended_inner(self) -> Node:
         # TODO: Consider changing the arithmetize type
-        return BitSetContainer([bit.transform_to_inv_unreduced_boolean().arithmetize_extended() for bit in self._bitset._bits])  # type: ignore
+        return BitSetContainer([bit.transform_to_neg_unreduced_boolean().arithmetize_extended() for bit in self._bitset._bits])  # type: ignore
     
     def __len__(self) -> int:
         return len(self._bitset)
@@ -275,11 +335,14 @@ class BitSetIndex(Boolean):
     def transform_to_reduced_boolean(self) -> ReducedBoolean:
         return ReducedBitSetIndex(ReducedBitSet(self._bitset), self._index, self._gf)  # type: ignore
     
+    def transform_to_neg_reduced_boolean(self) -> NegReducedBoolean:
+        return NegReducedBitSetIndex(NegReducedBitSet(self._bitset), self._index, self._gf)  # type: ignore
+    
     def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
         raise NotImplementedError("TODO!")
     
-    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
-        return InvUnreducedBitSetIndex(InvUnreducedBitSet(self._bitset), self._index, self._gf)  # type: ignore
+    def transform_to_neg_unreduced_boolean(self) -> NegUnreducedBoolean:
+        return NegUnreducedBitSetIndex(NegUnreducedBitSet(self._bitset), self._index, self._gf)  # type: ignore
 
 
 # TODO: Reduce duplication
@@ -340,13 +403,72 @@ class ReducedBitSetIndex(ReducedBoolean):
             return False
         
         return self._index == other._index and self._bitset.is_equivalent(other._bitset)
+    
 
-
-class InvUnreducedBitSetIndex(InvUnreducedBoolean):
+class NegReducedBitSetIndex(NegReducedBoolean):
     
     @property
     def _hash_name(self) -> str:
-        return "inv_unreduced_bitset_index"
+        return "neg_reduced_bitset_index"
+
+    @property
+    def _node_label(self) -> str:
+        return f"Bitset index #{self._index}"
+
+    def __init__(self, bitset: BitSet, index: int, gf: Type[FieldArray]):
+        super().__init__(gf)
+        self._bitset = bitset
+        self._index = index
+
+    def _expansion(self) -> Node:
+        raise NotImplementedError()
+
+    def arithmetize(self, strategy: str) -> Node:
+        if self._arithmetize_cache is None:
+            arithmetized_bitset = self._bitset.arithmetize(strategy)
+            assert isinstance(arithmetized_bitset, BitSetContainer)
+            self._arithmetize_cache = arithmetized_bitset._bits[self._index]
+
+        return self._arithmetize_cache
+    
+    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO")
+    
+    def arithmetize_extended(self) -> ExtendedArithmeticNode:
+        if self._arithmetize_extended_cache is None:
+            arithmetized_bitset = self._bitset.arithmetize_extended()
+            assert isinstance(arithmetized_bitset, BitSetContainer)
+            self._arithmetize_extended_cache = arithmetized_bitset._bits[self._index]  # type: ignore
+
+        return self._arithmetize_extended_cache  # type: ignore
+    
+    def apply_function_to_operands(self, function: Callable[[Node], None]):
+        function(self._bitset)
+
+    def replace_operands_using_function(self, function: Callable[[Node], Node]):
+        self._bitset = function(self._bitset)
+
+    def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:
+        raise NotImplementedError("TODO: Requires refactors")
+    
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._hash_name, self._index, self._bitset))
+
+        return self._hash
+    
+    def is_equivalent(self, other: Node) -> bool:
+        if not isinstance(other, BitSetIndex):
+            return False
+        
+        return self._index == other._index and self._bitset.is_equivalent(other._bitset)
+
+
+class NegUnreducedBitSetIndex(NegUnreducedBoolean):
+    
+    @property
+    def _hash_name(self) -> str:
+        return "neg_unreduced_bitset_index"
 
     @property
     def _node_label(self) -> str:

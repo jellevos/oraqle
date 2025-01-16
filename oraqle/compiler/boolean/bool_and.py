@@ -11,7 +11,7 @@ from galois import GF, FieldArray
 from oraqle.add_chains.addition_chains_front import gen_pareto_front
 from oraqle.add_chains.addition_chains_mod import chain_cost
 from oraqle.add_chains.solving import extract_indices
-from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, InvUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean, cast_to_inv_unreduced_boolean, cast_to_reduced_boolean
+from oraqle.compiler.boolean.bool import Boolean, BooleanConstant, NegReducedBoolean, NegUnreducedBoolean, ReducedBoolean, ReducedBooleanInput, UnreducedBoolean, cast_to_neg_unreduced_boolean, cast_to_reduced_boolean
 from oraqle.compiler.boolean.bool_neg import ReducedNeg
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.equality import ReducedIsNonZero
@@ -63,7 +63,7 @@ class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
         print(list(operand.node for operand in self._operands))
         # Choose the best of the reduced and unreduced implementations
         reduced = self.transform_to_reduced_boolean().arithmetize_extended()
-        inv_unreduced = self.transform_to_inv_unreduced_boolean().arithmetize_extended()
+        inv_unreduced = self.transform_to_neg_unreduced_boolean().arithmetize_extended()
 
         Circuit([reduced.to_arithmetic()]).to_pdf("reduced.pdf")
         Circuit([inv_unreduced.to_arithmetic()]).to_pdf("inv_unreduced.pdf")
@@ -97,15 +97,18 @@ class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
     def transform_to_reduced_boolean(self) -> ReducedBoolean:
         return ReducedAnd({UnoverloadedWrapper(operand.node.transform_to_reduced_boolean()) for operand in self._operands}, self._gf)
     
+    def transform_to_neg_reduced_boolean(self) -> UnreducedBoolean:
+        raise NotImplementedError("TODO: This is typically not a smart operation to do (it is better to use other representations).")
+    
     def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
         raise NotImplementedError("TODO: This is typically not a smart operation to do (it is better to use other representations).")
     
-    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
+    def transform_to_neg_unreduced_boolean(self) -> NegUnreducedBoolean:
         # TODO: We can also make a veersion that inputs unreduced Booleans
-        return InvUnreducedAnd({UnoverloadedWrapper(operand.node.transform_to_reduced_boolean()) for operand in self._operands}, self._gf)
+        return NegUnreducedAnd({UnoverloadedWrapper(operand.node.transform_to_neg_reduced_boolean()) for operand in self._operands}, self._gf)
 
 
-class InvUnreducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], InvUnreducedBoolean):
+class NegUnreducedAnd(CommutativeUniqueReducibleNode[NegReducedBoolean], NegUnreducedBoolean):
 
     @property
     def _hash_name(self) -> str:
@@ -129,7 +132,8 @@ class InvUnreducedAnd(CommutativeUniqueReducibleNode[ReducedBoolean], InvUnreduc
         raise NotImplementedError("This requires randomization")
     
     def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
-        return cast_to_inv_unreduced_boolean(UnknownRandom(self._gf) * sum_(*(ReducedNeg(operand.node) for operand in self._operands))).arithmetize_extended()
+        assert len(self._operands) < self._gf.characteristic
+        return cast_to_neg_unreduced_boolean(UnknownRandom(self._gf) * sum_(*self._operands)).arithmetize_extended()
         #return cast_to_inv_unreduced_boolean(SecretRandom(self._gf) * sum_(*(operand.node * PublicRandom(self._gf) for operand in self._operands))).arithmetize_extended()
 
 

@@ -3,7 +3,7 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.arithmetic.subtraction import Subtraction
-from oraqle.compiler.boolean.bool import Boolean, InvUnreducedBoolean, ReducedBoolean, UnreducedBoolean, cast_to_reduced_boolean
+from oraqle.compiler.boolean.bool import Boolean, NegReducedBoolean, NegUnreducedBoolean, ReducedBoolean, UnreducedBoolean, cast_to_reduced_boolean
 from oraqle.compiler.boolean.bool_neg import Neg, ReducedNeg
 from oraqle.compiler.nodes.abstract import CostParetoFront, ExtendedArithmeticNode, Node
 from oraqle.compiler.nodes.binary_arithmetic import CommutativeBinaryNode
@@ -53,10 +53,13 @@ class IsNonZero(UnivariateNode, Boolean):
     def transform_to_reduced_boolean(self) -> ReducedBoolean:
         return ReducedIsNonZero(self._node)
     
+    def transform_to_neg_reduced_boolean(self) -> NegReducedBoolean:
+        raise NotImplementedError("TODO!")
+    
     def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
         raise NotImplementedError("TODO!")
     
-    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
+    def transform_to_neg_unreduced_boolean(self) -> NegUnreducedBoolean:
         raise NotImplementedError("TODO!")
     
 
@@ -109,10 +112,13 @@ class Equals(CommutativeBinaryNode, Boolean):
     def transform_to_reduced_boolean(self) -> ReducedBoolean:
         return ReducedEquals(self._left, self._right, self._gf)
     
+    def transform_to_neg_reduced_boolean(self) -> NegReducedBoolean:
+        raise NotImplementedError("TODO!")
+    
     def transform_to_unreduced_boolean(self) -> UnreducedBoolean:
         raise NotImplementedError("TODO!")
     
-    def transform_to_inv_unreduced_boolean(self) -> InvUnreducedBoolean:
+    def transform_to_neg_unreduced_boolean(self) -> NegUnreducedBoolean:
         raise NotImplementedError("TODO!")
     
 
