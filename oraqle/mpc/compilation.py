@@ -1,5 +1,5 @@
 import subprocess
-from typing import Any, List, Sequence, Set
+from typing import Any, List, Optional, Sequence, Set
 
 from galois import GF
 
@@ -16,6 +16,9 @@ from oraqle.compiler.sets.bitset import BitSet, BitSetContainer
 from oraqle.mpc.parties import PartyId
 
 from pysat.formula import WCNF, IDPool
+from pysat.card import EncType
+
+import time
 
 
 class LeaderCosts(ExtendedArithmeticCosts):
@@ -63,7 +66,7 @@ def create_star_topology_costs(leader_arithmetic_costs: ArithmeticCosts, other_a
     return parties
 
 
-def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: int, precomputed_randomness: bool, max_colluders: int, costs: Sequence[ExtendedArithmeticCosts]):
+def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: int, precomputed_randomness: bool, max_colluders: int, costs: Sequence[ExtendedArithmeticCosts], at_most_1_enc: Optional[int]):
     # FIXME: Add collusion threshold to signature
 
     extended_arithmetic_circuit = circuit.arithmetize_extended()
@@ -80,7 +83,7 @@ def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: in
     # Let each node add their own clauses to the formulation
     wcnf = WCNF()
     id_pool = IDPool()
-    processed_circuit._add_constraints_minimize_cost_formulation(wcnf, id_pool, costs, party_count)
+    processed_circuit._add_constraints_minimize_cost_formulation(wcnf, id_pool, costs, party_count, at_most_1_enc)
     # TODO: We now assume that party 0 must learn the final results
     for output in processed_circuit._outputs:
         party_zero = 0
@@ -138,33 +141,33 @@ def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: in
 
 
 if __name__ == "__main__":
-    party_count = 3
-    gf = GF(11)
+    # party_count = 3
+    # gf = GF(11)
 
-    # a = Input("a", gf, {PartyId(0)})
-    # a_neg = (a * Constant(gf(10))) + 1
+    # # a = Input("a", gf, {PartyId(0)})
+    # # a_neg = (a * Constant(gf(10))) + 1
 
-    b = Input("b", gf, {PartyId(1)})
-    b_neg = (b * Constant(gf(10))) + 1
+    # b = Input("b", gf, {PartyId(1)})
+    # b_neg = (b * Constant(gf(10))) + 1
 
-    c = Input("c", gf, {PartyId(2)})
-    c_neg = (c * KnownRandom(gf, {PartyId(0)})) + 1
+    # c = Input("c", gf, {PartyId(2)})
+    # c_neg = (c * KnownRandom(gf, {PartyId(0)})) + 1
 
-    circuit = Circuit([(b_neg + c_neg) * KnownRandom(gf, {PartyId(1)})])
-    circuit.to_pdf("simple.pdf")
-    circuit = circuit.arithmetize_extended()
-    circuit.to_pdf("simple-arith.pdf")
+    # circuit = Circuit([(b_neg + c_neg) * KnownRandom(gf, {PartyId(1)})])
+    # circuit.to_pdf("simple.pdf")
+    # circuit = circuit.arithmetize_extended()
+    # circuit.to_pdf("simple-arith.pdf")
     
-    leader_arithmetic_costs = ArithmeticCosts(1., float('inf'), 1., 100.)
-    other_arithmetic_costs = leader_arithmetic_costs * 10.
-    print(leader_arithmetic_costs)
-    print(other_arithmetic_costs)
-    all_costs = create_star_topology_costs(leader_arithmetic_costs, other_arithmetic_costs, 1000., 1000., 2000., 2000., party_count)
-    minimize_total_protocol_cost(circuit, 0, False, party_count - 1, all_costs)
+    # leader_arithmetic_costs = ArithmeticCosts(1., float('inf'), 1., 100.)
+    # other_arithmetic_costs = leader_arithmetic_costs * 10.
+    # print(leader_arithmetic_costs)
+    # print(other_arithmetic_costs)
+    # all_costs = create_star_topology_costs(leader_arithmetic_costs, other_arithmetic_costs, 1000., 1000., 2000., 2000., party_count)
+    # minimize_total_protocol_cost(circuit, 0, False, party_count - 1, all_costs)
 
 
 
-    exit(0)
+    # exit(0)
     # TODO: Add proper set intersection interface
     gf = GF(11)
     
@@ -193,4 +196,7 @@ if __name__ == "__main__":
     print(leader_arithmetic_costs)
     print(other_arithmetic_costs)
     all_costs = create_star_topology_costs(leader_arithmetic_costs, other_arithmetic_costs, 1000., 1000., 2000., 2000., party_count)
-    minimize_total_protocol_cost(circuit, 0, False, party_count - 1, all_costs)
+
+    t = time.monotonic()
+    minimize_total_protocol_cost(circuit, 0, False, party_count - 1, all_costs, at_most_1_enc=EncType.ladder)
+    print(time.monotonic() - t)

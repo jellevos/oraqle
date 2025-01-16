@@ -3,6 +3,7 @@ from typing import List, Optional, Sequence, Set, Tuple
 
 from galois import FieldArray
 from pysat.formula import WCNF, IDPool
+from pysat.card import CardEnc, EncType
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import (
@@ -23,7 +24,7 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
         super().__init__(node)
         self._is_constant_mul = is_constant_mul
 
-    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], parties: int):
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], parties: int, at_most_1_enc: Optional[int]):
         # TODO: Consider reducing duplication with bivariate arithmetic
 
         for party_id in range(parties):
@@ -37,7 +38,7 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
             # If we do not already know this value, then
             if not PartyId(party_id) in self._known_by:
                 # We hold h if we compute it
-                sources = [-h, c]
+                sources = [c]
                 
                 # Or when it is sent by another party
                 for other_party_id in range(parties):
@@ -50,7 +51,13 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
                     # Add the cost for receiving a value from other_party_id
                     wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
                 
+                # Add a cut: we only want to compute/receive from one source
+                if at_most_1_enc is not None:
+                    at_most_1 = CardEnc.atmost(sources, encoding=at_most_1_enc, vpool=id_pool)  # type: ignore
+                    wcnf.extend(at_most_1)
+
                 # Add to WCNF
+                sources.append(-h)
                 wcnf.append(sources)
 
             # We can only send if we hold the value

@@ -12,6 +12,7 @@ from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
 from oraqle.compiler.nodes.abstract import ArithmeticNode, ExtendedArithmeticNode, Node, ExtendedArithmeticCosts
 
 from pysat.formula import WCNF, IDPool
+from pysat.card import EncType
 
 from oraqle.compiler.nodes.binary_arithmetic import Addition, Multiplication
 from oraqle.compiler.nodes.unary_arithmetic import ConstantAddition, ConstantMultiplication
@@ -224,9 +225,9 @@ class ExtendedArithmeticCircuit(Circuit):
         self._outputs = outputs
         self._gf = outputs[0]._gf
 
-    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int):
+    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int, at_most_1_enc: Optional[int]):
         for output in self._outputs:
-            output._add_constraints_minimize_cost_formulation(wcnf, id_pool, costs, party_count)
+            output._add_constraints_minimize_cost_formulation(wcnf, id_pool, costs, party_count, at_most_1_enc)
         self._clear_cache()
 
     def replace_randomness(self, party_count: int) -> "ExtendedArithmeticCircuit":  # TODO: Think if this is the right type

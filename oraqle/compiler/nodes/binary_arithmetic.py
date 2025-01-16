@@ -4,6 +4,7 @@ from typing import List, Optional, Sequence, Set, Tuple, Type
 
 from galois import FieldArray
 from pysat.formula import WCNF, IDPool
+from pysat.card import CardEnc, EncType
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import (
@@ -179,7 +180,7 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
     def _expansion(self) -> Node:
         raise NotImplementedError()
     
-    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int):
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int, at_most_1_enc: Optional[int]):
         print("yeet", id(self), self)
         for party_id in range(party_count):
             # We can compute a value if we hold both inputs
@@ -194,7 +195,7 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
             # If we do not already know this value, then
             if not PartyId(party_id) in self._known_by:
                 # We hold h if we compute it
-                sources = [-h, c]
+                sources = [c]
                 
                 # Or when it is sent by another party
                 for other_party_id in range(party_count):
@@ -207,7 +208,13 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
                     # Add the cost for receiving a value from other_party_id
                     wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
                 
+                # Add a cut: we only want to compute/receive from one source
+                if at_most_1_enc is not None:
+                    at_most_1 = CardEnc.atmost(sources, encoding=at_most_1_enc, vpool=id_pool)  # type: ignore
+                    wcnf.extend(at_most_1)
+
                 # Add to WCNF
+                sources.append(-h)
                 wcnf.append(sources)
 
             # We can only send if we hold the value

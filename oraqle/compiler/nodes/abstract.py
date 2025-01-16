@@ -11,12 +11,12 @@ from oraqle.mpc.parties import PartyId
 
 if TYPE_CHECKING:
     from oraqle.compiler.boolean.bool import Boolean
-    from oraqle.mpc.protocol import Protocol
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction
 
 from pysat.formula import IDPool, WCNF
+from pysat.card import EncType
 
 from oraqle.compiler.graphviz import DotFile
 
@@ -740,15 +740,15 @@ class ExtendedArithmeticNode(Node):
         pass
     
     @abstractmethod
-    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], parties: int):
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int, at_most_1_enc: Optional[int]):
         pass
 
-    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], parties: int):
+    def _add_constraints_minimize_cost_formulation(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int, at_most_1_enc: Optional[int]):
         # TODO: We may not have to keep this cache, it might be done by apply_function_to_operands
         if not self._added_constraints:
-            self._add_constraints_minimize_cost_formulation_inner(wcnf, id_pool, costs, parties)
+            self._add_constraints_minimize_cost_formulation_inner(wcnf, id_pool, costs, party_count, at_most_1_enc)
             self._added_constraints = True
-            self.apply_function_to_operands(lambda node: node._add_constraints_minimize_cost_formulation(wcnf, id_pool, costs, parties))  # type: ignore
+            self.apply_function_to_operands(lambda node: node._add_constraints_minimize_cost_formulation(wcnf, id_pool, costs, party_count, at_most_1_enc))  # type: ignore
 
     def replace_randomness(self, party_count: int) -> ExtendedArithmeticNode:  # TODO: Think about types
         if self._replace_randomness_cache is None:

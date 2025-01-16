@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type
 
 from galois import FieldArray
 from pysat.formula import WCNF, IDPool
+from pysat.card import CardEnc, EncType
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction, InputInstruction
@@ -47,7 +48,7 @@ class LeafNode(FixedNode):
 
 class ExtendedArithmeticLeafNode(LeafNode, ExtendedArithmeticNode):
 
-    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int):
+    def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int, at_most_1_enc: Optional[int]):
         print('leaf', self, self._known_by)
 
         # We can only send if we hold the value
@@ -57,7 +58,7 @@ class ExtendedArithmeticLeafNode(LeafNode, ExtendedArithmeticNode):
             # If we do not already know this value, then
             if PartyId(party_id) not in self._known_by:
                 # We hold h if we compute it
-                sources = [-h]
+                sources = []
                 
                 # Or when it is sent by another party
                 for other_party_id in range(party_count):
@@ -70,7 +71,13 @@ class ExtendedArithmeticLeafNode(LeafNode, ExtendedArithmeticNode):
                     # Add the cost for receiving a value from other_party_id
                     wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
                 
+                # Add a cut: we only want to compute/receive from one source
+                if at_most_1_enc is not None:
+                    at_most_1 = CardEnc.atmost(sources, encoding=at_most_1_enc, vpool=id_pool)  # type: ignore
+                    wcnf.extend(at_most_1)
+
                 # Add to WCNF
+                sources.append(-h)
                 wcnf.append(sources)
 
             for other_party_id in range(party_count):
