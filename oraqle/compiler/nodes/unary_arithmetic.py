@@ -29,27 +29,36 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
 
         for party_id in range(parties):
             # We can compute a value if we hold both inputs
-            c = id_pool.id(("c", id(self), party_id))
-            h_operand = id_pool.id(("h", id(self._node), party_id))
-            wcnf.append([-c, h_operand])
+            compute_cost = self._computational_cost(costs, PartyId(party_id))
+            computable = compute_cost < float('inf')
+            if computable:
+                c = id_pool.id(("c", id(self), party_id))
+                h_operand = id_pool.id(("h", id(self._node), party_id))
+                wcnf.append([-c, h_operand])
 
             h = id_pool.id(("h", id(self), party_id))
 
             # If we do not already know this value, then
             if not PartyId(party_id) in self._known_by:
+                sources = []
+
                 # We hold h if we compute it
-                sources = [c]
+                if computable:
+                    sources.append(c)
                 
                 # Or when it is sent by another party
                 for other_party_id in range(parties):
                     if party_id == other_party_id:
                         continue
 
-                    received = id_pool.id(("s", id(self), other_party_id, party_id))
-                    sources.append(received)
+                    receive_cost = costs[party_id].receive(PartyId(other_party_id))
 
-                    # Add the cost for receiving a value from other_party_id
-                    wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
+                    if receive_cost < float('inf'):
+                        received = id_pool.id(("s", id(self), other_party_id, party_id))
+                        sources.append(received)
+
+                        # Add the cost for receiving a value from other_party_id
+                        wcnf.append([-received], weight=receive_cost)
                 
                 # Add a cut: we only want to compute/receive from one source
                 if at_most_1_enc is not None:
@@ -65,22 +74,22 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
                 if party_id == other_party_id:
                     continue
 
-                send = id_pool.id(("s", id(self), party_id, other_party_id))
-                wcnf.append([-send, h])
+                send_cost = costs[party_id].send(PartyId(other_party_id))
 
-                # Prevent mutual communication of the same element
-                receive = id_pool.id(("s", id(self), other_party_id, party_id))
-                wcnf.append([-send, -receive])
+                if send_cost < float('inf'):
+                    send = id_pool.id(("s", id(self), party_id, other_party_id))
+                    wcnf.append([-send, h])
 
-                # Add the cost for sending a value to other_party_id
-                wcnf.append([-send], weight=costs[party_id].send(PartyId(other_party_id)))
+                    # Prevent mutual communication of the same element
+                    receive = id_pool.id(("s", id(self), other_party_id, party_id))
+                    wcnf.append([-send, -receive])
+
+                    # Add the cost for sending a value to other_party_id
+                    wcnf.append([-send], weight=send_cost)
 
             # Add the computation cost
-            # TODO: Use _computational_cost
-            if self._is_constant_mul:
-                wcnf.append([-c], weight=costs[party_id].scalar_mul)
-            else:
-                wcnf.append([-c], weight=costs[party_id].scalar_add)
+            if computable:
+                wcnf.append([-c], weight=compute_cost)
     
     def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
         raise NotImplementedError("TODO")

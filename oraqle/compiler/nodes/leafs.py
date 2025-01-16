@@ -65,11 +65,14 @@ class ExtendedArithmeticLeafNode(LeafNode, ExtendedArithmeticNode):
                     if party_id == other_party_id:
                         continue
 
-                    received = id_pool.id(("s", id(self), other_party_id, party_id))
-                    sources.append(received)
+                    receive_cost = costs[party_id].receive(PartyId(other_party_id))
 
-                    # Add the cost for receiving a value from other_party_id
-                    wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
+                    if receive_cost < float('inf'):
+                        received = id_pool.id(("s", id(self), other_party_id, party_id))
+                        sources.append(received)
+
+                        # Add the cost for receiving a value from other_party_id
+                        wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
                 
                 # Add a cut: we only want to compute/receive from one source
                 if at_most_1_enc is not None:
@@ -84,16 +87,19 @@ class ExtendedArithmeticLeafNode(LeafNode, ExtendedArithmeticNode):
                 if party_id == other_party_id:
                     continue
 
-                # FIXME: Is this correct?
-                send = id_pool.id(("s", id(self), party_id, other_party_id))
-                wcnf.append([-send, h])
+                send_cost = costs[party_id].send(PartyId(other_party_id))
 
-                # Prevent mutual communication of the same element
-                receive = id_pool.id(("s", id(self), other_party_id, party_id))
-                wcnf.append([-send, -receive])
+                if send_cost < float('inf'):
+                    # FIXME: Is this correct?
+                    send = id_pool.id(("s", id(self), party_id, other_party_id))
+                    wcnf.append([-send, h])
 
-                # Add the cost for sending a value to other_party_id
-                wcnf.append([-send], weight=costs[party_id].send(PartyId(other_party_id)))
+                    # Prevent mutual communication of the same element
+                    receive = id_pool.id(("s", id(self), other_party_id, party_id))
+                    wcnf.append([-send, -receive])
+
+                    # Add the cost for sending a value to other_party_id
+                    wcnf.append([-send], weight=send_cost)
     
     def _assign_to_cluster(self, graph_builder: DotFile, party_count: int, result: List[int], id_pool: IDPool):
         if not self._assigned_to_cluster:

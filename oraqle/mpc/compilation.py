@@ -17,6 +17,7 @@ from oraqle.mpc.parties import PartyId
 
 from pysat.formula import WCNF, IDPool
 from pysat.card import EncType
+from pysat.examples.fm import FM
 
 import time
 
@@ -90,6 +91,10 @@ def minimize_total_protocol_cost(circuit: Circuit, supported_multiplications: in
         h = id_pool.id(("h", id(output), party_zero))
         wcnf.append([h])
 
+    # solver = FM(wcnf, solver='glucose42')
+    # assert solver.compute()
+    # result = solver.model
+
     result = solve(wcnf, "glucose42", None)
     #result = solve(wcnf, "cadical195", None)
     print(result)
@@ -157,12 +162,24 @@ if __name__ == "__main__":
     extended_arithmetic_circuit = circuit.arithmetize_extended()
     extended_arithmetic_circuit.to_pdf("debug3.pdf")
 
-    leader_arithmetic_costs = ArithmeticCosts(1., float('inf'), 1., 100.)
-    other_arithmetic_costs = leader_arithmetic_costs * 10.
+    addition = 1.
+    other_computation_factor = 0.25 #0.25 #0.1
+    all_communication_factor = 100.
+
+    # FIXME: What to do with the cost of a scalar mul!
+    leader_arithmetic_costs = ArithmeticCosts(addition, float('inf'), addition, 100.)
+    other_arithmetic_costs = leader_arithmetic_costs * other_computation_factor
     print(leader_arithmetic_costs)
     print(other_arithmetic_costs)
-    all_costs = create_star_topology_costs(leader_arithmetic_costs, other_arithmetic_costs, 1000., 1000., 2000., 2000., party_count)
+
+    communication_cost = addition * all_communication_factor
+    all_costs = create_star_topology_costs(leader_arithmetic_costs, other_arithmetic_costs, communication_cost, communication_cost, communication_cost, communication_cost, party_count)
 
     t = time.monotonic()
     minimize_total_protocol_cost(circuit, 0, False, party_count - 1, all_costs, at_most_1_enc=EncType.ladder)
     print(time.monotonic() - t)
+
+# We kunnen denk ik 2^k doen voor k=-2,-1,0,1,2,3,4 ofzo voor hoeveel efficienter de leader is (kan ook vanaf -2 omdat we soms juist dingen door de user willen laten doen)
+# En dan 2^k k=-2,-1,-0,1,2 voor hoeveel efficienter de leader communiceert [DEZE ZOU IK NIET DOEN]
+# Ik zou ipv dat doen dat communicatie 10^k keer duurder is dan een addition, dan heb je k=-1,0,1,2,3
+# En dan meten we de tijd dat het duurt om te solven en welk protocol eruit komt

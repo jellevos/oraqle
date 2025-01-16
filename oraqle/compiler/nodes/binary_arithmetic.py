@@ -181,32 +181,40 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
         raise NotImplementedError()
     
     def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int, at_most_1_enc: Optional[int]):
-        print("yeet", id(self), self)
         for party_id in range(party_count):
             # We can compute a value if we hold both inputs
-            c = id_pool.id(("c", id(self), party_id))
-            h_left = id_pool.id(("h", id(self._left), party_id))
-            h_right = id_pool.id(("h", id(self._right), party_id))
-            wcnf.append([-c, h_left])
-            wcnf.append([-c, h_right])
+            compute_cost = self._computational_cost(costs, PartyId(party_id))
+            computable = compute_cost < float('inf')
+            if computable:
+                c = id_pool.id(("c", id(self), party_id))
+                h_left = id_pool.id(("h", id(self._left), party_id))
+                h_right = id_pool.id(("h", id(self._right), party_id))
+                wcnf.append([-c, h_left])
+                wcnf.append([-c, h_right])
 
             h = id_pool.id(("h", id(self), party_id))
 
             # If we do not already know this value, then
             if not PartyId(party_id) in self._known_by:
+                sources = []
+
                 # We hold h if we compute it
-                sources = [c]
+                if computable:
+                    sources.append(c)
                 
                 # Or when it is sent by another party
                 for other_party_id in range(party_count):
                     if party_id == other_party_id:
                         continue
 
-                    received = id_pool.id(("s", id(self), other_party_id, party_id))
-                    sources.append(received)
+                    receive_cost = costs[party_id].receive(PartyId(other_party_id))
 
-                    # Add the cost for receiving a value from other_party_id
-                    wcnf.append([-received], weight=costs[party_id].receive(PartyId(other_party_id)))
+                    if receive_cost < float('inf'):
+                        received = id_pool.id(("s", id(self), other_party_id, party_id))
+                        sources.append(received)
+
+                        # Add the cost for receiving a value from other_party_id
+                        wcnf.append([-received], weight=receive_cost)
                 
                 # Add a cut: we only want to compute/receive from one source
                 if at_most_1_enc is not None:
@@ -222,19 +230,22 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
                 if party_id == other_party_id:
                     continue
 
-                send = id_pool.id(("s", id(self), party_id, other_party_id))
-                wcnf.append([-send, h])
+                send_cost = costs[party_id].send(PartyId(other_party_id))
 
-                # Prevent mutual communication of the same element
-                receive = id_pool.id(("s", id(self), other_party_id, party_id))
-                wcnf.append([-send, -receive])
+                if send_cost < float('inf'):
+                    send = id_pool.id(("s", id(self), party_id, other_party_id))
+                    wcnf.append([-send, h])
 
-                # Add the cost for sending a value to other_party_id
-                wcnf.append([-send], weight=costs[party_id].send(PartyId(other_party_id)))
+                    # Prevent mutual communication of the same element
+                    receive = id_pool.id(("s", id(self), other_party_id, party_id))
+                    wcnf.append([-send, -receive])
+
+                    # Add the cost for sending a value to other_party_id
+                    wcnf.append([-send], weight=send_cost)
 
             # Add the computation cost
-            print(self, self._left, self._right, self._computational_cost(costs, PartyId(party_id)), party_id, self._known_by)
-            wcnf.append([-c], weight=self._computational_cost(costs, PartyId(party_id)))
+            if computable:
+                wcnf.append([-c], weight=compute_cost)
 
     def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
         if not self._is_random:
@@ -272,7 +283,7 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
                         print("I,", party_id, "received", self, "from", other_party_id)
 
                 c = id_pool.id(("c", id(self), party_id))
-                if result[c - 1] > 0:
+                if c < len(result) and result[c - 1] > 0:
                     print('assigning', self, 'to', party_id)
                     graph_builder.add_node_to_cluster(node_id, party_id)
 
