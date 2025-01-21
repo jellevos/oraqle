@@ -185,7 +185,7 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode, ArithmeticNode):
             # We can compute a value if we hold both inputs
             compute_cost = self._computational_cost(costs, PartyId(party_id))
             computable = compute_cost < float('inf')
-            if computable:
+            if computable:  # FIXME: We can additionally check if we do not already know it
                 c = id_pool.id(("c", id(self), party_id))
                 h_left = id_pool.id(("h", id(self._left), party_id))
                 h_right = id_pool.id(("h", id(self._right), party_id))

@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
     addition = 1.
     other_computation_factor = 0.25 #0.25 #0.1
-    all_communication_factor = 100.
+    all_communication_factor = 1.
 
     # FIXME: What to do with the cost of a scalar mul!
     leader_arithmetic_costs = ArithmeticCosts(addition, float('inf'), addition, 100.)
@@ -183,3 +183,8 @@ if __name__ == "__main__":
 # En dan 2^k k=-2,-1,-0,1,2 voor hoeveel efficienter de leader communiceert [DEZE ZOU IK NIET DOEN]
 # Ik zou ipv dat doen dat communicatie 10^k keer duurder is dan een addition, dan heb je k=-1,0,1,2,3
 # En dan meten we de tijd dat het duurt om te solven en welk protocol eruit komt
+
+# Schrijf een experiment
+# Beschrijf de AND operatie en encoding etc.
+
+Besluit of ik ook BGN ding wil implementeren om te laten zien dat we van techniek switchen met andere network params...
