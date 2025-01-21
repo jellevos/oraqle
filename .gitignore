@@ -12,3 +12,4 @@ instructions.txt
 .sphinx_build/
 /dist
 *.svg
+*.pyc
