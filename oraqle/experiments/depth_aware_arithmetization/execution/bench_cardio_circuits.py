@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
         for depth, cost, arithmetic_circuit in front:
             print(depth, cost)
-            run_time = arithmetic_circuit.run_using_helib(iterations=iterations, measure_time=True, *gen_params())
+            run_time = arithmetic_circuit.run_using_helib(iterations, True, False, *gen_params())
             print("Run time:", run_time)
 
         print(f"--- Cardio elevated risk assessment ({cost_of_squaring}) ---")
@@ -56,5 +56,5 @@ if __name__ == "__main__":
 
         for depth, cost, arithmetic_circuit in front:
             print(depth, cost)
-            run_time = arithmetic_circuit.run_using_helib(iterations=iterations, measure_time=True, *gen_params())
+            run_time = arithmetic_circuit.run_using_helib(iterations, True, False, *gen_params())
             print("Run time:", run_time)
