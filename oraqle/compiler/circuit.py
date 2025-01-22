@@ -411,7 +411,7 @@ class ArithmeticCircuit(Circuit):
             return params
         
     def run_using_helib(self,
-        iterations: int = 1,
+        iterations: int,
         measure_time: bool = False,
         decrypt_outputs: bool = False,
         **kwargs) -> float:
@@ -442,8 +442,7 @@ class ArithmeticCircuit(Circuit):
                 print(f"Build completed. Running with parameters: {', '.join(program_args)}...")
                 result = subprocess.run([executable_path] + program_args, check=True, text=True, capture_output=True)
 
-                print(result.stdout)
-
+                # Check that all ciphertexts are valid
                 lines = result.stdout.splitlines()
                 for line in lines[:-1]:
                     assert line.endswith("1")
