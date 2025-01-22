@@ -436,7 +436,7 @@ class ArithmeticCircuit(Circuit):
                 # Run the executable
                 executable_path = os.path.join(build_dir, "build", "main")
                 program_args = [f"{keyword}={value}" for keyword, value in kwargs.items()]
-                print(f"Build completed. Running with parameters: {", ".join(program_args)}...")
+                print(f"Build completed. Running with parameters: {', '.join(program_args)}...")
                 result = subprocess.run([executable_path] + program_args, check=True, text=True, capture_output=True)
 
                 print(result.stdout)
