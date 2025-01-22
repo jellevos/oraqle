@@ -1,4 +1,7 @@
 """This module contains classes for representing circuits."""
+import importlib.resources
+import os
+import shutil
 import subprocess
 import tempfile
 from typing import Dict, List, Optional, Tuple
@@ -405,6 +408,57 @@ class ArithmeticCircuit(Circuit):
             file.write(helib_postamble)
 
             return params
+        
+    def run_using_helib(self,
+        iterations: int = 1,
+        measure_time: bool = False,
+        decrypt_outputs: bool = False,
+        **kwargs) -> float:
+        assert measure_time
+        assert not decrypt_outputs
+
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Copy the template folder to the temporary directory
+                build_dir = os.path.join(temp_dir, "build")
+                with importlib.resources.path('oraqle.helib_template', '') as template_path:
+                    shutil.copytree(template_path, build_dir)
+
+                # Generate the main.cpp file
+                main_cpp_path = os.path.join(build_dir, "main.cpp")
+                self.generate_code(main_cpp_path, iterations, measure_time, decrypt_outputs)
+
+                # Call cmake and build
+                os.chdir(build_dir)
+                subprocess.run(["cmake", "-S", ".", "-B", "build"], check=True)
+                subprocess.run(["cmake", "--build", "build"], check=True)
+
+                # Run the executable
+                executable_path = os.path.join(build_dir, "build", "main")
+                program_args = [f"{keyword}={value}" for keyword, value in kwargs.items()]
+                result = subprocess.run([executable_path] + program_args, check=True, text=True, capture_output=True)
+
+                print(result.stdout)
+
+                lines = result.stdout.splitlines()
+                for line in lines[:-1]:
+                    assert line.endswith("1")
+
+                run_time = float(lines[-1]) / iterations
+                return run_time
+            
+        except subprocess.CalledProcessError as e:
+            print("An error occurred during the build or execution process.")
+            print(e)
+            try:
+                print("stderr:")
+                print(result.stderr)
+                print()
+                print("stdout:")
+                print(result.stdout)
+            except Exception:
+                pass
+            raise Exception("Cannot continue since an error occured.")
 
 
 if __name__ == "__main__":

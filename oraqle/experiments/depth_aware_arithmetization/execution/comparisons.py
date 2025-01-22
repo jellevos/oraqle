@@ -21,6 +21,8 @@ if __name__ == "__main__":
         print("Our circuits:", our_front)
 
         our_front[0][2].to_graph(f"comp_{p}_ours.dot")
+        for _, _, circ in our_front:
+            circ.run_using_helib(measure_time=True, x=15, y=22)
 
         t2_circuit = Circuit([T2SemiLessThan(x, y, gf)])
         t2_arithmetization = t2_circuit.arithmetize()
