@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple
 from pysat.card import CardEnc
 from pysat.formula import WCNF
 
-from oraqle.add_chains.memoization import ADDCHAIN_CACHE_PATH, cache_to_disk
+from oraqle.add_chains.memoization import cache_to_disk
 from oraqle.add_chains.solving import solve, solve_with_time_limit
 from oraqle.config import MAXSAT_TIMEOUT
 
@@ -41,7 +41,7 @@ def thurber_bounds(target: int, max_size: int) -> List[Tuple[int, int]]:
     return bounds
 
 
-@cache_to_disk(ADDCHAIN_CACHE_PATH, ignore_args={"solver", "encoding", "thurber"})
+@cache_to_disk(ignore_args={"solver", "encoding", "thurber"})
 def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
     target: int,
     max_depth: Optional[int],

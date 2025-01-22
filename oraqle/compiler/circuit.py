@@ -1,5 +1,5 @@
 """This module contains classes for representing circuits."""
-import importlib.resources
+from importlib.resources import files
 import os
 import shutil
 import subprocess
@@ -10,6 +10,7 @@ from fhegen.bgv import logqP
 from fhegen.util import estsecurity
 from galois import FieldArray
 
+import oraqle.helib_template
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
 from oraqle.compiler.nodes.abstract import ArithmeticNode, Node
@@ -421,8 +422,8 @@ class ArithmeticCircuit(Circuit):
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Copy the template folder to the temporary directory
                 build_dir = os.path.join(temp_dir, "build")
-                with importlib.resources.path('oraqle.helib_template', '') as template_path:
-                    shutil.copytree(template_path, build_dir)
+                template_path = files(oraqle.helib_template)
+                shutil.copytree(str(template_path), build_dir)
 
                 # Generate the main.cpp file
                 main_cpp_path = os.path.join(build_dir, "main.cpp")
