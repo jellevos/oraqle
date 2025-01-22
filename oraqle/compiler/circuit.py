@@ -418,6 +418,8 @@ class ArithmeticCircuit(Circuit):
         assert measure_time
         assert not decrypt_outputs
 
+        original_directory = os.getcwd()
+
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Copy the template folder to the temporary directory
@@ -448,7 +450,6 @@ class ArithmeticCircuit(Circuit):
 
                 run_time = float(lines[-1]) / iterations
                 return run_time
-            
         except subprocess.CalledProcessError as e:
             print("An error occurred during the build or execution process.")
             print(e)
@@ -461,6 +462,8 @@ class ArithmeticCircuit(Circuit):
             except Exception:
                 pass
             raise Exception("Cannot continue since an error occured.")
+        finally:
+            os.chdir(original_directory)
 
 
 if __name__ == "__main__":

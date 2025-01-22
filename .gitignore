@@ -13,3 +13,4 @@ instructions.txt
 /dist
 *.svg
 *.pyc
+oraqle/addchain_cache.db
