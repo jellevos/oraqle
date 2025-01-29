@@ -15,8 +15,8 @@ if __name__ == "__main__":
 
         circuit = Circuit([x == y])
 
-        for d, s, arith in circuit.arithmetize_depth_aware(0.75):
-            print(d, s, arith.multiplicative_cost(0.75), arith.run_using_helib(10, True, False, x=13, y=19))
+        for d, c, arith in circuit.arithmetize_depth_aware(0.75):
+            print(d, c, arith.run_using_helib(10, True, False, x=13, y=19))
 
         arith = circuit.arithmetize('naive')
         print('square and multiply', arith.multiplicative_depth(), arith.multiplicative_size(), arith.multiplicative_cost(0.75), arith.run_using_helib(10, True, False, x=13, y=19))
