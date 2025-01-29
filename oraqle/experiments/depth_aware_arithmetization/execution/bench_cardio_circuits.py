@@ -1,5 +1,4 @@
 import random
-import subprocess
 import time
 from typing import Dict
 
@@ -9,7 +8,7 @@ from oraqle.circuits.cardio import (
     construct_cardio_elevated_risk_circuit,
     construct_cardio_risk_circuit,
 )
-from oraqle.compiler.circuit import ArithmeticCircuit, Circuit
+from oraqle.compiler.circuit import Circuit
 
 
 def gen_params() -> Dict[str, int]:

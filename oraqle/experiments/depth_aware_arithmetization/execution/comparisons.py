@@ -44,7 +44,6 @@ if __name__ == "__main__":
 
         iz21_circuit = Circuit([IliashenkoZuccaSemiLessThan(x, y, gf)])
         iz21_arithmetization = iz21_circuit.arithmetize()
-        #iz21_arithmetization.to_graph(f"comp_{p}_iz21.dot")
         print(
             "IZ21 circuits:",
             iz21_arithmetization.multiplicative_depth(),
@@ -52,7 +51,6 @@ if __name__ == "__main__":
             iz21_arithmetization.run_using_helib(iterations=iterations, measure_time=True, x=15, y=22)
         )
         iz21_arithmetization.eliminate_subexpressions()
-        #iz21_arithmetization.to_graph(f"comp_{p}_iz21_cse.dot")
         print(
             "IZ21 circuit CSE:",
             iz21_arithmetization.multiplicative_depth(),

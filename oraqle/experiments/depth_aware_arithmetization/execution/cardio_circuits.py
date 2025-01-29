@@ -21,7 +21,6 @@ if __name__ == "__main__":
 
         for depth, cost, arithmetic_circuit in front:
             print(depth, cost)
-            # print('params', arithmetic_circuit.generate_code("temp.cpp", 10, True, False))
             arithmetic_circuit.to_graph(f"cardio_arith_d{depth}_c{cost}.dot")
 
         print(f"--- Cardio elevated risk assessment ({cost_of_squaring}) ---")
@@ -33,5 +32,4 @@ if __name__ == "__main__":
 
         for depth, cost, arithmetic_circuit in front:
             print(depth, cost)
-            # print('params', arithmetic_circuit.generate_code("temp.cpp", 10, True, False))
             arithmetic_circuit.to_graph(f"cardio_elevated_arith_d{depth}_c{cost}.dot")

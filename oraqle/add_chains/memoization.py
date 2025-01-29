@@ -1,9 +1,7 @@
 """This module contains tools for memoizing addition chains, as these are expensive to compute."""
 from hashlib import sha3_256
-import importlib.resources
 from importlib.resources import files
 import inspect
-import os
 import shelve
 from typing import Set
 

@@ -124,7 +124,7 @@ class UnivariatePoly(UnivariateNode):
 
         lowest_multiplicative_size = 1_000_000_000  # TODO: Not elegant
         optimal_k = math.sqrt(2 * len(self._coefficients))
-        bound = min(int(math.ceil(PS_METHOD_FACTOR_K * optimal_k)), len(self._coefficients))
+        bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
         for k in range(1, bound):
             (
                 arithmetization,
@@ -178,7 +178,7 @@ class UnivariatePoly(UnivariateNode):
 
         for _, _, x in self._node.arithmetize_depth_aware(cost_of_squaring):
             optimal_k = math.sqrt(2 * len(self._coefficients))
-            bound = min(int(math.ceil(PS_METHOD_FACTOR_K * optimal_k)), len(self._coefficients))
+            bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
             for k in range(1, bound):
                 (
                     arithmetization,

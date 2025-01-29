@@ -24,18 +24,18 @@ def thurber_bounds(target: int, max_size: int) -> List[Tuple[int, int]]:
             denominator = (1 << (t + 1)) * ((1 << (max_size - t - (step + 2))) + 1)
         else:
             denominator = (1 << t) * ((1 << (max_size - t - (step + 1))) + 1)
-        bound = int(math.ceil(target / denominator))
+        bound = math.ceil(target / denominator)
         bounds.append((bound, min(1 << step, target)))
 
     step = max_size - t - 2
     if step > 0:
         denominator = (1 << t) * ((1 << (max_size - t - (step + 1))) + 1)
-        bound = int(math.ceil(target / denominator))
+        bound = math.ceil(target / denominator)
         bounds.append((bound, min(1 << step, target)))
 
     if max_size - t - 1 > 0:
         for step in range(max_size - t - 1, max_size + 1):
-            bound = int(math.ceil(target / (1 << (max_size - step))))
+            bound = math.ceil(target / (1 << (max_size - step)))
             bounds.append((bound, min(1 << step, target)))
 
     return bounds

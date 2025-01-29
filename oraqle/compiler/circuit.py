@@ -415,6 +415,14 @@ class ArithmeticCircuit(Circuit):
         measure_time: bool = False,
         decrypt_outputs: bool = False,
         **kwargs) -> float:
+        """Generate a program using HElib and execute it, measuring the average run time.
+        
+        Raises:
+            Exception: If an error occured during the build or execution.
+
+        Returns:
+            Average run time in seconds as a float
+        """
         assert measure_time
         assert not decrypt_outputs
 
@@ -440,7 +448,7 @@ class ArithmeticCircuit(Circuit):
                 executable_path = os.path.join(build_dir, "build", "main")
                 program_args = [f"{keyword}={value}" for keyword, value in kwargs.items()]
                 print(f"Build completed. Running with parameters: {', '.join(program_args)}...")
-                result = subprocess.run([executable_path] + program_args, check=True, text=True, capture_output=True)
+                result = subprocess.run([executable_path, *program_args], check=True, text=True, capture_output=True)
 
                 # Check that all ciphertexts are valid
                 lines = result.stdout.splitlines()
@@ -460,7 +468,7 @@ class ArithmeticCircuit(Circuit):
                 print(result.stdout)
             except Exception:
                 pass
-            raise Exception("Cannot continue since an error occured.")
+            raise Exception("Cannot continue since an error occured.") from e
         finally:
             os.chdir(original_directory)
 
