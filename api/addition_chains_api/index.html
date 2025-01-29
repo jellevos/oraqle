@@ -1,0 +1,1519 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../abstract_nodes_api/">
+      
+      
+        <link rel="next" href="../../example_circuits/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.50">
+    
+    
+      
+        <title>Addition chains API - Oraqle</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.a40c8224.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#addition-chains-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Oraqle" class="md-header__button md-logo" aria-label="Oraqle" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Oraqle
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Addition chains API
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Oraqle" class="md-nav__button md-logo" aria-label="Oraqle" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Oraqle
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Welcome to oraqle
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial_running_exps/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tutorial: Running experiments
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    API reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            API reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../circuits_api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Circuits API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nodes_api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Nodes API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code_generation_api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Code generation API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pareto_fronts_api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pareto fronts API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abstract_nodes_api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Abstract nodes API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Addition chains API
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Addition chains API
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#oraqle.add_chains" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_chains
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="add_chains">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.addition_chains" class="md-nav__link">
+    <span class="md-ellipsis">
+      addition_chains
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.addition_chains_front" class="md-nav__link">
+    <span class="md-ellipsis">
+      addition_chains_front
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.addition_chains_heuristic" class="md-nav__link">
+    <span class="md-ellipsis">
+      addition_chains_heuristic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.addition_chains_mod" class="md-nav__link">
+    <span class="md-ellipsis">
+      addition_chains_mod
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.memoization" class="md-nav__link">
+    <span class="md-ellipsis">
+      memoization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.solving" class="md-nav__link">
+    <span class="md-ellipsis">
+      solving
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../example_circuits/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Example circuits
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#oraqle.add_chains" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_chains
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="add_chains">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.addition_chains" class="md-nav__link">
+    <span class="md-ellipsis">
+      addition_chains
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.addition_chains_front" class="md-nav__link">
+    <span class="md-ellipsis">
+      addition_chains_front
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.addition_chains_heuristic" class="md-nav__link">
+    <span class="md-ellipsis">
+      addition_chains_heuristic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.addition_chains_mod" class="md-nav__link">
+    <span class="md-ellipsis">
+      addition_chains_mod
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.memoization" class="md-nav__link">
+    <span class="md-ellipsis">
+      memoization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oraqle.add_chains.solving" class="md-nav__link">
+    <span class="md-ellipsis">
+      solving
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="addition-chains-api">Addition chains API<a class="headerlink" href="#addition-chains-api" title="Permanent link">&para;</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>In this version of Oraqle, the API is still prone to changes. Paths and names can change between any version.</p>
+</div>
+<p>The <code>add_chains</code> module contains tools for generating addition chains.</p>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="oraqle.add_chains" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <code>add_chains</code>
+
+
+<a href="#oraqle.add_chains" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+        <p>Tools for generating addition chains using different constraints and objectives.</p>
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="oraqle.add_chains.addition_chains" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <code>addition_chains</code>
+
+
+<a href="#oraqle.add_chains.addition_chains" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+        <p>Tools for generating short addition chains using a MaxSAT formulation.</p>
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains.thurber_bounds" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">thurber_bounds</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">max_size</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.addition_chains.thurber_bounds" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Returns the Thurber bounds for a given target and a maximum size of the addition chain.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains.add_chain" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">add_chain</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">,</span> <span class="n">strict_cost_max</span><span class="p">,</span> <span class="n">squaring_cost</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">thurber</span><span class="p">,</span> <span class="n">min_size</span><span class="p">,</span> <span class="n">precomputed_values</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.addition_chains.add_chain" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Generates a minimum-cost addition chain for a given target, abiding to the constraints.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>target</code></b>
+              (<code>int</code>)
+          –
+          <div class="doc-md-description">
+            <p>The target integer.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_depth</code></b>
+              (<code><span title="typing.Optional">Optional</span>[int]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The maximum depth of the addition chain</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>strict_cost_max</code></b>
+              (<code>float</code>)
+          –
+          <div class="doc-md-description">
+            <p>A strict upper bound on the cost of the addition chain. I.e., cost(chain) &lt; strict_cost_max.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>squaring_cost</code></b>
+              (<code>float</code>)
+          –
+          <div class="doc-md-description">
+            <p>The cost of doubling (squaring), compared to other additions (multiplications), which cost 1.0.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>solver</code></b>
+              (<code>str</code>)
+          –
+          <div class="doc-md-description">
+            <p>Name of the SAT solver, e.g. "glucose421" for glucose 4.2.1. See: <a href="https://pysathq.github.io/docs/html/api/solvers.html">https://pysathq.github.io/docs/html/api/solvers.html</a>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>encoding</code></b>
+              (<code>int</code>)
+          –
+          <div class="doc-md-description">
+            <p>The encoding to use for cardinality constraints. See: <a href="https://pysathq.github.io/docs/html/api/card.html#pysat.card.EncType">https://pysathq.github.io/docs/html/api/card.html#pysat.card.EncType</a>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>thurber</code></b>
+              (<code>bool</code>)
+          –
+          <div class="doc-md-description">
+            <p>Whether to use the Thurber bounds, which provide lower bounds for the elements in the chain. The bounds are ignored when <code>precomputed_values = True</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>min_size</code></b>
+              (<code>int</code>)
+          –
+          <div class="doc-md-description">
+            <p>The minimum size of the chain. It is always possible to use <code>math.ceil(math.log2(target))</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>precomputed_values</code></b>
+              (<code><span title="typing.Optional">Optional</span>[<span title="typing.Tuple">Tuple</span>[<span title="typing.Tuple">Tuple</span>[int, int], ...]]</code>)
+          –
+          <div class="doc-md-description">
+            <p>If there are any precomputed values that can be used for free, they can be specified as a tuple of pairs (value, chain_depth).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>TimeoutError</code>
+            –
+          <div class="doc-md-description">
+            <p>If the global MAXSAT_TIMEOUT is not None, and it is reached before a maxsat instance could be solved.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[<span title="typing.Tuple">Tuple</span>[int, int]]]</code>
+          –
+          <div class="doc-md-description">
+            <p>A minimum-cost addition chain, if it exists.</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="oraqle.add_chains.addition_chains_front" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <code>addition_chains_front</code>
+
+
+<a href="#oraqle.add_chains.addition_chains_front" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+        <p>Tools for generating addition chains that trade off depth and cost.</p>
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains_front.chain_depth" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">chain_depth</span><span class="p">(</span><span class="n">chain</span><span class="p">,</span> <span class="n">precomputed_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">modulus</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.addition_chains_front.chain_depth" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the depth of the addition chain.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains_front.gen_pareto_front" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">gen_pareto_front</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">modulus</span><span class="p">,</span> <span class="n">squaring_cost</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;glucose42&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">thurber</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">precomputed_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.addition_chains_front.gen_pareto_front" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Returns a Pareto front of addition chains, trading of cost and depth.</p>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="oraqle.add_chains.addition_chains_heuristic" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <code>addition_chains_heuristic</code>
+
+
+<a href="#oraqle.add_chains.addition_chains_heuristic" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+        <p>This module contains functions for finding addition chains, while sometimes resorting to heuristics to prevent long computations.</p>
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains_heuristic.add_chain_guaranteed" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">add_chain_guaranteed</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">modulus</span><span class="p">,</span> <span class="n">squaring_cost</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;glucose421&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">thurber</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">precomputed_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-cached"><code>cached</code></small>
+  </span>
+
+<a href="#oraqle.add_chains.addition_chains_heuristic.add_chain_guaranteed" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Always generates an addition chain for a given target, which is suboptimal if the inputs are too large.</p>
+<p>In some cases, the result is not necessarily optimal. These are the cases where we resort to a heuristic.
+This currently happens if:
+- The target exceeds 1000.
+- The modulus (if provided) exceeds 200.
+- MAXSAT_TIMEOUT is not None and a MaxSAT instance timed out</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is useful for preventing long computation, but the result is not guaranteed to be (close to) optimal.
+Unlike <code>add_chain</code>, this function will always return an addition chain.</p>
+</div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>target</code></b>
+              (<code>int</code>)
+          –
+          <div class="doc-md-description">
+            <p>The target integer.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>modulus</code></b>
+              (<code><span title="typing.Optional">Optional</span>[int]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Modulus to take into account. In an exponentiation chain, this is the modulus in the exponent, i.e. x^target mod p corresponds to <code>modulus = p - 1</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>squaring_cost</code></b>
+              (<code>float</code>)
+          –
+          <div class="doc-md-description">
+            <p>The cost of doubling (squaring), compared to other additions (multiplications), which cost 1.0.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>solver</code></b>
+              (<code>str</code>, default:
+                  <code>&#39;glucose421&#39;</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Name of the SAT solver, e.g. "glucose421" for glucose 4.2.1. See: <a href="https://pysathq.github.io/docs/html/api/solvers.html">https://pysathq.github.io/docs/html/api/solvers.html</a>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>encoding</code></b>
+              (<code>int</code>, default:
+                  <code>1</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The encoding to use for cardinality constraints. See: <a href="https://pysathq.github.io/docs/html/api/card.html#pysat.card.EncType">https://pysathq.github.io/docs/html/api/card.html#pysat.card.EncType</a>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>thurber</code></b>
+              (<code>bool</code>, default:
+                  <code>True</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Whether to use the Thurber bounds, which provide lower bounds for the elements in the chain. The bounds are ignored when <code>precomputed_values = True</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>precomputed_values</code></b>
+              (<code><span title="typing.Optional">Optional</span>[<span title="typing.Tuple">Tuple</span>[<span title="typing.Tuple">Tuple</span>[int, int], ...]]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>If there are any precomputed values that can be used for free, they can be specified as a tuple of pairs (value, chain_depth).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>TimeoutError</code>
+            –
+          <div class="doc-md-description">
+            <p>If the global MAXSAT_TIMEOUT is not None, and it is reached before a maxsat instance could be solved.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="typing.List">List</span>[<span title="typing.Tuple">Tuple</span>[int, int]]</code>
+          –
+          <div class="doc-md-description">
+            <p>An addition chain.</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="oraqle.add_chains.addition_chains_mod" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <code>addition_chains_mod</code>
+
+
+<a href="#oraqle.add_chains.addition_chains_mod" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+        <p>Tools for computing addition chains, taking into account the modular nature of the algebra.</p>
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains_mod.hw" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">hw</span><span class="p">(</span><span class="n">n</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.addition_chains_mod.hw" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Returns the Hamming weight of n.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains_mod.size_lower_bound" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">size_lower_bound</span><span class="p">(</span><span class="n">target</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.addition_chains_mod.size_lower_bound" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Returns a lower bound on the size of the addition chain for this target.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains_mod.cost_lower_bound_monotonic" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">cost_lower_bound_monotonic</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">squaring_cost</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.addition_chains_mod.cost_lower_bound_monotonic" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Returns a lower bound on the cost of the addition chain for this target. The bound is guaranteed to grow monotonically with the target.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains_mod.chain_cost" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">chain_cost</span><span class="p">(</span><span class="n">chain</span><span class="p">,</span> <span class="n">squaring_cost</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.addition_chains_mod.chain_cost" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Returns the cost of the addition chain, considering doubling (squaring) to be cheaper than other additions (multiplications).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.addition_chains_mod.add_chain_modp" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">add_chain_modp</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">modulus</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">,</span> <span class="n">strict_cost_max</span><span class="p">,</span> <span class="n">squaring_cost</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">thurber</span><span class="p">,</span> <span class="n">min_size</span><span class="p">,</span> <span class="n">precomputed_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.addition_chains_mod.add_chain_modp" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Computes an addition chain for target modulo p with the given constraints and optimization parameters.</p>
+<p>The precomputed_powers are an optional set of powers that have previously been computed along with their depth.
+This means that those powers can be reused for free.</p>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[<span title="typing.Tuple">Tuple</span>[int, int]]]</code>
+          –
+          <div class="doc-md-description">
+            <p>If it exists, a minimal addition chain meeting the given constraints and optimization parameters.</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="oraqle.add_chains.memoization" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <code>memoization</code>
+
+
+<a href="#oraqle.add_chains.memoization" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+        <p>This module contains tools for memoizing addition chains, as these are expensive to compute.</p>
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.memoization.cache_to_disk" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">cache_to_disk</span><span class="p">(</span><span class="n">ignore_args</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.memoization.cache_to_disk" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>This decorator caches the calls to this function in a file on disk, ignoring the arguments listed in <code>ignore_args</code>.</p>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          –
+          <div class="doc-md-description">
+            <p>A cached output</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="oraqle.add_chains.solving" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <code>solving</code>
+
+
+<a href="#oraqle.add_chains.solving" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+        <p>Tools for solving SAT formulations.</p>
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.solving.solve" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">solve</span><span class="p">(</span><span class="n">wcnf</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">strict_cost_max</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.solving.solve" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>This code is adapted from pysat's internal code to stop when we have reached a maximum cost.</p>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[int]]</code>
+          –
+          <div class="doc-md-description">
+            <p>A list containing the assignment (where 3 indicates that 3=True and -3 indicates that 3=False), or None if the wcnf is unsatisfiable.</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.solving.extract_indices" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">extract_indices</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">precomputed_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">modulus</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.solving.extract_indices" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Returns the indices for each step of the addition chain.</p>
+<p>If n precomputed values are provided, then these are considered to be the first n indices after x (i.e. x has index 0, followed by 1, ..., n representing the precomputed values).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="oraqle.add_chains.solving.solve_with_time_limit" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">solve_with_time_limit</span><span class="p">(</span><span class="n">wcnf</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">strict_cost_max</span><span class="p">,</span> <span class="n">timeout_secs</span><span class="p">)</span></code>
+
+<a href="#oraqle.add_chains.solving.solve_with_time_limit" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>This code is adapted from pysat's internal code to stop when we have reached a maximum cost.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>TimeoutError</code>
+            –
+          <div class="doc-md-description">
+            <p>When a timeout occurs (after <code>timeout_secs</code> seconds)</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[int]]</code>
+          –
+          <div class="doc-md-description">
+            <p>A list containing the assignment (where 3 indicates that 3=True and -3 indicates that 3=False), or None if the wcnf is unsatisfiable.</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.60a45f97.min.js"></script>
+      
+    
+  </body>
+</html>
