@@ -1,4 +1,7 @@
 """This module contains classes for representing circuits."""
+from importlib.resources import files
+import os
+import shutil
 import subprocess
 import tempfile
 from typing import Dict, List, Optional, Tuple
@@ -7,6 +10,7 @@ from fhegen.bgv import logqP
 from fhegen.util import estsecurity
 from galois import FieldArray
 
+import oraqle.helib_template
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
 from oraqle.compiler.nodes.abstract import ArithmeticNode, Node
@@ -405,6 +409,68 @@ class ArithmeticCircuit(Circuit):
             file.write(helib_postamble)
 
             return params
+        
+    def run_using_helib(self,
+        iterations: int,
+        measure_time: bool = False,
+        decrypt_outputs: bool = False,
+        **kwargs) -> float:
+        """Generate a program using HElib and execute it, measuring the average run time.
+        
+        Raises:
+            Exception: If an error occured during the build or execution.
+
+        Returns:
+            Average run time in seconds as a float
+        """
+        assert measure_time
+        assert not decrypt_outputs
+
+        original_directory = os.getcwd()
+
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Copy the template folder to the temporary directory
+                build_dir = os.path.join(temp_dir, "build")
+                template_path = files(oraqle.helib_template)
+                shutil.copytree(str(template_path), build_dir)
+
+                # Generate the main.cpp file
+                main_cpp_path = os.path.join(build_dir, "main.cpp")
+                self.generate_code(main_cpp_path, iterations, measure_time, decrypt_outputs)
+
+                # Call cmake and build
+                os.chdir(build_dir)
+                subprocess.run(["cmake", "-S", ".", "-B", "build"], check=True, capture_output=True)
+                subprocess.run(["cmake", "--build", "build"], check=True, capture_output=True)
+
+                # Run the executable
+                executable_path = os.path.join(build_dir, "build", "main")
+                program_args = [f"{keyword}={value}" for keyword, value in kwargs.items()]
+                print(f"Build completed. Running with parameters: {', '.join(program_args)}...")
+                result = subprocess.run([executable_path, *program_args], check=True, text=True, capture_output=True)
+
+                # Check that all ciphertexts are valid
+                lines = result.stdout.splitlines()
+                for line in lines[:-1]:
+                    assert line.endswith("1")
+
+                run_time = float(lines[-1]) / iterations
+                return run_time
+        except subprocess.CalledProcessError as e:
+            print("An error occurred during the build or execution process.")
+            print(e)
+            try:
+                print("stderr:")
+                print(result.stderr)
+                print()
+                print("stdout:")
+                print(result.stdout)
+            except Exception:
+                pass
+            raise Exception("Cannot continue since an error occured.") from e
+        finally:
+            os.chdir(original_directory)
 
 
 if __name__ == "__main__":

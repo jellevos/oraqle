@@ -71,13 +71,13 @@ class InUpperHalf(UnivariateNode):
                 (2 * exp) % (p - 1),
                 power_node.multiplicative_depth() - input_node.multiplicative_depth(),
             )
-            for exp, power_node in precomputed_powers.items()
+            for exp, power_node in precomputed_powers.items() if ((2 * exp) % (p - 1)) != 0
         )
         
         addition_chain = add_chain_guaranteed(p - 1, p - 1, squaring_cost=1.0, precomputed_values=precomputed_values)
 
         nodes = [input_node]
-        nodes.extend(power_node for _, power_node in precomputed_powers.items())
+        nodes.extend(power_node for exp, power_node in precomputed_powers.items() if ((2 * exp) % (p - 1)) != 0)
 
         for i, j in addition_chain:
             nodes.append(Multiplication(nodes[i], nodes[j], self._gf))
@@ -123,7 +123,7 @@ class InUpperHalf(UnivariateNode):
                 # Compute the final coefficient using an exponentiation
                 precomputed_values = tuple(
                     ((2 * exp) % (p - 1), power_node.multiplicative_depth() - node_depth)
-                    for exp, power_node in precomputed_powers[depth].items()
+                    for exp, power_node in precomputed_powers[depth].items() if ((2 * exp) % (p - 1)) != 0
                 )
                 # TODO: This is copied from Power, but in the future we can probably remove this if we have augmented circuits
                 if p <= 200:
@@ -148,7 +148,7 @@ class InUpperHalf(UnivariateNode):
                     )
 
                     nodes = [node]
-                    nodes.extend(power_node for _, power_node in precomputed_powers[depth].items())
+                    nodes.extend(power_node for exp, power_node in precomputed_powers[depth].items() if ((2 * exp) % (p - 1)) != 0)
 
                     for i, j in c:
                         nodes.append(Multiplication(nodes[i], nodes[j], self._gf))
@@ -224,13 +224,13 @@ class IliashenkoZuccaInUpperHalf(UnivariateNode):
                 (2 * exp) % (p - 1),
                 power_node.multiplicative_depth() - input_node.multiplicative_depth(),
             )
-            for exp, power_node in precomputed_powers.items()
+            for exp, power_node in precomputed_powers.items() if ((2 * exp) % (p - 1)) != 0
         )
         
         addition_chain = add_chain_guaranteed(p - 1, p - 1, squaring_cost=1.0, precomputed_values=precomputed_values)
 
         nodes = [input_node]
-        nodes.extend(power_node for _, power_node in precomputed_powers.items())
+        nodes.extend(power_node for exp, power_node in precomputed_powers.items() if ((2 * exp) % (p - 1)) != 0)
 
         for i, j in addition_chain:
             nodes.append(Multiplication(nodes[i], nodes[j], self._gf))

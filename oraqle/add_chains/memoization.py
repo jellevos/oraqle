@@ -1,23 +1,29 @@
 """This module contains tools for memoizing addition chains, as these are expensive to compute."""
 from hashlib import sha3_256
+from importlib.resources import files
 import inspect
 import shelve
 from typing import Set
 
 from sympy import sieve
 
+import oraqle
 
-ADDCHAIN_CACHE_PATH = "addchain_cache"
+
+ADDCHAIN_CACHE_FILENAME = "addchain_cache"
 
 
 # Adapted from: https://stackoverflow.com/questions/16463582/memoize-to-disk-python-persistent-memoization
-def cache_to_disk(file_name, ignore_args: Set[str]):
+def cache_to_disk(ignore_args: Set[str]):
     """This decorator caches the calls to this function in a file on disk, ignoring the arguments listed in `ignore_args`.
     
     Returns:
         A cached output
     """
-    d = shelve.open(file_name)  # noqa: SIM115
+    # Always opens the database in the root of where the package is located
+    oraqle_path = files(oraqle)
+    database_path = oraqle_path.joinpath(ADDCHAIN_CACHE_FILENAME)
+    d = shelve.open(str(database_path))  # noqa: SIM115
 
     def decorator(func):
         signature = inspect.signature(func)

@@ -13,7 +13,6 @@ from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
 def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> Node:
     """Returns the cardio circuit from https://arxiv.org/abs/2101.07078."""
     man = Input("man", gf)
-    woman = Input("woman", gf)
     smoking = Input("smoking", gf)
     age = Input("age", gf)
     diabetic = Input("diabetic", gf)
@@ -26,7 +25,7 @@ def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> Node:
 
     return sum_(
         man & (age > 50),
-        woman & (age > 60),
+        Neg(man, gf) & (age > 60),
         smoking,
         diabetic,
         hbp,
@@ -41,7 +40,6 @@ def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> Node:
 def construct_cardio_elevated_risk_circuit(gf: Type[FieldArray]) -> Node:
     """Returns a variant of the cardio circuit that returns a Boolean indicating whether any risk factor returned true."""
     man = Input("man", gf)
-    woman = Input("woman", gf)
     smoking = Input("smoking", gf)
     age = Input("age", gf)
     diabetic = Input("diabetic", gf)
@@ -54,7 +52,7 @@ def construct_cardio_elevated_risk_circuit(gf: Type[FieldArray]) -> Node:
 
     return any_(
         man & (age > 50),
-        woman & (age > 60),
+        Neg(man, gf) & (age > 60),
         smoking,
         diabetic,
         hbp,

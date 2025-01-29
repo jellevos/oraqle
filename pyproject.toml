@@ -1,7 +1,7 @@
 [project]
 name = "oraqle"
 description = "Secure computation compiler for homomorphic encryption and arithmetic circuits in general"
-version = "0.1.5"
+version = "0.1.6"
 requires-python = ">= 3.8"
 authors = [
   {name = "Jelle Vos", email = "J.V.Vos@tudelft.nl"},
