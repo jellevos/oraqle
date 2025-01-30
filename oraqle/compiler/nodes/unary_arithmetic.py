@@ -89,6 +89,7 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
 
             # Add the computation cost
             if computable:
+                assert c
                 wcnf.append([-c], weight=compute_cost)
     
     def _replace_randomness_inner(self, party_count: int) -> ExtendedArithmeticNode:
@@ -101,12 +102,9 @@ class ConstantUnivariateArithmetic(UnivariateNode[ArithmeticNode], ArithmeticNod
 
                 for other_party_id in range(party_count):
                     s = id_pool.id(("s", id(self), other_party_id, party_id))
-                    if (s-1) < len(result) and result[s - 1] > 0:
-                        print("I,", party_id, "received", self, "from", other_party_id)
 
                 c = id_pool.id(("c", id(self), party_id))
                 if result[c - 1] > 0:
-                    print('assigning', self, 'to', party_id)
                     graph_builder.add_node_to_cluster(node_id, party_id)
 
             self._node._assign_to_cluster(graph_builder, party_count, result, id_pool)

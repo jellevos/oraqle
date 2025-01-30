@@ -153,7 +153,6 @@ class Circuit:
         extended_arithmetic_circuit = ExtendedArithmeticCircuit(
             [output.arithmetize_extended().to_arithmetic() for output in self._outputs]
         )
-        # FIXME: Also call to_arithmetic
         extended_arithmetic_circuit._clear_cache()
 
         return extended_arithmetic_circuit

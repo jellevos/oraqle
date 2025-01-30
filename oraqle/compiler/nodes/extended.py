@@ -120,7 +120,7 @@ class KnownRandom(ExtendedArithmeticLeafNode):
 
     @property
     def _node_label(self) -> str:
-        return f"Rand {self._known_by}"
+        return f"Uniform\\nrandom"
     
     def __init__(self, gf: type[FieldArray], known_by: Optional[Set[PartyId]]):
         super().__init__(gf, known_by)

@@ -347,7 +347,7 @@ class NegReducedBooleanInput(Input, NegReducedBoolean):
 
     @property
     def _node_label(self) -> str:
-        return f"~{self._name}"
+        return f"¬{self._name}"
     
     def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:
         output = super().evaluate(actual_inputs)
@@ -370,7 +370,7 @@ class NegUnreducedBooleanInput(Input, NegUnreducedBoolean):
 
     @property
     def _node_label(self) -> str:
-        return f"~{self._name}"
+        return f"¬{self._name}"
     
     def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:
         output = super().evaluate(actual_inputs)

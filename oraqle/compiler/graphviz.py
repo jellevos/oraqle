@@ -73,11 +73,11 @@ class DotFile:
             #for cluster_id, properties in enumerate(self._clusters):
             for cluster_id, ids in enumerate(self._clusters):
                 #ids, attributes = properties
-                text = f"subgraph cluster_{cluster_id} {{\n"
+                text = f"subgraph cluster_{cluster_id} {{\nstyle=dashed;\n"
                 for id in ids:
                     text += f"n{id};\n"
-                text += f'label = "Cluster {cluster_id}"';
-                text += "}"
+                text += f'label = "Party {cluster_id + 1}";\n';
+                text += "}\n"
                 file.write(text)
 
             file.write("}\n")

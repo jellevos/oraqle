@@ -49,8 +49,6 @@ class LeafNode(FixedNode):
 class ExtendedArithmeticLeafNode(LeafNode, ExtendedArithmeticNode):
 
     def _add_constraints_minimize_cost_formulation_inner(self, wcnf: WCNF, id_pool: IDPool, costs: Sequence[ExtendedArithmeticCosts], party_count: int, at_most_1_enc: Optional[int]):
-        print('leaf', self, self._known_by)
-
         # We can only send if we hold the value
         for party_id in range(party_count):
             h = id_pool.id(("h", id(self), party_id))
@@ -108,8 +106,6 @@ class ExtendedArithmeticLeafNode(LeafNode, ExtendedArithmeticNode):
 
                 for other_party_id in range(party_count):
                     s = id_pool.id(("s", id(self), other_party_id, party_id))
-                    if (s-1) < len(result) and result[s - 1] > 0:
-                        print("I,", party_id, "received", self, "from", other_party_id)
 
                 if PartyId(party_id) in self._known_by:
                     graph_builder.add_node_to_cluster(node_id, party_id)

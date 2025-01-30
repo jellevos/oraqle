@@ -524,8 +524,6 @@ class Node(ABC):  # noqa: PLR0904
         Returns:
             An ExtendedArithmeticNode that computes this Node.
         """
-        # TODO: propagate known by?
-        # TODO: Add leak to? E.g. by adding reveal after it.
 
     def _arithmetize_inner(self, strategy: str) -> "Node":
         return self._expansion().arithmetize(strategy)

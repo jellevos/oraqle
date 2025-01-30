@@ -60,7 +60,6 @@ class And(CommutativeUniqueReducibleNode[Boolean], Boolean):
         return self.transform_to_reduced_boolean().arithmetize_depth_aware(cost_of_squaring)
     
     def _arithmetize_extended_inner(self) -> ExtendedArithmeticNode:
-        print(list(operand.node for operand in self._operands))
         # Choose the best of the reduced and unreduced implementations
         reduced = self.transform_to_reduced_boolean().arithmetize_extended()
         inv_unreduced = self.transform_to_neg_unreduced_boolean().arithmetize_extended()

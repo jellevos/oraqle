@@ -7,13 +7,13 @@ from pysat.examples.rc2 import RC2
 from pysat.formula import WCNF
 
 
-def solve(wcnf: WCNF, solver: str, strict_cost_max: Optional[float]) -> Optional[List[int]]:
+def solve(wcnf: WCNF, solver: str, strict_cost_max: Optional[float], **kwargs) -> Optional[List[int]]:
     """This code is adapted from pysat's internal code to stop when we have reached a maximum cost.
 
     Returns:
         A list containing the assignment (where 3 indicates that 3=True and -3 indicates that 3=False), or None if the wcnf is unsatisfiable.
     """
-    rc2 = RC2(wcnf, solver)
+    rc2 = RC2(wcnf, solver, **kwargs)
 
     if strict_cost_max is None:
         strict_cost_max = float("inf")
@@ -45,6 +45,8 @@ def solve(wcnf: WCNF, solver: str, strict_cost_max: Optional[float]) -> Optional
     rc2.model = filter(lambda inp: abs(inp) in rc2.vmap.i2e, rc2.model)  # type: ignore
     rc2.model = map(lambda inp: int(math.copysign(rc2.vmap.i2e[abs(inp)], inp)), rc2.model)
     rc2.model = sorted(rc2.model, key=abs)
+
+    print(rc2.cost)
 
     return rc2.model
 
