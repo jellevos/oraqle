@@ -225,7 +225,7 @@ class ArithmeticProgram:
 
 def test_instructions_small_comparison():  # noqa: D103
     from oraqle.compiler.circuit import Circuit
-    from oraqle.compiler.nodes.leafs import Input
+    from oraqle.compiler.nodes.fp.leafs import Input
 
     gf = GF(7)
 

@@ -2,7 +2,7 @@ from galois import GF
 
 from oraqle.compiler.boolean.bool_and import all_
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import Input
 
 if __name__ == "__main__":
     gf = GF(17)

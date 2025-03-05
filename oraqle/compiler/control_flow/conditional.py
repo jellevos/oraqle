@@ -4,9 +4,9 @@ from typing import List, Type
 from galois import GF, FieldArray
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node
-from oraqle.compiler.nodes.fixed import FixedNode
-from oraqle.compiler.nodes.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.fp.fixed import FixedNode
+from oraqle.compiler.nodes.fp.leafs import Constant, Input
 
 
 class IfElse(FixedNode):

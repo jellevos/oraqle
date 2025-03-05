@@ -3,7 +3,7 @@
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.leafs import Constant, Input
 
 gf = GF(11)
 

@@ -9,7 +9,7 @@ from sympy import sieve
 
 from oraqle.compiler.boolean.bool_and import all_
 from oraqle.compiler.circuit import ArithmeticCircuit, Circuit
-from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import Input
 
 
 def generate_circuits(bits: int) -> List[Tuple[int, ArithmeticCircuit, int, float]]:

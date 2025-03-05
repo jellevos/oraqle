@@ -7,9 +7,9 @@ from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.in_upper_half import IliashenkoZuccaInUpperHalf, InUpperHalf
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node, iterate_increasing_depth
-from oraqle.compiler.nodes.leafs import Constant, Input
-from oraqle.compiler.nodes.non_commutative import NonCommutativeBinaryNode
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node, iterate_increasing_depth
+from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.non_commutative import NonCommutativeBinaryNode
 
 
 class AbstractComparison(NonCommutativeBinaryNode):

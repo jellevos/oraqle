@@ -4,10 +4,10 @@ from galois import GF, FieldArray
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.boolean.bool_neg import Neg
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node
-from oraqle.compiler.nodes.binary_arithmetic import CommutativeBinaryNode
-from oraqle.compiler.nodes.leafs import Input
-from oraqle.compiler.nodes.univariate import UnivariateNode
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.fp.binary_arithmetic import CommutativeBinaryNode
+from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.univariate import UnivariateNode
 
 
 class IsNonZero(UnivariateNode):

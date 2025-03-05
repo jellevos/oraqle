@@ -7,8 +7,8 @@ from sympy import sieve
 from oraqle.compiler.boolean.bool_and import _minimum_cost
 from oraqle.compiler.boolean.bool_or import Or
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.abstract import CostParetoFront, UnoverloadedWrapper
-from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, UnoverloadedWrapper
+from oraqle.compiler.nodes.fp.leafs import Input
 from oraqle.experiments.oraqle_spotlight.experiments.veto_voting_minimal_cost import (
     exponentiation_results,
 )

@@ -7,7 +7,7 @@ from sympy import sieve
 
 from oraqle.compiler.circuit import ArithmeticCircuit, Circuit
 from oraqle.compiler.comparison.comparison import SemiStrictComparison, T2SemiLessThan
-from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import Input
 
 
 def run_benchmark(arithmetic_circuit: ArithmeticCircuit) -> float:

@@ -4,7 +4,7 @@ from galois import GF
 
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.equality import Equals
-from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import Input
 
 gf = GF(31)
 

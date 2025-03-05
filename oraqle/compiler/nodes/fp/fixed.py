@@ -4,7 +4,7 @@ from typing import Callable, Dict, List
 
 from galois import FieldArray
 
-from oraqle.compiler.nodes.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node
 
 
 class FixedNode(Node):
@@ -56,7 +56,7 @@ class FixedNode(Node):
             if len(operands) > 0 and all(
                 hasattr(operand, "_value") for operand in operands
             ):  # This is a hacky way of checking whether the operands are all constant
-                from oraqle.compiler.nodes.leafs import Constant
+                from oraqle.compiler.nodes.fp.leafs import Constant
 
                 self._arithmetize_cache = Constant(self.operation([operand._value for operand in self.operands()]))  # type: ignore
             else:
@@ -80,7 +80,7 @@ class FixedNode(Node):
             if len(operands) > 0 and all(
                 hasattr(operand, "_value") for operand in operands
             ):  # This is a hacky way of checking whether the operands are all constant
-                from oraqle.compiler.nodes.leafs import Constant
+                from oraqle.compiler.nodes.fp.leafs import Constant
 
                 self._arithmetize_depth_cache = CostParetoFront.from_leaf(Constant(self.operation([operand._value for operand in self.operands()])), cost_of_squaring)  # type: ignore
             else:

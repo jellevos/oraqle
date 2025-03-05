@@ -6,8 +6,8 @@ from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.boolean.bool_or import any_
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes import Input
-from oraqle.compiler.nodes.abstract import Node
-from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
+from oraqle.compiler.nodes.fp.abstract import Node
+from oraqle.compiler.nodes.fp.arbitrary_arithmetic import sum_
 
 
 def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> Node:

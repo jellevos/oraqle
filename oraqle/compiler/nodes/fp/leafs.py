@@ -5,8 +5,8 @@ from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction, InputInstruction
-from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, Node, select_stack_index
-from oraqle.compiler.nodes.fixed import FixedNode
+from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, Node, select_stack_index
+from oraqle.compiler.nodes.fp.fixed import FixedNode
 
 
 class ArithmeticLeafNode(FixedNode, ArithmeticNode):

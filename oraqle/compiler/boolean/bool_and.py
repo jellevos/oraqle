@@ -13,21 +13,21 @@ from oraqle.add_chains.addition_chains_mod import chain_cost
 from oraqle.add_chains.solving import extract_indices
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.comparison.equality import IsNonZero
-from oraqle.compiler.nodes.abstract import (
+from oraqle.compiler.nodes.fp.abstract import (
     ArithmeticNode,
     CostParetoFront,
     Node,
     UnoverloadedWrapper,
 )
-from oraqle.compiler.nodes.arbitrary_arithmetic import (
+from oraqle.compiler.nodes.fp.arbitrary_arithmetic import (
     _PrioritizedItem,
     Product,
     Sum,
     _generate_multiplication_tree,
 )
-from oraqle.compiler.nodes.binary_arithmetic import Multiplication
-from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
-from oraqle.compiler.nodes.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
+from oraqle.compiler.nodes.fp.flexible import CommutativeUniqueReducibleNode
+from oraqle.compiler.nodes.fp.leafs import Constant, Input
 
 
 class And(CommutativeUniqueReducibleNode):

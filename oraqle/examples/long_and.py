@@ -4,8 +4,8 @@ from galois import GF
 
 from oraqle.compiler.boolean.bool_and import And
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
-from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.fp.abstract import UnoverloadedWrapper
+from oraqle.compiler.nodes.fp.leafs import Input
 
 gf = GF(5)
 

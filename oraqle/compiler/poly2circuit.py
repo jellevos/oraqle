@@ -13,8 +13,8 @@ from sympy.core.numbers import NegativeOne
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.func2poly import interpolate_polynomial
 from oraqle.compiler.nodes import Constant, Input, Node
-from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
-from oraqle.compiler.nodes.arbitrary_arithmetic import Product
+from oraqle.compiler.nodes.fp.abstract import UnoverloadedWrapper
+from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Product
 
 
 def construct_subcircuit(expression, gf, modulus: int, inputs: Dict[str, Input]) -> Node:  # noqa: PLR0912

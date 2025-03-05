@@ -9,15 +9,15 @@ from oraqle.compiler.instructions import (
     ArithmeticInstruction,
     MultiplicationInstruction,
 )
-from oraqle.compiler.nodes.abstract import (
+from oraqle.compiler.nodes.fp.abstract import (
     ArithmeticNode,
     CostParetoFront,
     Node,
     iterate_increasing_depth,
     select_stack_index,
 )
-from oraqle.compiler.nodes.fixed import BinaryNode
-from oraqle.compiler.nodes.leafs import Constant
+from oraqle.compiler.nodes.fp.fixed import BinaryNode
+from oraqle.compiler.nodes.fp.leafs import Constant
 
 
 class CommutativeBinaryNode(BinaryNode):

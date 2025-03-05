@@ -5,8 +5,8 @@ from galois import GF
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.circuit import ArithmeticCircuit, Circuit
-from oraqle.compiler.nodes.binary_arithmetic import Multiplication
-from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
+from oraqle.compiler.nodes.fp.leafs import Input
 
 gf = GF(5)
 

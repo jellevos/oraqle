@@ -13,7 +13,7 @@ from galois import FieldArray
 import oraqle.helib_template
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
-from oraqle.compiler.nodes.abstract import ArithmeticNode, Node
+from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, Node
 
 
 class Circuit:
@@ -477,7 +477,7 @@ if __name__ == "__main__":
     from galois import GF
 
     from oraqle.compiler.circuit import Circuit
-    from oraqle.compiler.nodes.leafs import Input
+    from oraqle.compiler.nodes.fp.leafs import Input
 
     gf = GF(7)
 

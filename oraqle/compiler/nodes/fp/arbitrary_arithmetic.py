@@ -10,17 +10,17 @@ from typing import Dict, Iterable, Optional, Tuple, Type, Union
 
 from galois import FieldArray
 
-from oraqle.compiler.nodes.abstract import (
+from oraqle.compiler.nodes.fp.abstract import (
     ArithmeticNode,
     CostParetoFront,
     Node,
     UnoverloadedWrapper,
     _to_node,
 )
-from oraqle.compiler.nodes.binary_arithmetic import Addition, Multiplication
-from oraqle.compiler.nodes.flexible import CommutativeMultiplicityReducibleNode
-from oraqle.compiler.nodes.leafs import Constant
-from oraqle.compiler.nodes.unary_arithmetic import ConstantAddition, ConstantMultiplication
+from oraqle.compiler.nodes.fp.binary_arithmetic import Addition, Multiplication
+from oraqle.compiler.nodes.fp.flexible import CommutativeMultiplicityReducibleNode
+from oraqle.compiler.nodes.fp.leafs import Constant
+from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantAddition, ConstantMultiplication
 
 
 # TODO: This is mostly copied from generate_multiplication_tree (depth is different)

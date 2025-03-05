@@ -4,7 +4,7 @@ from galois import GF
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.comparison import SemiStrictComparison
-from oraqle.compiler.nodes.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.leafs import Constant, Input
 
 if __name__ == "__main__":
     gf = GF(101)

@@ -9,8 +9,8 @@ from oraqle.compiler.instructions import (
     ConstantAdditionInstruction,
     ConstantMultiplicationInstruction,
 )
-from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, Node, select_stack_index
-from oraqle.compiler.nodes.univariate import UnivariateNode
+from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, Node, select_stack_index
+from oraqle.compiler.nodes.fp.univariate import UnivariateNode
 
 # TODO: There is (going to be) a lot of code duplication between these two classes
 

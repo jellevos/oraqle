@@ -252,7 +252,7 @@ def _to_node(obj: Union["Node", int, bool], gf: Type[FieldArray]) -> "Node":
         return obj
 
     if isinstance(obj, int):
-        from oraqle.compiler.nodes.leafs import Constant
+        from oraqle.compiler.nodes.fp.leafs import Constant
 
         return Constant(gf(obj))
 
@@ -442,8 +442,8 @@ class Node(ABC):  # noqa: PLR0904
         Returns:
             A possibly flattened `Sum` node or a `Constant` representing self & other.
         """
-        from oraqle.compiler.nodes.arbitrary_arithmetic import Sum
-        from oraqle.compiler.nodes.leafs import Constant
+        from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Sum
+        from oraqle.compiler.nodes.fp.leafs import Constant
 
         if flatten and isinstance(self, Sum):
             return self.add_flatten(other)
@@ -485,8 +485,8 @@ class Node(ABC):  # noqa: PLR0904
         Returns:
             A possibly flattened `Product` node or a `Constant` representing self & other.
         """
-        from oraqle.compiler.nodes.arbitrary_arithmetic import Product
-        from oraqle.compiler.nodes.leafs import Constant
+        from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Product
+        from oraqle.compiler.nodes.fp.leafs import Constant
 
         if flatten and isinstance(self, Product):
             return self.mul_flatten(other)
@@ -523,7 +523,7 @@ class Node(ABC):  # noqa: PLR0904
             A possibly flattened `Or` node or a `Constant` representing self & other.
         """
         from oraqle.compiler.boolean.bool_or import Or
-        from oraqle.compiler.nodes.leafs import Constant
+        from oraqle.compiler.nodes.fp.leafs import Constant
 
         if flatten and isinstance(other, Or):
             return other.or_flatten(self)
@@ -554,7 +554,7 @@ class Node(ABC):  # noqa: PLR0904
             A possibly flattened `And` node or a `Constant` representing self & other.
         """
         from oraqle.compiler.boolean.bool_and import And
-        from oraqle.compiler.nodes.leafs import Constant
+        from oraqle.compiler.nodes.fp.leafs import Constant
 
         if flatten and isinstance(other, And):
             return other.and_flatten(self)
@@ -613,7 +613,7 @@ class Node(ABC):  # noqa: PLR0904
         return Comparison(self, other_node, less_than=False, gf=self._gf)
 
     def __neg__(self) -> "Node":
-        from oraqle.compiler.nodes.leafs import Constant
+        from oraqle.compiler.nodes.fp.leafs import Constant
 
         return Constant(-self._gf(1)) * self
 

@@ -6,8 +6,8 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.abstract import SizeParetoFront
-from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.fp.abstract import SizeParetoFront
+from oraqle.compiler.nodes.fp.leafs import Input
 from oraqle.compiler.polynomials.univariate import (
     UnivariatePoly,
     _eval_poly,

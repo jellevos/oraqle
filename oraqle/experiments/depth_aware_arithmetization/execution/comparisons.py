@@ -6,7 +6,7 @@ from oraqle.compiler.comparison.comparison import (
     SemiStrictComparison,
     T2SemiLessThan,
 )
-from oraqle.compiler.nodes.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import Input
 
 if __name__ == "__main__":
     iterations = 10
