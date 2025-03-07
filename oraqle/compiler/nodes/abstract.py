@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, Iterator, List, Optional, Self, Set, Tuple, Union
 
+from galois import FieldArray
+
 from oraqle.compiler.graphviz import DotFile
 
 
@@ -72,6 +74,11 @@ class Node[Operand: "Node"](ABC):
         self._hash = None
 
         already_cleared.add(id(self))
+
+    # TODO: Evaluate currently assumes FieldArray inputs, but this is not necessary in the future
+    @abstractmethod
+    def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:
+        """Evaluates the node in the arithmetic circuit. The output should always be reduced modulo the modulus."""
 
     def to_graph(self, graph_builder: DotFile) -> int:
         """Adds this node to the graph as well as its edges.

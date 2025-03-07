@@ -272,11 +272,6 @@ class FpNode(Node):  # noqa: PLR0904
         self._arithmetize_depth_cache: Optional[CostParetoFront] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
 
-
-    @abstractmethod
-    def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:
-        """Evaluates the node in the arithmetic circuit. The output should always be reduced modulo the modulus."""
-
     def clear_cache(self, already_cleared: Set[int]):
         # FIXME: The cache should not be cleared twice for the same node, but there is no way to check this.
         self._evaluate_cache: Optional[FieldArray] = None

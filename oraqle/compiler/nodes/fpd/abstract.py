@@ -1,6 +1,7 @@
+from oraqle.compiler.nodes.abstract import Node
 
 
-class FpdNode:
+class FpdNode(Node):
     """
     An element of F_{p^d}.
     """

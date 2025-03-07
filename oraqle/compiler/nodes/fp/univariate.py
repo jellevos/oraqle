@@ -5,16 +5,17 @@ from typing import List, Type
 
 from galois import FieldArray
 
+from oraqle.compiler.nodes.abstract import Node
 from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.fixed import FixedFpNode
 from oraqle.compiler.nodes.fp.leafs import Constant
 from oraqle.compiler.nodes.univariate import UnivariateNode
 
 
-class UnivariateFpNode[Operand: FpNode](UnivariateNode[Operand], FixedFpNode[Operand]):
+class UnivariateFpNode[Operand: Node](UnivariateNode[Operand], FixedFpNode[Operand]):
     """An abstract node with a single FpNode input."""
 
-    def __init__(self, node: FpNode, gf: Type[FieldArray]):
+    def __init__(self, node: Operand, gf: Type[FieldArray]):
         """Initialize a univariate node."""
         self._node = node
         assert not isinstance(node, Constant)

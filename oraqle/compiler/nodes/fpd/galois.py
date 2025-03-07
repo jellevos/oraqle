@@ -5,12 +5,10 @@ from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpdNode
 
 
-# TODO: This should be a univariate FpNode
-class FieldNorm(UnivariateFpNode):
+class FieldNorm(UnivariateFpNode[FpdNode]):
     
     def __init__(self, node: FpdNode, gf: Type[FieldArray]) -> None:
         # TODO: Implement the arithmetization
-        # TODO: Allow UnivariateNode to take generic Nodes (e.g. FpdNode) as input?
         super().__init__(node, gf)
 
 

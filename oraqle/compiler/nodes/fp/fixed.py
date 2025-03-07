@@ -10,21 +10,8 @@ from oraqle.compiler.nodes.fixed import FixedNode
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode, ParetoFront
 
 
-class FixedFpNode[Operand: FpNode](FixedNode[Operand], FpNode):
-    """A node with a fixed number of operands that are all FpNodes as well."""
-    
-    def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:  # noqa: D102
-        # TODO: Remove modulus in this method and store it in each node instead. Alternatively, add `modulus` to methods such as `flatten` as well.
-        if self._evaluate_cache is None:
-            self._evaluate_cache = self.operation(
-                [operand.evaluate(actual_inputs) for operand in self.operands()]
-            )
-
-        return self._evaluate_cache
-
-    @abstractmethod
-    def operation(self, operands: List[FieldArray]) -> FieldArray:
-        """Evaluates this node on the specified operands."""
+class FixedFpNode[Operand: Node](FixedNode[Operand], FpNode):
+    """A node with a fixed number of operands."""
     
     def arithmetize(self, strategy: str) -> "ArithmeticNode":  # noqa: D102
         if self._arithmetize_cache is None:
