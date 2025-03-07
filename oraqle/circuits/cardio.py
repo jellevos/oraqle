@@ -6,11 +6,11 @@ from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.boolean.bool_or import any_
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes import Input
-from oraqle.compiler.nodes.fp.abstract import Node
+from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.arbitrary_arithmetic import sum_
 
 
-def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> Node:
+def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> FpNode:
     """Returns the cardio circuit from https://arxiv.org/abs/2101.07078."""
     man = Input("man", gf)
     smoking = Input("smoking", gf)
@@ -37,7 +37,7 @@ def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> Node:
     )
 
 
-def construct_cardio_elevated_risk_circuit(gf: Type[FieldArray]) -> Node:
+def construct_cardio_elevated_risk_circuit(gf: Type[FieldArray]) -> FpNode:
     """Returns a variant of the cardio circuit that returns a Boolean indicating whether any risk factor returned true."""
     man = Input("man", gf)
     smoking = Input("smoking", gf)

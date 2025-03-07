@@ -6,7 +6,7 @@ from typing import List, Type
 from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
-from oraqle.compiler.nodes.fp.abstract import Node
+from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.fixed import FixedNode
 from oraqle.compiler.nodes.fp.leafs import Constant
 
@@ -19,18 +19,18 @@ class UnivariateNode(FixedNode):
     def _node_shape(self) -> str:
         """Graphviz node shape."""
 
-    def __init__(self, node: Node, gf: Type[FieldArray]):
+    def __init__(self, node: FpNode, gf: Type[FieldArray]):
         """Initialize a univariate node."""
         self._node = node
         assert not isinstance(node, Constant)
         super().__init__(gf)
 
     
-    def operands(self) -> List["Node"]:  # noqa: D102
+    def operands(self) -> List["FpNode"]:  # noqa: D102
         return [self._node]
 
     
-    def set_operands(self, operands: List["Node"]):  # noqa: D102
+    def set_operands(self, operands: List["FpNode"]):  # noqa: D102
         self._node = operands[0]
 
     @abstractmethod
@@ -62,7 +62,7 @@ class UnivariateNode(FixedNode):
 
         return self._hash
 
-    def is_equivalent(self, other: Node) -> bool:
+    def is_equivalent(self, other: FpNode) -> bool:
         """Check whether `self` is semantically equivalent to `other`.
 
         This function may have false negatives but it should never return false positives.

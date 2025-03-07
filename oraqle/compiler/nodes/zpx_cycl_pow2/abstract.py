@@ -44,3 +44,7 @@ class ZpxNode:
     
     def __init__(self) -> None:
         pass
+
+
+class GaloisArithmeticNode(ZpxNode):
+    pass

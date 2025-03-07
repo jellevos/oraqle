@@ -4,28 +4,28 @@ from typing import Callable, Dict, List
 
 from galois import FieldArray
 
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
 
 
-class FixedNode(Node):
+class FixedNode(FpNode):
     """A node with a fixed number of operands."""
 
     @abstractmethod
-    def operands(self) -> List["Node"]:
+    def operands(self) -> List["FpNode"]:
         """Returns the operands (children) of this node. The list can be empty."""
 
     @abstractmethod
-    def set_operands(self, operands: List["Node"]):
+    def set_operands(self, operands: List["FpNode"]):
         """Overwrites the operands of this node."""
         # TODO: Consider replacing this method with a graph traversal method that applies a function on all operands and replaces them.
 
     
-    def apply_function_to_operands(self, function: Callable[[Node], None]):  # noqa: D102
+    def apply_function_to_operands(self, function: Callable[[FpNode], None]):  # noqa: D102
         for operand in self.operands():
             function(operand)
 
     
-    def replace_operands_using_function(self, function: Callable[[Node], Node]):  # noqa: D102
+    def replace_operands_using_function(self, function: Callable[[FpNode], FpNode]):  # noqa: D102
         self.set_operands([function(operand) for operand in self.operands()])
         # TODO: These caches should only be cleared if this is an ArithmeticNode
         self._multiplications = None
@@ -46,7 +46,7 @@ class FixedNode(Node):
     def operation(self, operands: List[FieldArray]) -> FieldArray:
         """Evaluates this node on the specified operands."""
     
-    def arithmetize(self, strategy: str) -> "Node":  # noqa: D102
+    def arithmetize(self, strategy: str) -> "FpNode":  # noqa: D102
         if self._arithmetize_cache is None:
             if self._arithmetize_depth_cache is not None:
                 return self._arithmetize_depth_cache.get_lowest_value()  # type: ignore
@@ -65,7 +65,7 @@ class FixedNode(Node):
         return self._arithmetize_cache
 
     @abstractmethod
-    def _arithmetize_inner(self, strategy: str) -> "Node":
+    def _arithmetize_inner(self, strategy: str) -> "FpNode":
         pass
 
     # TODO: Reduce code duplication

@@ -1,14 +1,14 @@
 from typing import Type
 from galois import FieldArray
-from oraqle.compiler.nodes.fp.abstract import Node
+from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.leafs import Input
 from oraqle.compiler.sequences.map import Map
 from oraqle.compiler.sequences.packed import PackedSequence
 
 
-class Reduce(Node):
+class Reduce(FpNode):
 
-    def __init__(self, sequence: PackedSequence, operation: Node, gf: type[FieldArray]):
+    def __init__(self, sequence: PackedSequence, operation: FpNode, gf: type[FieldArray]):
         super().__init__(gf)
 
 

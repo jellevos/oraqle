@@ -5,7 +5,7 @@ from typing import List, Type
 from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
-from oraqle.compiler.nodes.fp.abstract import Node
+from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.fixed import BinaryNode
 
 
@@ -25,10 +25,10 @@ class NonCommutativeBinaryNode(BinaryNode):
     def operation(self, operands: List[FieldArray]) -> FieldArray:  # noqa: D102
         return self._operation_inner(operands[0], operands[1])
 
-    def operands(self) -> List[Node]:  # noqa: D102
+    def operands(self) -> List[FpNode]:  # noqa: D102
         return [self._left, self._right]
 
-    def set_operands(self, operands: List["Node"]):  # noqa: D102
+    def set_operands(self, operands: List["FpNode"]):  # noqa: D102
         self._left = operands[0]
         self._right = operands[1]
 
@@ -41,7 +41,7 @@ class NonCommutativeBinaryNode(BinaryNode):
 
         return self._hash
     
-    def is_equivalent(self, other: Node) -> bool:  # noqa: D102
+    def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 

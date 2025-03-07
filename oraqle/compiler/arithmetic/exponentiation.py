@@ -7,7 +7,7 @@ from galois import GF, FieldArray
 from oraqle.add_chains.addition_chains_front import gen_pareto_front
 from oraqle.add_chains.addition_chains_heuristic import add_chain_guaranteed
 from oraqle.add_chains.solving import extract_indices
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
 from oraqle.compiler.nodes.fp.leafs import Input
 from oraqle.compiler.nodes.fp.univariate import UnivariateNode
@@ -29,7 +29,7 @@ class Power(UnivariateNode):
     def _node_label(self) -> str:
         return f"Pow: {self._exponent}"
 
-    def __init__(self, node: Node, exponent: int, gf: Type[FieldArray]):
+    def __init__(self, node: FpNode, exponent: int, gf: Type[FieldArray]):
         """Initialize a `Power` node that exponentiates `node` with `exponent`."""
         self._exponent = exponent
         super().__init__(node, gf)
@@ -37,7 +37,7 @@ class Power(UnivariateNode):
     def _operation_inner(self, input: FieldArray, gf: Type[FieldArray]) -> FieldArray:
         return input**self._exponent  # type: ignore
 
-    def _arithmetize_inner(self, strategy: str) -> "Node":
+    def _arithmetize_inner(self, strategy: str) -> "FpNode":
         if strategy == "naive":
             # Square & multiply
             nodes = [self._node.arithmetize(strategy)]

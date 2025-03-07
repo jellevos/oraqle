@@ -7,26 +7,26 @@ from galois import GF
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes import Constant
-from oraqle.compiler.nodes.fp.abstract import Node
+from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.leafs import Input
 
 gf = GF(2**8)
 
 
-def encrypt(plaintext: List[Node], key: bytes) -> List[Node]:
+def encrypt(plaintext: List[FpNode], key: bytes) -> List[FpNode]:
     """Returns an AES encryption circuit for a constant `key`."""
     mix = [Constant(gf(2)), Constant(gf(3)), Constant(gf(1)), Constant(gf(1))]
 
     round_keys = [[Constant(gf(byte)) for byte in round_key] for round_key in key_schedule(key)]
 
-    def additions(nodes: List[Node]) -> Node:
+    def additions(nodes: List[FpNode]) -> FpNode:
         node_iter = iter(nodes)
         out = next(node_iter) + next(node_iter)
         for node in node_iter:
             out += node
         return out
 
-    def sbox(node: Node, method="minchain") -> Node:
+    def sbox(node: FpNode, method="minchain") -> FpNode:
         if method == "hardcoded":
             x2 = node.mul(node, flatten=False)
             x3 = node.mul(x2, flatten=False)
@@ -62,7 +62,7 @@ def encrypt(plaintext: List[Node], key: bytes) -> List[Node]:
 
         # AddRoundKey
         b = [round_key + b[j] for j, round_key in zip(range(16), round_keys[round + 1])]
-        b: List[Node]
+        b: List[FpNode]
 
     return b
 

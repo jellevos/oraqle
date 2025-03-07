@@ -4,7 +4,7 @@ from typing import List, Type
 from galois import GF, FieldArray
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.fixed import FixedNode
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 
@@ -20,7 +20,7 @@ class IfElse(FixedNode):
     def _hash_name(self):
         return "if_else"
 
-    def __init__(self, condition: Node, positive: Node, negative: Node, gf: Type[FieldArray]):
+    def __init__(self, condition: FpNode, positive: FpNode, negative: FpNode, gf: Type[FieldArray]):
         """Initialize an if-else node: If condition evaluates to true, then it outputs positive, otherwise it outputs negative."""
         self._condition = condition
         self._positive = positive
@@ -30,7 +30,7 @@ class IfElse(FixedNode):
     def __hash__(self) -> int:
         return hash((self._hash_name, self._condition, self._positive, self._negative))
 
-    def is_equivalent(self, other: Node) -> bool:  # noqa: D102
+    def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 
@@ -40,10 +40,10 @@ class IfElse(FixedNode):
             and self._negative.is_equivalent(other._negative)
         )
 
-    def operands(self) -> List[Node]:  # noqa: D102
+    def operands(self) -> List[FpNode]:  # noqa: D102
         return [self._condition, self._positive, self._negative]
 
-    def set_operands(self, operands: List[Node]):  # noqa: D102
+    def set_operands(self, operands: List[FpNode]):  # noqa: D102
         self._condition = operands[0]
         self._positive = operands[1]
         self._negative = operands[2]
@@ -52,7 +52,7 @@ class IfElse(FixedNode):
         assert operands[0] == 0 or operands[0] == 1
         return operands[1] if operands[0] == 1 else operands[2]
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return (self._condition * (self._positive - self._negative) + self._negative).arithmetize(
             strategy
         )
@@ -63,7 +63,7 @@ class IfElse(FixedNode):
         ).arithmetize_depth_aware(cost_of_squaring)
 
 
-def if_else(condition: Node, positive: Node, negative: Node) -> IfElse:
+def if_else(condition: FpNode, positive: FpNode, negative: FpNode) -> IfElse:
     """Sugar expression for creating an if-else clause.
     
     Returns:

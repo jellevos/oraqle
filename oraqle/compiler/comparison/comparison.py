@@ -7,7 +7,7 @@ from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.in_upper_half import IliashenkoZuccaInUpperHalf, InUpperHalf
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node, iterate_increasing_depth
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode, iterate_increasing_depth
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 from oraqle.compiler.nodes.fp.non_commutative import NonCommutativeBinaryNode
 
@@ -32,7 +32,7 @@ class AbstractComparison(NonCommutativeBinaryNode):
 
         return self._hash
 
-    def is_equivalent(self, other: Node) -> bool:  # noqa: D102
+    def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 
@@ -67,7 +67,7 @@ class SemiStrictComparison(AbstractComparison):
         else:
             return self._gf(int(int(x) > int(y)))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         if self._less_than:
             left = self._left
             right = self._right
@@ -125,7 +125,7 @@ class StrictComparison(AbstractComparison):
         else:
             return self._gf(int(int(x) > int(y)))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         p = self._gf.characteristic
 
         if self._less_than:
@@ -224,7 +224,7 @@ class SemiComparison(AbstractComparison):
         else:
             return self._gf(int(int(x) >= int(y)))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return Neg(
             SemiStrictComparison(
                 self._left.arithmetize(strategy),
@@ -261,7 +261,7 @@ class Comparison(AbstractComparison):
         else:
             return self._gf(int(int(x) >= int(y)))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return Neg(
             StrictComparison(
                 self._left.arithmetize(strategy),
@@ -293,7 +293,7 @@ class T2SemiLessThan(NonCommutativeBinaryNode):
     def _operation_inner(self, x, y) -> FieldArray:
         return self._gf(int(int(x) < int(y)))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         out = Constant(self._gf(0))
 
         p = self._gf.characteristic
@@ -322,7 +322,7 @@ class IliashenkoZuccaSemiLessThan(NonCommutativeBinaryNode):
     def _operation_inner(self, x, y) -> FieldArray:
         return self._gf(int(int(x) < int(y)))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return IliashenkoZuccaInUpperHalf(
             Subtraction(
                 self._left.arithmetize(strategy), self._right.arithmetize(strategy), self._gf

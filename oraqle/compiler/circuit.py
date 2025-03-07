@@ -13,13 +13,13 @@ from galois import FieldArray
 import oraqle.helib_template
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
-from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, Node
+from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, FpNode
 
 
 class Circuit:
     """Represents a circuit over a fixed finite field that can be turned into an arithmetic circuit. Behind the scenes this is a directed acyclic graph (DAG). The circuit only has references to the outputs."""
 
-    def __init__(self, outputs: List[Node]):
+    def __init__(self, outputs: List[FpNode]):
         """Initialize a circuit with the given `outputs`."""
         assert len(outputs) > 0
         self._outputs = outputs
@@ -471,6 +471,9 @@ class ArithmeticCircuit(Circuit):
             raise Exception("Cannot continue since an error occured.") from e
         finally:
             os.chdir(original_directory)
+
+
+# TODO: GaloisArithmeticCircuits for Fpd and Zpx
 
 
 if __name__ == "__main__":

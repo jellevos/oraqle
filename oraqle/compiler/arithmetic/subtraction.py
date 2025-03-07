@@ -1,7 +1,7 @@
 """This module contains classes for representing subtraction: x - y."""
 from galois import GF, FieldArray
 
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 from oraqle.compiler.nodes.fp.non_commutative import NonCommutativeBinaryNode
 
@@ -24,7 +24,7 @@ class Subtraction(NonCommutativeBinaryNode):
     def _operation_inner(self, x, y) -> FieldArray:
         return x - y
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         # TODO: Reorganize the files: let the arithmetic folder only contain pure arithmetic (including add and mul) and move exponentiation elsewhere.
         # TODO: For schemes that support subtraction we do not need to do this. We should only do this transformation during the compiler stage.
         return (self._left.arithmetize(strategy) + (Constant(-self._gf(1)) * self._right.arithmetize(strategy))).arithmetize(strategy)  # type: ignore  # TODO: Should we always perform a final arithmetization in every node for constant folding? E.g. in Node?

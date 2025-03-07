@@ -5,12 +5,12 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.circuit import ArithmeticCircuit, Circuit
 from oraqle.compiler.nodes import Input
-from oraqle.compiler.nodes.fp.abstract import Node
+from oraqle.compiler.nodes.fp.abstract import FpNode
 
 gf = GF(13)
 
 
-def cswp(lhs: Node, rhs: Node) -> Tuple[Node, Node]:
+def cswp(lhs: FpNode, rhs: FpNode) -> Tuple[FpNode, FpNode]:
     """Conditionally swap inputs `lhs` and `rhs` such that `lhs <= rhs`.
 
     Returns:

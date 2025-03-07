@@ -16,7 +16,7 @@ from oraqle.compiler.comparison.equality import IsNonZero
 from oraqle.compiler.nodes.fp.abstract import (
     ArithmeticNode,
     CostParetoFront,
-    Node,
+    FpNode,
     UnoverloadedWrapper,
 )
 from oraqle.compiler.nodes.fp.arbitrary_arithmetic import (
@@ -44,7 +44,7 @@ class And(CommutativeUniqueReducibleNode):
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return self._gf(bool(a) & bool(b))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:  # noqa: PLR0911, PLR0912
+    def _arithmetize_inner(self, strategy: str) -> FpNode:  # noqa: PLR0911, PLR0912
         new_operands: Set[UnoverloadedWrapper] = set()
         for operand in self._operands:
             new_operand = operand.node.arithmetize(strategy)
@@ -171,7 +171,7 @@ class And(CommutativeUniqueReducibleNode):
 
         return front
 
-    def and_flatten(self, other: Node) -> Node:
+    def and_flatten(self, other: FpNode) -> FpNode:
         """Performs an AND operation with `other`, flattening the `And` node if either of the two is also an `And` and absorbing `Constant`s.
         
         Returns:
@@ -737,7 +737,7 @@ def minimize_depth_cost_recursive(  # noqa: PLR0912, PLR0914, PLR0915
     return output
 
 
-def all_(*operands: Node) -> And:
+def all_(*operands: FpNode) -> And:
     """Returns an `And` node that evaluates to true if any of the given `operands` evaluates to true."""
     assert len(operands) > 0
     return And(set(UnoverloadedWrapper(operand) for operand in operands), operands[0]._gf)

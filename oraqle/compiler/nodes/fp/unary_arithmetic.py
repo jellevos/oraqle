@@ -9,7 +9,8 @@ from oraqle.compiler.instructions import (
     ConstantAdditionInstruction,
     ConstantMultiplicationInstruction,
 )
-from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, Node, select_stack_index
+from oraqle.compiler.nodes.abstract import select_stack_index
+from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.univariate import UnivariateNode
 
 # TODO: There is (going to be) a lot of code duplication between these two classes
@@ -88,7 +89,7 @@ class ConstantAddition(UnivariateNode, ArithmeticNode):
         return self._instruction_cache, stack_counter
 
     
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return self
 
     
@@ -134,7 +135,7 @@ class ConstantMultiplication(UnivariateNode, ArithmeticNode):
     def _node_label(self) -> str:
         return "×"  # noqa: RUF001
 
-    def __init__(self, node: Node, constant: FieldArray):
+    def __init__(self, node: FpNode, constant: FieldArray):
         """Represents the operation `constant * node`."""
         super().__init__(node, constant.__class__)
         self._constant = constant
@@ -190,7 +191,7 @@ class ConstantMultiplication(UnivariateNode, ArithmeticNode):
         return self._instruction_cache, stack_counter
 
     
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return self
 
     

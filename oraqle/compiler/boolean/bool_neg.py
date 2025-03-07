@@ -2,7 +2,7 @@
 from galois import FieldArray
 
 from oraqle.compiler.arithmetic.subtraction import Subtraction
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.leafs import Constant
 from oraqle.compiler.nodes.fp.univariate import UnivariateNode
 
@@ -26,7 +26,7 @@ class Neg(UnivariateNode):
         assert input in {0, 1}
         return self._gf(not bool(input))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return Subtraction(
             Constant(self._gf(1)), self._node.arithmetize(strategy), self._gf
         ).arithmetize(strategy)

@@ -4,7 +4,7 @@ from galois import GF, FieldArray
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.boolean.bool_neg import Neg
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.binary_arithmetic import CommutativeBinaryNode
 from oraqle.compiler.nodes.fp.leafs import Input
 from oraqle.compiler.nodes.fp.univariate import UnivariateNode
@@ -28,7 +28,7 @@ class IsNonZero(UnivariateNode):
     def _operation_inner(self, input: FieldArray) -> FieldArray:
         return input != 0
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return Power(self._node, self._gf.order - 1, self._gf).arithmetize(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
@@ -51,7 +51,7 @@ class Equals(CommutativeBinaryNode):
     def _operation_inner(self, x, y) -> FieldArray:
         return self._gf(int(x == y))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return Neg(
             IsNonZero(Subtraction(self._left, self._right, self._gf), self._gf),
             self._gf,

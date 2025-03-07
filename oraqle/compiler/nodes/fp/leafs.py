@@ -5,20 +5,21 @@ from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction, InputInstruction
-from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, Node, select_stack_index
+from oraqle.compiler.nodes.abstract import select_stack_index
+from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.fixed import FixedNode
 
 
 class ArithmeticLeafNode(FixedNode, ArithmeticNode):
     """An ArithmeticLeafNode is an ArithmeticNode with no inputs."""
 
-    def operands(self) -> List[Node]:  # noqa: D102
+    def operands(self) -> List[FpNode]:  # noqa: D102
         return []
 
-    def set_operands(self, operands: List["Node"]):  # noqa: D102
+    def set_operands(self, operands: List["FpNode"]):  # noqa: D102
         pass
     
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return self
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
@@ -81,7 +82,7 @@ class Input(ArithmeticLeafNode):
         return hash(self._name)
 
     
-    def is_equivalent(self, other: Node) -> bool:  # noqa: D102
+    def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 
@@ -140,34 +141,34 @@ class Constant(ArithmeticLeafNode):
         return hash(int(self._value))
 
     
-    def is_equivalent(self, other: Node) -> bool:  # noqa: D102
+    def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 
         return self._value == other._value
 
     
-    def add(self, other: "Node", flatten=True) -> "Node":  # noqa: D102
+    def add(self, other: "FpNode", flatten=True) -> "FpNode":  # noqa: D102
         if isinstance(other, Constant):
             return Constant(self._value + other._value)
 
         return other.add(self, flatten)
 
     
-    def mul(self, other: "Node", flatten=True) -> "Node":  # noqa: D102
+    def mul(self, other: "FpNode", flatten=True) -> "FpNode":  # noqa: D102
         if isinstance(other, Constant):
             return Constant(self._value * other._value)
 
         return other.mul(self, flatten)
 
     
-    def bool_or(self, other: "Node", flatten=True) -> Node:  # noqa: D102
+    def bool_or(self, other: "FpNode", flatten=True) -> FpNode:  # noqa: D102
         if isinstance(other, Constant):
             return Constant(self._gf(bool(self._value) | bool(other._value)))
 
         return other.bool_or(self, flatten)
     
-    def bool_and(self, other: "Node", flatten=True) -> Node:  # noqa: D102
+    def bool_and(self, other: "FpNode", flatten=True) -> FpNode:  # noqa: D102
         if isinstance(other, Constant):
             return Constant(self._gf(bool(self._value) & bool(other._value)))
 
@@ -185,8 +186,8 @@ class Constant(ArithmeticLeafNode):
 class DummyNode(FixedNode):
     """A DummyNode is a fixed node with no inputs and no behavior."""
 
-    def operands(self) -> List[Node]:  # noqa: D102
+    def operands(self) -> List[FpNode]:  # noqa: D102
         return []
 
-    def set_operands(self, operands: List["Node"]):  # noqa: D102
+    def set_operands(self, operands: List["FpNode"]):  # noqa: D102
         pass

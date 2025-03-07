@@ -5,13 +5,13 @@ from random import randint
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes import Constant, Input, Node
+from oraqle.compiler.nodes import Constant, Input, FpNode
 
 gf = GF(680564733841876926926749214863536422929)
 
 
 # TODO: Check parameters with the paper
-def encrypt(plaintext: Node, key: int, power_n: int = 129) -> Node:
+def encrypt(plaintext: FpNode, key: int, power_n: int = 129) -> FpNode:
     """Returns an MIMC encryption circuit using a constant key."""
     rounds = ceil(power_n / log2(3))
 

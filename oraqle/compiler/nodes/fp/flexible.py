@@ -9,23 +9,23 @@ from typing import Dict, Optional, Set, Type
 from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node, UnoverloadedWrapper
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode, UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.leafs import Constant
 
 
-class FlexibleNode(Node):
+class FlexibleNode(FpNode):
     """A node with an arbitrary number of operands. The operation must be reducible using a binary associative operation."""
 
     # TODO: Ensure that when all inputs are constants, the node is replaced with its evaluation
 
-    def arithmetize(self, strategy: str) -> Node:  # noqa: D102
+    def arithmetize(self, strategy: str) -> FpNode:  # noqa: D102
         if self._arithmetize_cache is None:
             self._arithmetize_cache = self._arithmetize_inner(strategy)
 
         return self._arithmetize_cache
 
     @abstractmethod
-    def _arithmetize_inner(self, strategy: str) -> "Node":
+    def _arithmetize_inner(self, strategy: str) -> "FpNode":
         pass
 
     def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:  # noqa: D102
@@ -56,11 +56,11 @@ class CommutativeUniqueReducibleNode(FlexibleNode):
         assert len(operands) > 1
         super().__init__(gf)
 
-    def apply_function_to_operands(self, function: Callable[[Node], None]):  # noqa: D102
+    def apply_function_to_operands(self, function: Callable[[FpNode], None]):  # noqa: D102
         for operand in self._operands:
             function(operand.node)
 
-    def replace_operands_using_function(self, function: Callable[[Node], Node]):  # noqa: D102
+    def replace_operands_using_function(self, function: Callable[[FpNode], FpNode]):  # noqa: D102
         self._operands = {UnoverloadedWrapper(function(operand.node)) for operand in self._operands}
 
     def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:  # noqa: D102
@@ -84,7 +84,7 @@ class CommutativeUniqueReducibleNode(FlexibleNode):
 
         return self._hash
 
-    def is_equivalent(self, other: Node) -> bool:  # noqa: D102
+    def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 
@@ -116,11 +116,11 @@ class CommutativeMultiplicityReducibleNode(FlexibleNode):
     def _identity(self) -> FieldArray:
         pass
 
-    def apply_function_to_operands(self, function: Callable[[Node], None]):  # noqa: D102
+    def apply_function_to_operands(self, function: Callable[[FpNode], None]):  # noqa: D102
         for operand in self._operands:
             function(operand.node)
 
-    def replace_operands_using_function(self, function: Callable[[Node], Node]):  # noqa: D102
+    def replace_operands_using_function(self, function: Callable[[FpNode], FpNode]):  # noqa: D102
         # FIXME: What if there is only one operand remaining?
         self._operands = Counter(
             {
@@ -141,7 +141,7 @@ class CommutativeMultiplicityReducibleNode(FlexibleNode):
 
         return self._hash
 
-    def is_equivalent(self, other: Node) -> bool:  # noqa: D102
+    def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 

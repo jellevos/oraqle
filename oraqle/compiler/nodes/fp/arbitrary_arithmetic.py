@@ -10,11 +10,11 @@ from typing import Dict, Iterable, Optional, Tuple, Type, Union
 
 from galois import FieldArray
 
+from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.abstract import (
     ArithmeticNode,
     CostParetoFront,
-    Node,
-    UnoverloadedWrapper,
+    FpNode,
     _to_node,
 )
 from oraqle.compiler.nodes.fp.binary_arithmetic import Addition, Multiplication
@@ -73,7 +73,7 @@ class Sum(CommutativeMultiplicityReducibleNode):
     def _identity(self) -> FieldArray:
         return self._gf(0)
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         # TODO: Wrap exponents
         new_operands = Counter()
         new_constant = self._constant
@@ -157,7 +157,7 @@ class Sum(CommutativeMultiplicityReducibleNode):
 
         return self._evaluate_cache  # type: ignore
 
-    def add_flatten(self, other: Node) -> Node:
+    def add_flatten(self, other: FpNode) -> FpNode:
         """Adds this node to `other`, flattening the summation if either of the two is also a `Sum` and absorbing `Constant`s.
         
         Returns:
@@ -262,7 +262,7 @@ class Product(CommutativeMultiplicityReducibleNode):
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return a * b  # type: ignore
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         # TODO: Wrap exponents
         new_operands = Counter()
         new_constant = self._constant
@@ -342,7 +342,7 @@ class Product(CommutativeMultiplicityReducibleNode):
 
         return self._evaluate_cache  # type: ignore
 
-    def mul_flatten(self, other: Node) -> Node:
+    def mul_flatten(self, other: FpNode) -> FpNode:
         """Multiplies this node with `other`, flattening the product if either of the two is also a `Product` and absorbing `Constant`s.
         
         Returns:
@@ -362,13 +362,13 @@ class Product(CommutativeMultiplicityReducibleNode):
         return Product(counter, self._gf, self._constant)
 
 
-def _first_gf(*operands: Union[Node, int, bool]) -> Optional[Type[FieldArray]]:
+def _first_gf(*operands: Union[FpNode, int, bool]) -> Optional[Type[FieldArray]]:
     for operand in operands:
-        if isinstance(operand, Node):
+        if isinstance(operand, FpNode):
             return operand._gf
 
 
-def sum_(*operands: Union[Node, int, bool]) -> Sum:
+def sum_(*operands: Union[FpNode, int, bool]) -> Sum:
     """Performs a sum between any number of nodes (or operands such as integers).
     
     Returns:
@@ -380,7 +380,7 @@ def sum_(*operands: Union[Node, int, bool]) -> Sum:
     return Sum(Counter(UnoverloadedWrapper(_to_node(operand, gf)) for operand in operands), gf)
 
 
-def product_(*operands: Node) -> Product:
+def product_(*operands: FpNode) -> Product:
     """Performs a product between any number of nodes (or operands such as integers).
     
     Returns:

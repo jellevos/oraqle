@@ -1,12 +1,13 @@
 from typing import List, Type
 
 from galois import FieldArray
+from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fpd.abstract import FpdNode
 from oraqle.compiler.nodes.fpd.galois import FieldNorm
 from oraqle.compiler.nodes.zpx_cycl_pow2.abstract import MultAutParetoFront, PolyRingPow2, ZpxNode
 
 
-def poly_eval_galois_within_degree(gf: Type[FieldArray], coefficients: List[int], element: FpdNode) -> PackedElement:
+def poly_eval_galois_within_degree(gf: Type[FieldArray], coefficients: List[int], element: FpdNode) -> FpNode:
     assert (len(coefficients) - 1) <= gf.degree
 
     added_poly, factor, inverse_factor, poly_degree = None  # TODO: Call Rust code

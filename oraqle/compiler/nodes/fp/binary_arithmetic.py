@@ -9,12 +9,12 @@ from oraqle.compiler.instructions import (
     ArithmeticInstruction,
     MultiplicationInstruction,
 )
+from oraqle.compiler.nodes.abstract import select_stack_index
 from oraqle.compiler.nodes.fp.abstract import (
     ArithmeticNode,
     CostParetoFront,
-    Node,
+    FpNode,
     iterate_increasing_depth,
-    select_stack_index,
 )
 from oraqle.compiler.nodes.fp.fixed import BinaryNode
 from oraqle.compiler.nodes.fp.leafs import Constant
@@ -25,8 +25,8 @@ class CommutativeBinaryNode(BinaryNode):
 
     def __init__(
         self,
-        left: Node,
-        right: Node,
+        left: FpNode,
+        right: FpNode,
         gf: Type[FieldArray],
     ):
         """Initialize the binary node with operands `left` and `right`."""
@@ -41,7 +41,7 @@ class CommutativeBinaryNode(BinaryNode):
     def operation(self, operands: List[FieldArray]) -> FieldArray:  # noqa: D102
         return self._operation_inner(operands[0], operands[1])
 
-    def operands(self) -> List[Node]:  # noqa: D102
+    def operands(self) -> List[FpNode]:  # noqa: D102
         return [self._left, self._right]
 
     def set_operands(self, operands: List[ArithmeticNode]):  # noqa: D102
@@ -61,7 +61,7 @@ class CommutativeBinaryNode(BinaryNode):
 
         return self._hash
 
-    def is_equivalent(self, other: Node) -> bool:  # noqa: D102
+    def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 
@@ -195,12 +195,12 @@ class Addition(CommutativeArithmeticBinaryNode, ArithmeticNode):
     def _operation_inner(self, x, y):
         return x + y
 
-    def arithmetize(self, strategy: str) -> Node:  # noqa: D102
+    def arithmetize(self, strategy: str) -> FpNode:  # noqa: D102
         self._left = self._left.arithmetize(strategy)
         self._right = self._right.arithmetize(strategy)
         return self
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         raise NotImplementedError()
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
@@ -252,12 +252,12 @@ class Multiplication(CommutativeArithmeticBinaryNode, ArithmeticNode):
         return x * y
 
     # TODO: This is very hacky! Arithmetic nodes should simply not have to be arithmetized...
-    def arithmetize(self, strategy: str) -> Node:  # noqa: D102
+    def arithmetize(self, strategy: str) -> FpNode:  # noqa: D102
         self._left = self._left.arithmetize(strategy)
         self._right = self._right.arithmetize(strategy)
         return self
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         raise NotImplementedError()
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:

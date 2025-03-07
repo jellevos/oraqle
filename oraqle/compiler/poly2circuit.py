@@ -12,12 +12,12 @@ from sympy.core.numbers import NegativeOne
 
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.func2poly import interpolate_polynomial
-from oraqle.compiler.nodes import Constant, Input, Node
+from oraqle.compiler.nodes import Constant, Input, FpNode
 from oraqle.compiler.nodes.fp.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Product
 
 
-def construct_subcircuit(expression, gf, modulus: int, inputs: Dict[str, Input]) -> Node:  # noqa: PLR0912
+def construct_subcircuit(expression, gf, modulus: int, inputs: Dict[str, Input]) -> FpNode:  # noqa: PLR0912
     """Build a circuit with a single output given an expression of simple arithmetic operations in Sympy.
     
     Raises:

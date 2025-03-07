@@ -8,7 +8,7 @@ from galois import GF, FieldArray
 from oraqle.add_chains.addition_chains_heuristic import add_chain_guaranteed
 from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.func2poly import interpolate_polynomial
-from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, Node
+from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantMultiplication
@@ -59,7 +59,7 @@ class UnivariatePoly(UnivariateNode):
 
     def __init__(
         self,
-        node: Node,
+        node: FpNode,
         coefficients: List[FieldArray],
         gf: Type[FieldArray],
     ):
@@ -72,7 +72,7 @@ class UnivariatePoly(UnivariateNode):
 
     @classmethod
     def from_function(
-        cls, node: Node, gf: Type[FieldArray], function: Callable[[int], int]
+        cls, node: FpNode, gf: Type[FieldArray], function: Callable[[int], int]
     ) -> "UnivariatePoly":
         """Interpolate a univariate polynomial for the given function.
         
@@ -100,7 +100,7 @@ class UnivariatePoly(UnivariateNode):
 
         return result  # type: ignore
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         return self.arithmetize_custom(strategy)[0]
 
     def arithmetize_custom(self, strategy: str) -> Tuple[ArithmeticNode, Dict[int, ArithmeticNode]]:
@@ -119,7 +119,7 @@ class UnivariatePoly(UnivariateNode):
 
         x = self._node.arithmetize(strategy).to_arithmetic()
 
-        best_arithmetization: Optional[Node] = None
+        best_arithmetization: Optional[FpNode] = None
         best_arithmetization_powers = None
 
         lowest_multiplicative_size = 1_000_000_000  # TODO: Not elegant
@@ -445,7 +445,7 @@ def _eval_poly(
 
 def _eval_poly_alternative(
     x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: Type[FieldArray]
-) -> Tuple[Node, Dict[int, ArithmeticNode]]:
+) -> Tuple[FpNode, Dict[int, ArithmeticNode]]:
     # Baby-step giant-step algorithm
     assert len(coefficients) > 0
 

@@ -6,7 +6,7 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.boolean.bool_and import And, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import Neg
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, Node, UnoverloadedWrapper
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode, UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 
@@ -27,7 +27,7 @@ class Or(CommutativeUniqueReducibleNode):
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return self._gf(bool(a) | bool(b))
 
-    def _arithmetize_inner(self, strategy: str) -> Node:
+    def _arithmetize_inner(self, strategy: str) -> FpNode:
         # FIXME: Handle what happens when arithmetize outputs a constant!
         # TODO: Also consider the arithmetization using randomness
         return Neg(
@@ -87,7 +87,7 @@ class Or(CommutativeUniqueReducibleNode):
 
         return front
 
-    def or_flatten(self, other: Node) -> Node:
+    def or_flatten(self, other: FpNode) -> FpNode:
         """Performs an OR operation with `other`, flattening the `Or` node if either of the two is also an `Or` and absorbing `Constant`s.
         
         Returns:
@@ -107,7 +107,7 @@ class Or(CommutativeUniqueReducibleNode):
         return Or(new_operands, self._gf)
 
 
-def any_(*operands: Node) -> Or:
+def any_(*operands: FpNode) -> Or:
     """Returns an `Or` node that evaluates to true if any of the given `operands` evaluates to true."""
     assert len(operands) > 0
     return Or(set(UnoverloadedWrapper(operand) for operand in operands), operands[0]._gf)
