@@ -357,6 +357,7 @@ class FpNode(Node):  # noqa: PLR0904
 
         return self.add(other_node)
 
+    # TODO: Make separate method for flatten=False, which creates an ArithmeticNode (same for additions)
     def mul(self, other: "FpNode", flatten=True) -> "FpNode":  # noqa: PLR0911
         """Performs a multiplication between `self` and `other`, possibly flattening any products.
 

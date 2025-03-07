@@ -73,7 +73,7 @@ class Sum(CommutativeMultiplicityReducibleNode):
     def _identity(self) -> FieldArray:
         return self._gf(0)
 
-    def _arithmetize_inner(self, strategy: str) -> FpNode:
+    def _arithmetize_inner(self, strategy: str) -> ArithmeticNode:
         # TODO: Wrap exponents
         new_operands = Counter()
         new_constant = self._constant
@@ -86,11 +86,11 @@ class Sum(CommutativeMultiplicityReducibleNode):
                 new_operands[UnoverloadedWrapper(new_operand)] += count
 
         if len(new_operands) == 0:
-            return Constant(new_constant)  # type: ignore
+            return Constant(new_constant)
         elif sum(new_operands.values()) == 1 and new_constant == self._identity:
             return next(iter(new_operands)).node
 
-        return Sum(new_operands, self._gf, new_constant)
+        return Sum(new_operands, self._gf, new_constant).to_arithmetic()  # TODO: Merge the code from to_arithmetic; we do not need it anymore
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         # FIXME: This could be done way more efficiently by iterating over increasing depth
@@ -262,7 +262,7 @@ class Product(CommutativeMultiplicityReducibleNode):
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return a * b  # type: ignore
 
-    def _arithmetize_inner(self, strategy: str) -> FpNode:
+    def _arithmetize_inner(self, strategy: str) -> ArithmeticNode:
         # TODO: Wrap exponents
         new_operands = Counter()
         new_constant = self._constant
@@ -275,14 +275,14 @@ class Product(CommutativeMultiplicityReducibleNode):
                 new_operands[UnoverloadedWrapper(new_operand)] += count
 
         if len(new_operands) == 0:
-            return Constant(new_constant)  # type: ignore
+            return Constant(new_constant)
         elif sum(new_operands.values()) == 1 and new_constant == self._identity:
             return next(iter(new_operands)).node
 
         if new_constant == 0:
             return Constant(self._gf(0))
 
-        return Product(new_operands, self._gf, new_constant)  # type: ignore
+        return Product(new_operands, self._gf, new_constant).to_arithmetic()  # TODO: Merge the code from to_arithmetic; we do not need it anymore
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         # TODO: This could be done more efficiently by going breadth-wise
