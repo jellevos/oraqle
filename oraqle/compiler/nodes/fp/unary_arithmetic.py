@@ -10,7 +10,8 @@ from oraqle.compiler.instructions import (
     ConstantMultiplicationInstruction,
 )
 from oraqle.compiler.nodes.abstract import select_stack_index
-from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, FpNode
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 
 # TODO: There is (going to be) a lot of code duplication between these two classes

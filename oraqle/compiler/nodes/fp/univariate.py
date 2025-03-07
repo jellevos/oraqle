@@ -5,8 +5,6 @@ from typing import List, Type
 
 from galois import FieldArray
 
-from oraqle.compiler.graphviz import DotFile
-from oraqle.compiler.nodes.abstract import Node
 from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.fixed import FixedFpNode
 from oraqle.compiler.nodes.fp.leafs import Constant

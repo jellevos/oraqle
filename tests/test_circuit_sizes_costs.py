@@ -4,8 +4,9 @@ from collections import Counter
 
 from galois import GF
 
-from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, UnoverloadedWrapper
+from oraqle.compiler.nodes.fp.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Sum
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 
 

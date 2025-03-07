@@ -10,6 +10,7 @@ from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode, UnoverloadedWrapper
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.leafs import Constant
 
 
@@ -25,7 +26,7 @@ class FlexibleNode(FpNode):
         return self._arithmetize_cache
 
     @abstractmethod
-    def _arithmetize_inner(self, strategy: str) -> "FpNode":
+    def _arithmetize_inner(self, strategy: str) -> ArithmeticNode:
         pass
 
     def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:  # noqa: D102

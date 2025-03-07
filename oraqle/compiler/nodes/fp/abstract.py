@@ -1,13 +1,17 @@
 """Module containing the most fundamental classes in the compiler."""
 from abc import ABC, abstractmethod
 from collections import Counter
-from typing import Any, Callable, Dict, Iterator, List, Optional, Self, Set, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Self, Set, Tuple, Type, Union
 
 from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction
 from oraqle.compiler.nodes.abstract import Node, UnoverloadedWrapper
+
+
+if TYPE_CHECKING:
+    from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 
 
 def _to_node(obj: Union["FpNode", int, bool], gf: Type[FieldArray]) -> "FpNode":
@@ -264,7 +268,7 @@ class FpNode(Node):  # noqa: PLR0904
         Node.__init__(self)
 
         self._evaluate_cache: Optional[FieldArray] = None
-        self._arithmetize_cache: Optional[FpNode] = None
+        self._arithmetize_cache: Optional["ArithmeticNode"] = None
         self._arithmetize_depth_cache: Optional[CostParetoFront] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
 
@@ -276,14 +280,14 @@ class FpNode(Node):  # noqa: PLR0904
     def clear_cache(self, already_cleared: Set[int]):
         # FIXME: The cache should not be cleared twice for the same node, but there is no way to check this.
         self._evaluate_cache: Optional[FieldArray] = None
-        self._arithmetize_cache: Optional[FpNode] = None
+        self._arithmetize_cache: Optional["ArithmeticNode"] = None
         self._arithmetize_depth_cache: Optional[CostParetoFront] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
 
         Node.clear_cache(self, already_cleared)
 
     @abstractmethod
-    def arithmetize(self, strategy: str) -> Self:
+    def arithmetize(self, strategy: str) -> "ArithmeticNode":
         """Arithmetizes this node, replacing it with only arithmetic operations (constants, additions, and multiplications).
 
         The current implementation only aims at reducing the total number of multiplications.
@@ -534,88 +538,86 @@ class FpNode(Node):  # noqa: PLR0904
         return Equals(self, other_node, self._gf)
 
 
-# TODO: Do we need a separate class to distinguish nodes from arithmetic nodes (which only have arithmetic operands)?
-from oraqle.compiler.nodes.fp.fixed import FixedFpNode
-class ArithmeticNode(FixedFpNode["ArithmeticNode"]):
-    """Extension of Node to indicate that this is a node permitted in a purely arithmetic circuit (with binary additions and multiplications).
+# class ArithmeticNode(FixedFpNode["ArithmeticNode"]):
+#     """Extension of Node to indicate that this is a node permitted in a purely arithmetic circuit (with binary additions and multiplications).
     
-    The ArithmeticNode 'mixin' must always come before the base class in the class declaration.
-    """
+#     The ArithmeticNode 'mixin' must always come before the base class in the class declaration.
+#     """
 
-    # ArithmeticNode should be like an interface; it should not have an __init__ method.
+#     # ArithmeticNode should be like an interface; it should not have an __init__ method.
 
-    def clear_cache(self, already_cleared: Set[int]):
-        """Clears any cached values of the node and any of its operands."""
-        # FIXME: The cache should not be cleared twice for the same node, but there is no way to check this.
-        if id(self) not in already_cleared:
-            for node in self.operands():
-                node.clear_cache(already_cleared)
+#     def clear_cache(self, already_cleared: Set[int]):
+#         """Clears any cached values of the node and any of its operands."""
+#         # FIXME: The cache should not be cleared twice for the same node, but there is no way to check this.
+#         if id(self) not in already_cleared:
+#             for node in self.operands():
+#                 node.clear_cache(already_cleared)
 
-        self._evaluate_cache: Optional[FieldArray] = None
-        self._to_graph_cache: Optional[int] = None
-        self._arithmetize_cache: Optional[FpNode] = None
-        self._arithmetize_depth_cache: Optional[ParetoFront] = None
-        self._instruction_cache: Optional[int] = None
-        self._arithmetic_cache: Optional[ArithmeticNode] = None
-        self._parent_count_cache: Optional[int] = None
+#         self._evaluate_cache: Optional[FieldArray] = None
+#         self._to_graph_cache: Optional[int] = None
+#         self._arithmetize_cache: Optional[ArithmeticNode] = None
+#         self._arithmetize_depth_cache: Optional[ParetoFront] = None
+#         self._instruction_cache: Optional[int] = None
+#         self._arithmetic_cache: Optional[ArithmeticNode] = None
+#         self._parent_count_cache: Optional[int] = None
 
-        self._hash = None
+#         self._hash = None
 
-        already_cleared.add(id(self))
+#         already_cleared.add(id(self))
 
-    @abstractmethod
-    def multiplicative_depth(self) -> int:
-        """Computes the multiplicative depth of this node and its children recursively.
+#     @abstractmethod
+#     def multiplicative_depth(self) -> int:
+#         """Computes the multiplicative depth of this node and its children recursively.
         
-        Returns:
-        The largest number of multiplications from the output of this node to the leafs of this subcircuit.
-        """
+#         Returns:
+#         The largest number of multiplications from the output of this node to the leafs of this subcircuit.
+#         """
 
-    def multiplicative_size(self) -> int:
-        """Computes the multiplicative size (number of multiplications) by counting the size of the set returned by self.multiplications().
+#     def multiplicative_size(self) -> int:
+#         """Computes the multiplicative size (number of multiplications) by counting the size of the set returned by self.multiplications().
         
-        Returns:
-        The number of multiplications in this subcircuit.
-        """
-        return len(self.multiplications())
+#         Returns:
+#         The number of multiplications in this subcircuit.
+#         """
+#         return len(self.multiplications())
 
-    def multiplicative_cost(self, cost_of_squaring: float) -> float:
-        """Computes the multiplicative cost (number of general multiplications + cost_of_squaring * squarings).
+#     def multiplicative_cost(self, cost_of_squaring: float) -> float:
+#         """Computes the multiplicative cost (number of general multiplications + cost_of_squaring * squarings).
         
-        It does so by counting the size of the sets returned by self.multiplications() and self.squarings().
+#         It does so by counting the size of the sets returned by self.multiplications() and self.squarings().
 
-        Returns:
-            The number of proper multiplications + the cost of squaring * the number of squarings.
-        """
-        return (
-            len(self.multiplications())
-            - len(self.squarings())
-            + cost_of_squaring * len(self.squarings())
-        )
+#         Returns:
+#             The number of proper multiplications + the cost of squaring * the number of squarings.
+#         """
+#         return (
+#             len(self.multiplications())
+#             - len(self.squarings())
+#             + cost_of_squaring * len(self.squarings())
+#         )
 
-    @abstractmethod
-    def multiplications(self) -> Set[int]:
-        """Returns a set of all the multiplications in this tree of descendants, including itself.
+#     @abstractmethod
+#     def multiplications(self) -> Set[int]:
+#         """Returns a set of all the multiplications in this tree of descendants, including itself.
         
-        This includes any squarings.
-        """
+#         This includes any squarings.
+#         """
 
-    @abstractmethod
-    def squarings(self) -> Set[int]:
-        """Returns a set of all the squarings in this tree of descendants, including itself."""
+#     @abstractmethod
+#     def squarings(self) -> Set[int]:
+#         """Returns a set of all the squarings in this tree of descendants, including itself."""
 
-    @abstractmethod
-    def create_instructions(
-        self,
-        instructions: List[ArithmeticInstruction],
-        stack_counter: int,
-        stack_occupied: List[bool],
-    ) -> Tuple[int, int]:
-        """Creates a set of instructions of this node to the given file. Returns the index in the stack of the output and the stack_counter.
+#     @abstractmethod
+#     def create_instructions(
+#         self,
+#         instructions: List[ArithmeticInstruction],
+#         stack_counter: int,
+#         stack_occupied: List[bool],
+#     ) -> Tuple[int, int]:
+#         """Creates a set of instructions of this node to the given file. Returns the index in the stack of the output and the stack_counter.
         
-        !!! note
-            This method assumes that the _parent_count of each node is up to date.
-        """
+#         !!! note
+#             This method assumes that the _parent_count of each node is up to date.
+#         """
 
-    def to_arithmetic(self) -> "ArithmeticNode":  # noqa: D102
-        return self
+#     def to_arithmetic(self) -> "ArithmeticNode":  # noqa: D102
+#         return self

@@ -11,11 +11,11 @@ from oraqle.compiler.instructions import (
 )
 from oraqle.compiler.nodes.abstract import select_stack_index
 from oraqle.compiler.nodes.fp.abstract import (
-    ArithmeticNode,
     CostParetoFront,
     FpNode,
     iterate_increasing_depth,
 )
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.fixed import BinaryFpNode
 from oraqle.compiler.nodes.fp.leafs import Constant
 

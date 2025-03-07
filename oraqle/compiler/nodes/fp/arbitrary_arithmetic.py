@@ -12,11 +12,11 @@ from galois import FieldArray
 
 from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.abstract import (
-    ArithmeticNode,
     CostParetoFront,
     FpNode,
     _to_node,
 )
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.binary_arithmetic import Addition, Multiplication
 from oraqle.compiler.nodes.fp.flexible import CommutativeMultiplicityReducibleNode
 from oraqle.compiler.nodes.fp.leafs import Constant

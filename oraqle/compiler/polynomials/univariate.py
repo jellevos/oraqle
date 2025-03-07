@@ -8,7 +8,8 @@ from galois import GF, FieldArray
 from oraqle.add_chains.addition_chains_heuristic import add_chain_guaranteed
 from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.func2poly import interpolate_polynomial
-from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, FpNode
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantMultiplication

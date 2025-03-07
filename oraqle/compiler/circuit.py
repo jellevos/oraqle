@@ -10,10 +10,11 @@ from fhegen.bgv import logqP
 from fhegen.util import estsecurity
 from galois import FieldArray
 
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 import oraqle.helib_template
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
-from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, FpNode
+from oraqle.compiler.nodes.fp.abstract import FpNode
 
 
 class Circuit:
