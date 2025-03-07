@@ -10,15 +10,19 @@ from oraqle.compiler.nodes.zpx_cycl_pow2.abstract import MultAutParetoFront, Pol
 def poly_eval_galois_within_degree(gf: Type[FieldArray], coefficients: List[int], element: FpdNode) -> FpNode:
     assert (len(coefficients) - 1) <= gf.degree
 
-    added_poly, factor, inverse_factor, poly_degree = None  # TODO: Call Rust code
+    added_coefficients, factor, inverse_factor, poly_degree = None  # TODO: Call Rust code
 
     # Add a poly and multiply with a factor to ensure the degree is a power of two and the poly is monic
-    add poly
-    multiply with factor
+    if added poly is nonzero
+    new_coefficients = list(coefficients)
+    new_coefficients.extend([0] * (len(added_coefficients) - len(new_coefficients)))
+    p = gf.characteristic
+    mul only if inv is not one
+    new_coefficients = [(((a + b) % p) * inverse_factor) % p for a, b in zip(added_coefficients, new_coefficients)]
 
     # Perform the norm computation
-    alpha: FpdNode = None  # TODO: Call Rust code
-    res = FieldNorm(alpha - element, poly_degree, poly_ring)
+    alpha: FpdNode = None  # TODO: Call Rust code, also give the characteristic poly?
+    res = FieldNorm(alpha - element, poly_degree)
 
     # Undo the added_poly and the factor
     if inverse_factor != 1:

@@ -15,6 +15,7 @@ class FpdNode(Node):
     An element of F_{p^d}.
     """
 
+    # TODO: Should we not be able to call arithmetize on FpdNode? FpdNode only means the output is in F_{p^d}.
     @abstractmethod
     def galois_arithmetize(self) -> "GaloisArithmeticNode":
         pass

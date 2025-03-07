@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Optional, Type
 
 from galois import FieldArray
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
@@ -15,18 +15,19 @@ class FieldNorm(UnivariateFpNode[FpdNode]):
     
     @property
     def _hash_name(self) -> str:
-        return "field_norm"  # TODO: Should we include gf in the hash?
+        return f"field_norm_{self._norm_degree}"  # TODO: Should we include gf in the hash?
     
     @property
     def _node_shape(self) -> str:
         return "box"
     
-    def __init__(self, node: FpdNode, gf: Type[FieldArray]) -> None:
+    def __init__(self, node: FpdNode, norm_degree: Optional[int] = None) -> None:
         # TODO: Implement the arithmetization
-        super().__init__(node, gf)
+        super().__init__(node, node._gf)
+        self._norm_degree = self._gf.degree if norm_degree is None else norm_degree
 
     def _arithmetize_inner(self, strategy: str) -> ArithmeticNode:
-        raise NotImplementedError("TODO")
+        chain up to norm_degree
     
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
