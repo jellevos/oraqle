@@ -1,7 +1,7 @@
 from typing import List, Type
 
 from galois import FieldArray
-from oraqle.compiler.nodes.fp.abstract import FpNode
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 from oraqle.compiler.nodes.fpd.abstract import FpdNode
 from oraqle.compiler.nodes.fpd.galois import FieldNorm
 from oraqle.compiler.nodes.zpx_cycl_pow2.abstract import MultAutParetoFront, PolyRingPow2, ZpxNode

@@ -1,9 +1,10 @@
 """This module contains classes for representing subtraction: x - y."""
 from galois import GF, FieldArray
 
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 from oraqle.compiler.nodes.fp.non_commutative import NonCommutativeBinaryNode
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
 class Subtraction(NonCommutativeBinaryNode):

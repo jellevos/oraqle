@@ -9,9 +9,11 @@ from typing import Dict, Optional, Set, Type
 from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode, UnoverloadedWrapper
+from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.leafs import Constant
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
 class FlexibleNode(FpNode):

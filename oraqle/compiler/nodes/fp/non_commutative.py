@@ -5,8 +5,8 @@ from typing import List, Type
 from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
-from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.fixed import BinaryFpNode
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
 class NonCommutativeBinaryNode(BinaryFpNode):

@@ -1,4 +1,4 @@
-from oraqle.compiler.nodes.fp.abstract import FpNode
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 from oraqle.compiler.sequences.packed import PackedSequence
 
 

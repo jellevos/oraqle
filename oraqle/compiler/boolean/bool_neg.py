@@ -2,9 +2,10 @@
 from galois import FieldArray
 
 from oraqle.compiler.arithmetic.subtraction import Subtraction
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.leafs import Constant
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
 class Neg(UnivariateFpNode):

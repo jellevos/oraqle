@@ -14,7 +14,7 @@ from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 import oraqle.helib_template
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticProgram, OutputInstruction
-from oraqle.compiler.nodes.fp.abstract import FpNode
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
 class Circuit:

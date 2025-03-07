@@ -3,9 +3,9 @@ from typing import Tuple
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.arbitrary_arithmetic import sum_
 from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
 def generate_nodes() -> Tuple[FpNode, FpNode]:

@@ -6,11 +6,12 @@ from galois import GF, FieldArray
 from oraqle.add_chains.addition_chains_front import gen_pareto_front
 from oraqle.add_chains.addition_chains_heuristic import add_chain_guaranteed
 from oraqle.add_chains.solving import extract_indices
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.binary_arithmetic import Addition, Multiplication
 from oraqle.compiler.nodes.fp.leafs import Input
 from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantMultiplication
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 from oraqle.compiler.polynomials.univariate import UnivariatePoly, _eval_poly
 
 

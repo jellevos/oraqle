@@ -1,13 +1,37 @@
 """Module containing fixed nodes: nodes with a fixed number of inputs."""
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
 from galois import FieldArray
 
 from oraqle.compiler.instructions import ArithmeticInstruction
 from oraqle.compiler.nodes.abstract import Node
 from oraqle.compiler.nodes.fixed import FixedNode
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode, ParetoFront
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront, ParetoFront
+from oraqle.compiler.nodes.fpd.abstract import FpNode
+
+
+def _to_node(obj: Union["FpNode", int, bool], gf: Type[FieldArray]) -> "FpNode":
+    if isinstance(obj, FpNode):
+        return obj
+
+    if isinstance(obj, int):
+        from oraqle.compiler.nodes.fp.leafs import Constant
+
+        return Constant(gf(obj))
+
+
+# TODO: This should output higher level types (not necessarily elements of Fp, Fpd, ..., we do not yet know which it should be)
+def try_to_node(obj: Any, gf: Type[FieldArray]) -> Optional["FpNode"]:
+    """Tries to cast this object into a valid `Node`.
+    
+    This can be used to transform e.g. an `int` or `bool` into a `Constant`.
+    If it is applied to a `Node`, it does nothing.
+    
+    Returns:
+    A `Node` or `None` depending on whether the object is castable.
+    """
+    return _to_node(obj, gf)
 
 
 class FixedFpNode[Operand: Node](FixedNode[Operand], FpNode):
@@ -67,16 +91,10 @@ class BinaryFpNode(FixedFpNode):
     """A node with two operands."""
 
 
-class ArithmeticNode(FixedFpNode["ArithmeticNode"]):
-    """
-    A special type of FixedFpNode that indicates only arithmetic operations. These are the primitives in an arithmetic circuit.
+
+
+class GaloisArithmeticNode(FixedFpNode["ArithmeticNode"]):
     
-    This node is an extension of Node to indicate that this is a node permitted in a purely arithmetic circuit (with binary additions and multiplications).
-    The ArithmeticNode 'mixin' must always come before the base class in the class declaration.
-    """
-
-    # ArithmeticNode should be like an interface; it should not have an __init__ method.
-
     def clear_cache(self, already_cleared: Set[int]):
         """Clears any cached values of the node and any of its operands."""
         # FIXME: The cache should not be cleared twice for the same node, but there is no way to check this.
@@ -150,5 +168,19 @@ class ArithmeticNode(FixedFpNode["ArithmeticNode"]):
             This method assumes that the _parent_count of each node is up to date.
         """
 
+    def to_arithmetic(self) -> "GaloisArithmeticNode":  # noqa: D102
+        return self
+
+
+class ArithmeticNode(GaloisArithmeticNode):
+    """
+    A special type of FixedFpNode that indicates only arithmetic operations. These are the primitives in an arithmetic circuit.
+    
+    This node is an extension of Node to indicate that this is a node permitted in a purely arithmetic circuit (with binary additions and multiplications).
+    The ArithmeticNode 'mixin' must always come before the base class in the class declaration.
+    """
+
+    # ArithmeticNode should be like an interface; it should not have an __init__ method.
+    
     def to_arithmetic(self) -> "ArithmeticNode":  # noqa: D102
         return self

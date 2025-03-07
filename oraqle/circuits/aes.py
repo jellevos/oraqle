@@ -7,8 +7,8 @@ from galois import GF
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes import Constant
-from oraqle.compiler.nodes.fp.abstract import FpNode
 from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 gf = GF(2**8)
 

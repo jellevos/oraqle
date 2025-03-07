@@ -5,7 +5,7 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.circuit import ArithmeticCircuit, Circuit
 from oraqle.compiler.nodes import Input
-from oraqle.compiler.nodes.fp.abstract import FpNode
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 gf = GF(13)
 

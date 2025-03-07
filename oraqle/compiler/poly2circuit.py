@@ -13,7 +13,7 @@ from sympy.core.numbers import NegativeOne
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.func2poly import interpolate_polynomial
 from oraqle.compiler.nodes import Constant, Input, FpNode
-from oraqle.compiler.nodes.fp.abstract import UnoverloadedWrapper
+from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Product
 
 

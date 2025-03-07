@@ -6,9 +6,11 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.boolean.bool_and import And, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import Neg
-from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode, UnoverloadedWrapper
+from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 # TODO: Reduce code duplication between OR and AND
 

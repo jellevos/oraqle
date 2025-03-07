@@ -13,14 +13,13 @@ from galois import FieldArray
 from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.abstract import (
     CostParetoFront,
-    FpNode,
-    _to_node,
 )
-from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode, _to_node
 from oraqle.compiler.nodes.fp.binary_arithmetic import Addition, Multiplication
 from oraqle.compiler.nodes.fp.flexible import CommutativeMultiplicityReducibleNode
 from oraqle.compiler.nodes.fp.leafs import Constant
 from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantAddition, ConstantMultiplication
+from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
 # TODO: This is mostly copied from generate_multiplication_tree (depth is different)
