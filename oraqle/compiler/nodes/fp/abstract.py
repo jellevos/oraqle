@@ -261,7 +261,7 @@ class FpNode(Node):  # noqa: PLR0904
     def __init__(self, gf: Type[FieldArray]):
         """Creates a new node, of which the result is known by the parties identified by `known_by`, as well as those who know all input operands."""
         self._gf = gf
-        super().__init__()
+        Node.__init__(self)
 
         self._evaluate_cache: Optional[FieldArray] = None
         self._arithmetize_cache: Optional[FpNode] = None
@@ -280,7 +280,7 @@ class FpNode(Node):  # noqa: PLR0904
         self._arithmetize_depth_cache: Optional[CostParetoFront] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
 
-        super().clear_cache(already_cleared)
+        Node.clear_cache(self, already_cleared)
 
     @abstractmethod
     def arithmetize(self, strategy: str) -> Self:
@@ -535,7 +535,8 @@ class FpNode(Node):  # noqa: PLR0904
 
 
 # TODO: Do we need a separate class to distinguish nodes from arithmetic nodes (which only have arithmetic operands)?
-class ArithmeticNode(FpNode):
+from oraqle.compiler.nodes.fp.fixed import FixedFpNode
+class ArithmeticNode(FixedFpNode["ArithmeticNode"]):
     """Extension of Node to indicate that this is a node permitted in a purely arithmetic circuit (with binary additions and multiplications).
     
     The ArithmeticNode 'mixin' must always come before the base class in the class declaration.
@@ -561,14 +562,6 @@ class ArithmeticNode(FpNode):
         self._hash = None
 
         already_cleared.add(id(self))
-
-    @abstractmethod
-    def operands(self) -> List["ArithmeticNode"]:
-        """Returns the operands (children) of this node. The list can be empty. The nodes MUST be arithmetic nodes."""
-
-    @abstractmethod
-    def set_operands(self, operands: List["ArithmeticNode"]):
-        """Overwrites the operands of this node. The nodes MUST be arithmetic nodes."""
 
     @abstractmethod
     def multiplicative_depth(self) -> int:
@@ -610,13 +603,6 @@ class ArithmeticNode(FpNode):
     @abstractmethod
     def squarings(self) -> Set[int]:
         """Returns a set of all the squarings in this tree of descendants, including itself."""
-
-    def arithmetize(self, strategy: str) -> "ArithmeticNode":  # noqa: D102
-        if self._arithmetize_cache2 is None:
-            self.set_operands([operand.arithmetize(strategy) for operand in self.operands()])
-            self._arithmetize_cache2 = self
-
-        return self._arithmetize_cache2
 
     @abstractmethod
     def create_instructions(

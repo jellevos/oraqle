@@ -5,11 +5,11 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
-from oraqle.compiler.nodes.fp.fixed import FixedNode
+from oraqle.compiler.nodes.fp.fixed import FixedFpNode
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 
 
-class IfElse(FixedNode):
+class IfElse(FixedFpNode):
     """A node representing an if-else clause."""
 
     @property

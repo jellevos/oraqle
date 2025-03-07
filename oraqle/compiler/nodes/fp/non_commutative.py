@@ -6,10 +6,10 @@ from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.nodes.fp.abstract import FpNode
-from oraqle.compiler.nodes.fp.fixed import BinaryNode
+from oraqle.compiler.nodes.fp.fixed import BinaryFpNode
 
 
-class NonCommutativeBinaryNode(BinaryNode):
+class NonCommutativeBinaryNode(BinaryFpNode):
     """Represents a non-cummutative binary operation such as `x < y` or `x - y`."""
 
     def __init__(self, left, right, gf: Type[FieldArray]):

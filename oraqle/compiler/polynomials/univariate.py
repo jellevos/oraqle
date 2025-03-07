@@ -12,7 +12,7 @@ from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, F
 from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
 from oraqle.compiler.nodes.fp.leafs import Constant, Input
 from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantMultiplication
-from oraqle.compiler.nodes.fp.univariate import UnivariateNode
+from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.config import PS_METHOD_FACTOR_K
 
 
@@ -42,7 +42,7 @@ def _format_polynomial(coefficients: List[FieldArray]) -> str:
     return polynomial
 
 
-class UnivariatePoly(UnivariateNode):
+class UnivariatePoly(UnivariateFpNode):
     """Evaluation of a univariate polynomial."""
 
     @property

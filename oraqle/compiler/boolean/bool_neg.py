@@ -4,10 +4,10 @@ from galois import FieldArray
 from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.leafs import Constant
-from oraqle.compiler.nodes.fp.univariate import UnivariateNode
+from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 
 
-class Neg(UnivariateNode):
+class Neg(UnivariateFpNode):
     """A node that negates a Boolean input."""
 
     @property

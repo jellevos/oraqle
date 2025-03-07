@@ -10,11 +10,11 @@ from oraqle.add_chains.solving import extract_indices
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
 from oraqle.compiler.nodes.fp.leafs import Input
-from oraqle.compiler.nodes.fp.univariate import UnivariateNode
+from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 
 
 # TODO: Think about the role of Power when there are also Products
-class Power(UnivariateNode):
+class Power(UnivariateFpNode):
     """Represents an exponentiation: x ** constant."""
 
     @property

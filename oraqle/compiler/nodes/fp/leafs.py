@@ -7,10 +7,10 @@ from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction, InputInstruction
 from oraqle.compiler.nodes.abstract import select_stack_index
 from oraqle.compiler.nodes.fp.abstract import ArithmeticNode, CostParetoFront, FpNode
-from oraqle.compiler.nodes.fp.fixed import FixedNode
+from oraqle.compiler.nodes.fp.fixed import FixedFpNode
 
 
-class ArithmeticLeafNode(FixedNode, ArithmeticNode):
+class ArithmeticLeafNode(ArithmeticNode):
     """An ArithmeticLeafNode is an ArithmeticNode with no inputs."""
 
     def operands(self) -> List[FpNode]:  # noqa: D102
@@ -102,6 +102,7 @@ class Input(ArithmeticLeafNode):
         return self._instruction_cache, stack_counter
 
 
+# TODO: Constant should not only be an FpNode
 class Constant(ArithmeticLeafNode):
     """Represents a Node with a constant value."""
 
@@ -183,7 +184,7 @@ class Constant(ArithmeticLeafNode):
         raise NotImplementedError("The circuit is a constant.")
 
 
-class DummyNode(FixedNode):
+class DummyNode(FixedFpNode):
     """A DummyNode is a fixed node with no inputs and no behavior."""
 
     def operands(self) -> List[FpNode]:  # noqa: D102

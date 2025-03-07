@@ -10,11 +10,11 @@ from oraqle.compiler.nodes.fp.abstract import CostParetoFront, FpNode
 from oraqle.compiler.nodes.fp.binary_arithmetic import Addition, Multiplication
 from oraqle.compiler.nodes.fp.leafs import Input
 from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantMultiplication
-from oraqle.compiler.nodes.fp.univariate import UnivariateNode
+from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.polynomials.univariate import UnivariatePoly, _eval_poly
 
 
-class InUpperHalf(UnivariateNode):
+class InUpperHalf(UnivariateFpNode):
     """Returns 1 when the input is contained in the upper half of the field, which are considered the negative numbers.
 
     Specifically, it returns 0 in the range [0, (p - 1) / 2] and 1 in the range ((p - 1) / 2, p - 1].
@@ -163,7 +163,7 @@ class InUpperHalf(UnivariateNode):
         return final_front
 
 
-class IliashenkoZuccaInUpperHalf(UnivariateNode):
+class IliashenkoZuccaInUpperHalf(UnivariateFpNode):
     """Returns 1 when the input is contained in the upper half of the field, which are considered the negative numbers.
 
     Specifically, it returns 0 in the range [0, (p - 1) / 2] and 1 in the range ((p - 1) / 2, p - 1].

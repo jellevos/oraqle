@@ -16,11 +16,11 @@ from oraqle.compiler.nodes.fp.abstract import (
     FpNode,
     iterate_increasing_depth,
 )
-from oraqle.compiler.nodes.fp.fixed import BinaryNode
+from oraqle.compiler.nodes.fp.fixed import BinaryFpNode
 from oraqle.compiler.nodes.fp.leafs import Constant
 
 
-class CommutativeBinaryNode(BinaryNode):
+class CommutativeBinaryNode(BinaryFpNode):
     """This node has two operands and implements a commutative operation between arithmetic nodes."""
 
     def __init__(

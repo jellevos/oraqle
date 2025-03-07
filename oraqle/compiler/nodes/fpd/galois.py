@@ -1,12 +1,12 @@
 from typing import Type
 
 from galois import FieldArray
-from oraqle.compiler.nodes.fp.univariate import UnivariateNode
+from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpdNode
 
 
 # TODO: This should be a univariate FpNode
-class FieldNorm(UnivariateNode):
+class FieldNorm(UnivariateFpNode):
     
     def __init__(self, node: FpdNode, gf: Type[FieldArray]) -> None:
         # TODO: Implement the arithmetization
