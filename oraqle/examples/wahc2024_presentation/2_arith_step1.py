@@ -4,13 +4,13 @@ from galois import GF
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.comparison import SemiStrictComparison
-from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 
 if __name__ == "__main__":
     gf = GF(101)
 
-    alex = Input("a", gf)
-    blake = Input("b", gf)
+    alex = FpInput("a", gf)
+    blake = FpInput("b", gf)
 
     output = alex < blake
 
@@ -28,10 +28,10 @@ if __name__ == "__main__":
     right = right.arithmetize("best-effort")
 
     left_is_small = SemiStrictComparison(
-        left, Constant(output._gf(p // 2)), less_than=True, gf=output._gf
+        left, FpConstant(output._gf(p // 2)), less_than=True, gf=output._gf
     )
     right_is_small = SemiStrictComparison(
-        right, Constant(output._gf(p // 2)), less_than=True, gf=output._gf
+        right, FpConstant(output._gf(p // 2)), less_than=True, gf=output._gf
     )
 
     # Test whether left and right are in the same range

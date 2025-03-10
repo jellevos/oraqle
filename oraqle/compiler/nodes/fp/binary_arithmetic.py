@@ -1,6 +1,6 @@
 """Module containing binary arithmetic nodes: additions and multiplications between non-constant nodes."""
 from abc import abstractmethod
-from typing import List, Optional, Set, Tuple, Type
+from typing import List, Optional, Set, Tuple, Type, override
 
 from galois import FieldArray
 
@@ -9,19 +9,21 @@ from oraqle.compiler.instructions import (
     ArithmeticInstruction,
     MultiplicationInstruction,
 )
-from oraqle.compiler.nodes.abstract import select_stack_index
+from oraqle.compiler.nodes.abstract import Node, select_stack_index
+from oraqle.compiler.nodes.fixed import BinaryNode, FixedNode
 from oraqle.compiler.nodes.fp.abstract import (
     CostParetoFront,
     iterate_increasing_depth,
 )
 from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.fixed import BinaryFpNode
-from oraqle.compiler.nodes.fp.leafs import Constant
+from oraqle.compiler.nodes.fp.leafs import FpConstant
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
-class CommutativeBinaryNode(BinaryFpNode):
-    """This node has two operands and implements a commutative operation between arithmetic nodes."""
+# Code duplication: BinaryNode
+class CommutativeBinaryFpNode[Operand: FpNode](BinaryFpNode[Operand]):
+    """This node has two operands in Fp and implements a commutative operation outputting an element in Fp."""
 
     def __init__(
         self,
@@ -44,7 +46,7 @@ class CommutativeBinaryNode(BinaryFpNode):
     def operands(self) -> List[FpNode]:  # noqa: D102
         return [self._left, self._right]
 
-    def set_operands(self, operands: List[ArithmeticNode]):  # noqa: D102
+    def set_operands(self, operands: List[FpNode]):  # noqa: D102
         self._left = operands[0]
         self._right = operands[1]
 
@@ -74,27 +76,33 @@ class CommutativeBinaryNode(BinaryFpNode):
         ) or (self._left.is_equivalent(other._right) and self._right.is_equivalent(other._left))
 
 
-class CommutativeArithmeticBinaryNode(CommutativeBinaryNode):
+class CommutativeArithmeticBinaryNode(BinaryNode[ArithmeticNode], ArithmeticNode):
     """This node has two operands and implements a commutative operation between arithmetic nodes."""
+
+    @property
+    def circuit_algebra(self) -> Type[FieldArray]:
+        return self._circuit_gf
 
     def __init__(
         self,
         left: ArithmeticNode,
         right: ArithmeticNode,
-        gf: Type[FieldArray],
+        circuit_gf: Type[FieldArray],
     ):
         """Initialize this binary node with the given `left` and `right` operands.
         
         Raises:
             Exception: Neither `left` nor `right` is allowed to be a `Constant`.
         """
-        super().__init__(left, right, gf)
+        BinaryNode.__init__(self, left, right)
+        ArithmeticNode.__init__(self)
+        self._circuit_gf = circuit_gf
 
         self._multiplications: Optional[Set[int]] = None
         self._squarings: Optional[Set[int]] = None
         self._depth_cache: Optional[int] = None
 
-        if isinstance(left, Constant) or isinstance(right, Constant):
+        if isinstance(left, FpConstant) or isinstance(right, FpConstant):
             self._is_multiplication = False
             raise Exception("This should be a constant.")
 
@@ -164,10 +172,17 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode):
                 )
 
         return self._instruction_cache, stack_counter
+    
+    @override
+    def arithmetize_fpd(self, strategy: str) -> ArithmeticNode:  # noqa: D102
+        return self
+
+    @override
+    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
+        return CostParetoFront.from_node(self, cost_of_squaring)
 
 
-# FIXME: This order should probably change
-class Addition(CommutativeArithmeticBinaryNode, ArithmeticNode):
+class FpAddition(CommutativeArithmeticBinaryNode):
     """Performs modular addition of two previous nodes in an arithmetic circuit."""
 
     @property
@@ -186,41 +201,17 @@ class Addition(CommutativeArithmeticBinaryNode, ArithmeticNode):
         self,
         left: ArithmeticNode,
         right: ArithmeticNode,
-        gf: Type[FieldArray],
+        circuit_gf: Type[FieldArray],
     ):
         """Initialize a modular addition between `left` and `right`."""
         self._is_multiplication = False
-        super().__init__(left, right, gf)
+        super().__init__(left, right, circuit_gf)
 
     def _operation_inner(self, x, y):
         return x + y
 
-    def arithmetize(self, strategy: str) -> ArithmeticNode:  # noqa: D102
-        self._left = self._left.arithmetize(strategy)
-        self._right = self._right.arithmetize(strategy)
-        return self
 
-    def _arithmetize_inner(self, strategy: str) -> FpNode:
-        raise NotImplementedError()
-
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        front = CostParetoFront(cost_of_squaring)
-
-        for res1, res2 in iterate_increasing_depth(
-            self._left.arithmetize_depth_aware(cost_of_squaring),
-            self._right.arithmetize_depth_aware(cost_of_squaring),
-        ):
-            d1, _, e1 = res1
-            d2, _, e2 = res2
-
-            # TODO: Do we use + here for flattening?
-            front.add(Addition(e1, e2, self._gf), depth=max(d1, d2))
-
-        assert not front.is_empty()
-        return front
-
-
-class Multiplication(CommutativeArithmeticBinaryNode, ArithmeticNode):
+class FpMultiplication(CommutativeArithmeticBinaryNode):
     """Performs modular multiplication of two previous nodes in an arithmetic circuit."""
 
     @property
@@ -239,26 +230,14 @@ class Multiplication(CommutativeArithmeticBinaryNode, ArithmeticNode):
         self,
         left: ArithmeticNode,
         right: ArithmeticNode,
-        gf: Type[FieldArray],
+        circuit_gf: Type[FieldArray],
     ):
         """Initialize a modular multiplication between `left` and `right`."""
         assert isinstance(left, ArithmeticNode)
         assert isinstance(right, ArithmeticNode)
 
         self._is_multiplication = True
-        super().__init__(left, right, gf)
+        super().__init__(left, right, circuit_gf)
 
     def _operation_inner(self, x, y):
         return x * y
-
-    # TODO: This is very hacky! Arithmetic nodes should simply not have to be arithmetized...
-    def arithmetize(self, strategy: str) -> ArithmeticNode:  # noqa: D102
-        self._left = self._left.arithmetize(strategy)
-        self._right = self._right.arithmetize(strategy)
-        return self
-
-    def _arithmetize_inner(self, strategy: str) -> FpNode:
-        raise NotImplementedError()
-
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        return CostParetoFront.from_node(self, cost_of_squaring)

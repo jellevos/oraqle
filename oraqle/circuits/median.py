@@ -5,14 +5,14 @@ from galois import GF, FieldArray
 
 from oraqle.circuits.sorting import cswp
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes import Input
+from oraqle.compiler.nodes import FpInput
 
 gf = GF(1037347783)
 
 
 def gen_median_circuit(inputs: Sequence[int], gf: Type[FieldArray]):
     """Returns a naive circuit for finding the median value of `inputs`."""
-    input_nodes = [Input(f"Input {v}", gf) for v in inputs]
+    input_nodes = [FpInput(f"Input {v}", gf) for v in inputs]
 
     outputs = [n for n in input_nodes]
 

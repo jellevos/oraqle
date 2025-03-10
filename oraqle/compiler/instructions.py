@@ -225,12 +225,12 @@ class ArithmeticProgram:
 
 def test_instructions_small_comparison():  # noqa: D103
     from oraqle.compiler.circuit import Circuit
-    from oraqle.compiler.nodes.fp.leafs import Input
+    from oraqle.compiler.nodes.fp.leafs import FpInput
 
     gf = GF(7)
 
-    x = Input("x", gf)
-    y = Input("y", gf)
+    x = FpInput("x", gf)
+    y = FpInput("y", gf)
 
     arithmetic_circuit = Circuit([x < y]).arithmetize()
     program = arithmetic_circuit.generate_program()

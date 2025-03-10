@@ -3,7 +3,7 @@ from galois import FieldArray
 
 from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
-from oraqle.compiler.nodes.fp.leafs import Constant
+from oraqle.compiler.nodes.fp.leafs import FpConstant
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
@@ -29,10 +29,10 @@ class Neg(UnivariateFpNode):
 
     def _arithmetize_inner(self, strategy: str) -> FpNode:
         return Subtraction(
-            Constant(self._gf(1)), self._node.arithmetize(strategy), self._gf
-        ).arithmetize(strategy)
+            FpConstant(self._gf(1)), self._node.arithmetize(strategy), self._gf
+        ).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        return Subtraction(Constant(self._gf(1)), self._node, self._gf).arithmetize_depth_aware(
+        return Subtraction(FpConstant(self._gf(1)), self._node, self._gf).arithmetize_depth_aware(
             cost_of_squaring
         )

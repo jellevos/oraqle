@@ -8,8 +8,8 @@ from oraqle.add_chains.addition_chains_front import gen_pareto_front
 from oraqle.add_chains.addition_chains_heuristic import add_chain_guaranteed
 from oraqle.add_chains.solving import extract_indices
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
-from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.binary_arithmetic import FpMultiplication
+from oraqle.compiler.nodes.fp.leafs import FpInput
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
@@ -64,7 +64,7 @@ class Power(UnivariateFpNode):
         nodes = [self._node.arithmetize(strategy).to_arithmetic()]
 
         for i, j in addition_chain:
-            nodes.append(Multiplication(nodes[i], nodes[j], self._gf))
+            nodes.append(FpMultiplication(nodes[i], nodes[j], self._gf))
 
         return nodes[-1]
 
@@ -87,7 +87,7 @@ class Power(UnivariateFpNode):
                 nodes = [node]
 
                 for i, j in c:
-                    nodes.append(Multiplication(nodes[i], nodes[j], self._gf))
+                    nodes.append(FpMultiplication(nodes[i], nodes[j], self._gf))
 
                 final_front.add(nodes[-1], depth=depth1 + depth2)
 
@@ -97,7 +97,7 @@ class Power(UnivariateFpNode):
 def test_depth_aware_arithmetization():  # noqa: D103
     gf = GF(31)
 
-    x = Input("x", gf)
+    x = FpInput("x", gf)
     node = Power(x, 30, gf)
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
     node.clear_cache(set())

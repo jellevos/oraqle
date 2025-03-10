@@ -3,7 +3,7 @@ from typing import List, Type, override
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.nodes.abstract import Node
 from oraqle.compiler.nodes.fixed import FixedNode
-from oraqle.compiler.nodes.fp.leafs import Constant
+from oraqle.compiler.nodes.fp.leafs import FpConstant
 
 
 class UnivariateNode[Operand: Node](FixedNode[Operand]):
@@ -17,7 +17,7 @@ class UnivariateNode[Operand: Node](FixedNode[Operand]):
     def __init__(self, node: Operand):
         """Initialize a univariate node."""
         self._node = node
-        assert not isinstance(node, Constant)
+        assert not isinstance(node, FpConstant)
         FixedNode.__init__(self)
 
     def operands(self) -> List[Operand]:  # noqa: D102

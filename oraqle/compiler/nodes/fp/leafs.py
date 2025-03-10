@@ -1,30 +1,27 @@
 """Module containing leaf nodes: i.e. nodes without an input."""
-from typing import Any, Dict, List, Set, Tuple, Type
+from typing import Any, Dict, List, Set, Tuple, Type, override
 
 from galois import FieldArray
 
 from oraqle.compiler.graphviz import DotFile
 from oraqle.compiler.instructions import ArithmeticInstruction, InputInstruction
 from oraqle.compiler.nodes.abstract import select_stack_index
+from oraqle.compiler.nodes.fixed import LeafNode
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.fixed import FixedFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
-class ArithmeticLeafNode(ArithmeticNode):
+class ArithmeticLeafNode(LeafNode, ArithmeticNode):
     """An ArithmeticLeafNode is an ArithmeticNode with no inputs."""
 
-    def operands(self) -> List[FpNode]:  # noqa: D102
-        return []
-
-    def set_operands(self, operands: List["FpNode"]):  # noqa: D102
-        pass
-    
-    def _arithmetize_inner(self, strategy: str) -> FpNode:
+    @override
+    def arithmetize_fpd(self, strategy: str, circuit_gf: FieldArray) -> ArithmeticNode:
         return self
-
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+    
+    @override
+    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
         return CostParetoFront.from_leaf(self, cost_of_squaring)
     
     def multiplicative_depth(self) -> int:  # noqa: D102
@@ -38,10 +35,16 @@ class ArithmeticLeafNode(ArithmeticNode):
     
     def squarings(self) -> Set[int]:  # noqa: D102
         return set()
+    
+
+class ArithmeticLeafFpNode(ArithmeticLeafNode, FpNode):
+
+    def __init__(self, gf: Type[FieldArray]):
+        FpNode.__init__(self, gf)
 
 
 # TODO: Merge ArithmeticInput and Input using multiple inheritance
-class Input(ArithmeticLeafNode):
+class FpInput(ArithmeticLeafFpNode):
     """Represents a named input to the arithmetic circuit."""
 
     @property
@@ -61,15 +64,12 @@ class Input(ArithmeticLeafNode):
         super().__init__(gf)
         self._name = name
 
-    
     def operation(self, operands: List[FieldArray]) -> FieldArray:  # noqa: D102
         raise Exception()
 
-    
     def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:  # noqa: D102
         return actual_inputs[self._name]
 
-    
     def to_graph(self, graph_builder: DotFile) -> int:  # noqa: D102
         if self._to_graph_cache is None:
             label = self._name
@@ -83,14 +83,12 @@ class Input(ArithmeticLeafNode):
     def __hash__(self) -> int:
         return hash(self._name)
 
-    
     def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 
         return self._name == other._name
 
-    
     def create_instructions(  # noqa: D102
         self,
         instructions: List[ArithmeticInstruction],
@@ -105,7 +103,7 @@ class Input(ArithmeticLeafNode):
 
 
 # TODO: Constant should not only be an FpNode
-class Constant(ArithmeticLeafNode):
+class FpConstant(ArithmeticLeafFpNode):
     """Represents a Node with a constant value."""
 
     @property
@@ -125,11 +123,9 @@ class Constant(ArithmeticLeafNode):
         super().__init__(value.__class__)
         self._value = value
 
-    
     def operation(self, operands: List[FieldArray]) -> FieldArray:  # noqa: D102
         return self._value
 
-    
     def to_graph(self, graph_builder: DotFile) -> Any:  # noqa: D102
         if self._to_graph_cache is None:
             label = str(self._value)
@@ -143,37 +139,33 @@ class Constant(ArithmeticLeafNode):
     def __hash__(self) -> int:
         return hash(int(self._value))
 
-    
     def is_equivalent(self, other: FpNode) -> bool:  # noqa: D102
         if not isinstance(other, self.__class__):
             return False
 
         return self._value == other._value
-
     
     def add(self, other: "FpNode", flatten=True) -> "FpNode":  # noqa: D102
-        if isinstance(other, Constant):
-            return Constant(self._value + other._value)
+        if isinstance(other, FpConstant):
+            return FpConstant(self._value + other._value)
 
         return other.add(self, flatten)
 
-    
     def mul(self, other: "FpNode", flatten=True) -> "FpNode":  # noqa: D102
-        if isinstance(other, Constant):
-            return Constant(self._value * other._value)
+        if isinstance(other, FpConstant):
+            return FpConstant(self._value * other._value)
 
         return other.mul(self, flatten)
-
     
     def bool_or(self, other: "FpNode", flatten=True) -> FpNode:  # noqa: D102
-        if isinstance(other, Constant):
-            return Constant(self._gf(bool(self._value) | bool(other._value)))
+        if isinstance(other, FpConstant):
+            return FpConstant(self._gf(bool(self._value) | bool(other._value)))
 
         return other.bool_or(self, flatten)
     
     def bool_and(self, other: "FpNode", flatten=True) -> FpNode:  # noqa: D102
-        if isinstance(other, Constant):
-            return Constant(self._gf(bool(self._value) & bool(other._value)))
+        if isinstance(other, FpConstant):
+            return FpConstant(self._gf(bool(self._value) & bool(other._value)))
 
         return other.bool_and(self, flatten)
     

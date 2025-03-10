@@ -8,7 +8,7 @@ from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.in_upper_half import IliashenkoZuccaInUpperHalf, InUpperHalf
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront, iterate_increasing_depth
-from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 from oraqle.compiler.nodes.fp.non_commutative import NonCommutativeBinaryNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
@@ -77,9 +77,9 @@ class SemiStrictComparison(AbstractComparison):
             right = self._left
 
         return InUpperHalf(
-            Subtraction(left.arithmetize(strategy), right.arithmetize(strategy), self._gf),
+            Subtraction(left.arithmetize_fpd(strategy), right.arithmetize_fpd(strategy), self._gf),
             self._gf,
-        ).arithmetize(strategy)
+        ).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         front = CostParetoFront(cost_of_squaring)
@@ -136,14 +136,14 @@ class StrictComparison(AbstractComparison):
             left = self._right
             right = self._left
 
-        left = left.arithmetize(strategy)
-        right = right.arithmetize(strategy)
+        left = left.arithmetize_fpd(strategy)
+        right = right.arithmetize_fpd(strategy)
 
         left_is_small = SemiStrictComparison(
-            left, Constant(self._gf(p // 2)), less_than=True, gf=self._gf
+            left, FpConstant(self._gf(p // 2)), less_than=True, gf=self._gf
         )
         right_is_small = SemiStrictComparison(
-            right, Constant(self._gf(p // 2)), less_than=True, gf=self._gf
+            right, FpConstant(self._gf(p // 2)), less_than=True, gf=self._gf
         )
 
         # Test whether left and right are in the same range
@@ -159,7 +159,7 @@ class StrictComparison(AbstractComparison):
         right_is_larger = left_is_small & Neg(right_is_small, self._gf)
         result += right_is_larger
 
-        return result.arithmetize(strategy)
+        return result.arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         p = self._gf.characteristic
@@ -180,10 +180,10 @@ class StrictComparison(AbstractComparison):
         for _, _, left_node in left_front:
             for _, _, right_node in right_front:
                 left_is_small = SemiStrictComparison(
-                    left_node, Constant(self._gf(p // 2)), less_than=True, gf=self._gf
+                    left_node, FpConstant(self._gf(p // 2)), less_than=True, gf=self._gf
                 )
                 right_is_small = SemiStrictComparison(
-                    right_node, Constant(self._gf(p // 2)), less_than=True, gf=self._gf
+                    right_node, FpConstant(self._gf(p // 2)), less_than=True, gf=self._gf
                 )
 
                 # Test whether left and right are in the same range
@@ -228,13 +228,13 @@ class SemiComparison(AbstractComparison):
     def _arithmetize_inner(self, strategy: str) -> FpNode:
         return Neg(
             SemiStrictComparison(
-                self._left.arithmetize(strategy),
-                self._right.arithmetize(strategy),
+                self._left.arithmetize_fpd(strategy),
+                self._right.arithmetize_fpd(strategy),
                 less_than=not self._less_than,
                 gf=self._gf,
             ),
             self._gf,
-        ).arithmetize(strategy)
+        ).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         return Neg(
@@ -265,13 +265,13 @@ class Comparison(AbstractComparison):
     def _arithmetize_inner(self, strategy: str) -> FpNode:
         return Neg(
             StrictComparison(
-                self._left.arithmetize(strategy),
-                self._right.arithmetize(strategy),
+                self._left.arithmetize_fpd(strategy),
+                self._right.arithmetize_fpd(strategy),
                 less_than=not self._less_than,
                 gf=self._gf,
             ),
             self._gf,
-        ).arithmetize(strategy)
+        ).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         return Neg(
@@ -295,15 +295,15 @@ class T2SemiLessThan(NonCommutativeBinaryNode):
         return self._gf(int(int(x) < int(y)))
 
     def _arithmetize_inner(self, strategy: str) -> FpNode:
-        out = Constant(self._gf(0))
+        out = FpConstant(self._gf(0))
 
         p = self._gf.characteristic
         for a in range((p + 1) // 2, p):
-            out += Constant(self._gf(1)) - (self._left - self._right - Constant(self._gf(a))) ** (
+            out += FpConstant(self._gf(1)) - (self._left - self._right - FpConstant(self._gf(a))) ** (
                 p - 1
             )
 
-        return out.arithmetize(strategy)
+        return out.arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError()
@@ -326,10 +326,10 @@ class IliashenkoZuccaSemiLessThan(NonCommutativeBinaryNode):
     def _arithmetize_inner(self, strategy: str) -> FpNode:
         return IliashenkoZuccaInUpperHalf(
             Subtraction(
-                self._left.arithmetize(strategy), self._right.arithmetize(strategy), self._gf
+                self._left.arithmetize_fpd(strategy), self._right.arithmetize_fpd(strategy), self._gf
             ),
             self._gf,
-        ).arithmetize(strategy)
+        ).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError()
@@ -338,8 +338,8 @@ class IliashenkoZuccaSemiLessThan(NonCommutativeBinaryNode):
 def test_evaluate_semi_mod5_lt():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = SemiStrictComparison(a, b, less_than=True, gf=gf)
 
     for x in range(3):
@@ -351,9 +351,9 @@ def test_evaluate_semi_mod5_lt():  # noqa: D103
 def test_evaluate_semi_arithmetized_mod5_lt():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = SemiStrictComparison(a, b, less_than=True, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = SemiStrictComparison(a, b, less_than=True, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(3):
@@ -365,8 +365,8 @@ def test_evaluate_semi_arithmetized_mod5_lt():  # noqa: D103
 def test_evaluate_mod5_lt():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = StrictComparison(a, b, less_than=True, gf=gf)
 
     for x in range(5):
@@ -378,9 +378,9 @@ def test_evaluate_mod5_lt():  # noqa: D103
 def test_evaluate_arithmetized_mod5_lt():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = StrictComparison(a, b, less_than=True, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = StrictComparison(a, b, less_than=True, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(5):
@@ -392,9 +392,9 @@ def test_evaluate_arithmetized_mod5_lt():  # noqa: D103
 def test_evaluate_arithmetized_mod11_lt():  # noqa: D103
     gf = GF(11)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = StrictComparison(a, b, less_than=True, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = StrictComparison(a, b, less_than=True, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(11):
@@ -406,8 +406,8 @@ def test_evaluate_arithmetized_mod11_lt():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_semi_mod11_lt():  # noqa: D103
     gf = GF(11)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     front = SemiStrictComparison(a, b, less_than=True, gf=gf).arithmetize_depth_aware(1.0)
 
     for _, _, node in front:
@@ -420,8 +420,8 @@ def test_evaluate_arithmetized_depth_aware_semi_mod11_lt():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_mod11_lt():  # noqa: D103
     gf = GF(11)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     front = StrictComparison(a, b, less_than=True, gf=gf).arithmetize_depth_aware(1.0)
 
     for _, _, node in front:
@@ -434,9 +434,9 @@ def test_evaluate_arithmetized_depth_aware_mod11_lt():  # noqa: D103
 def test_evaluate_semi_arithmetized_mod5_t2():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = T2SemiLessThan(a, b, gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = T2SemiLessThan(a, b, gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(3):
@@ -448,9 +448,9 @@ def test_evaluate_semi_arithmetized_mod5_t2():  # noqa: D103
 def test_evaluate_semi_arithmetized_mod11_t2():  # noqa: D103
     gf = GF(11)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = T2SemiLessThan(a, b, gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = T2SemiLessThan(a, b, gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(6):
@@ -462,8 +462,8 @@ def test_evaluate_semi_arithmetized_mod11_t2():  # noqa: D103
 def test_evaluate_semi_mod5_gt():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = SemiStrictComparison(a, b, less_than=False, gf=gf)
 
     for x in range(3):
@@ -475,9 +475,9 @@ def test_evaluate_semi_mod5_gt():  # noqa: D103
 def test_evaluate_semi_arithmetized_mod5_gt():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = SemiStrictComparison(a, b, less_than=False, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = SemiStrictComparison(a, b, less_than=False, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(3):
@@ -489,8 +489,8 @@ def test_evaluate_semi_arithmetized_mod5_gt():  # noqa: D103
 def test_evaluate_mod5_gt():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = StrictComparison(a, b, less_than=False, gf=gf)
 
     for x in range(5):
@@ -502,9 +502,9 @@ def test_evaluate_mod5_gt():  # noqa: D103
 def test_evaluate_arithmetized_mod5_gt():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = StrictComparison(a, b, less_than=False, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = StrictComparison(a, b, less_than=False, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(5):
@@ -516,8 +516,8 @@ def test_evaluate_arithmetized_mod5_gt():  # noqa: D103
 def test_evaluate_semi_mod5_ge():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = SemiComparison(a, b, less_than=False, gf=gf)
 
     for x in range(3):
@@ -529,9 +529,9 @@ def test_evaluate_semi_mod5_ge():  # noqa: D103
 def test_evaluate_semi_arithmetized_mod5_ge():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = SemiComparison(a, b, less_than=False, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = SemiComparison(a, b, less_than=False, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(3):
@@ -543,8 +543,8 @@ def test_evaluate_semi_arithmetized_mod5_ge():  # noqa: D103
 def test_evaluate_mod5_ge():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = Comparison(a, b, less_than=False, gf=gf)
 
     for x in range(5):
@@ -556,9 +556,9 @@ def test_evaluate_mod5_ge():  # noqa: D103
 def test_evaluate_arithmetized_mod5_ge():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = Comparison(a, b, less_than=False, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = Comparison(a, b, less_than=False, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(5):
@@ -570,8 +570,8 @@ def test_evaluate_arithmetized_mod5_ge():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_mod5_ge():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = Comparison(a, b, less_than=False, gf=gf)
     front = node.arithmetize_depth_aware(0.75)
 
@@ -585,8 +585,8 @@ def test_evaluate_arithmetized_depth_aware_mod5_ge():  # noqa: D103
 def test_evaluate_semi_mod5_le():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = SemiComparison(a, b, less_than=True, gf=gf)
 
     for x in range(3):
@@ -598,9 +598,9 @@ def test_evaluate_semi_mod5_le():  # noqa: D103
 def test_evaluate_semi_arithmetized_mod5_le():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = SemiComparison(a, b, less_than=True, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = SemiComparison(a, b, less_than=True, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(3):
@@ -612,8 +612,8 @@ def test_evaluate_semi_arithmetized_mod5_le():  # noqa: D103
 def test_evaluate_mod5_le():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = Comparison(a, b, less_than=True, gf=gf)
 
     for x in range(5):
@@ -625,9 +625,9 @@ def test_evaluate_mod5_le():  # noqa: D103
 def test_evaluate_arithmetized_mod5_le():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = Comparison(a, b, less_than=True, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = Comparison(a, b, less_than=True, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(5):
@@ -639,9 +639,9 @@ def test_evaluate_arithmetized_mod5_le():  # noqa: D103
 def test_evaluate_semi_arithmetized_mod101_lt():  # noqa: D103
     gf = GF(101)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = SemiStrictComparison(a, b, less_than=True, gf=gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = SemiStrictComparison(a, b, less_than=True, gf=gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for x in range(51):
@@ -653,8 +653,8 @@ def test_evaluate_semi_arithmetized_mod101_lt():  # noqa: D103
 def test_evaluate_semi_depth_aware_arithmetized_mod61_lt():  # noqa: D103
     gf = GF(61)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     front = SemiStrictComparison(a, b, less_than=True, gf=gf).arithmetize_depth_aware(cost_of_squaring=1.0)
 
     for _, _, node in front:
@@ -669,8 +669,8 @@ def test_evaluate_semi_depth_aware_arithmetized_mod61_lt():  # noqa: D103
 def test_evaluate_semi_depth_aware_arithmetized_mod61_lt_05sq():  # noqa: D103
     gf = GF(61)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     front = SemiStrictComparison(a, b, less_than=True, gf=gf).arithmetize_depth_aware(cost_of_squaring=0.5)
 
     for _, _, node in front:
@@ -685,7 +685,7 @@ def test_evaluate_semi_depth_aware_arithmetized_mod61_lt_05sq():  # noqa: D103
 def test_lessthan_mod101():  # noqa: D103
     gf = GF(101)
 
-    x = Input("x", gf)
+    x = FpInput("x", gf)
     circuit = Circuit([x < 30])
 
     for _, _, arithmetization in circuit.arithmetize_depth_aware():

@@ -12,12 +12,12 @@ from sympy.core.numbers import NegativeOne
 
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.func2poly import interpolate_polynomial
-from oraqle.compiler.nodes import Constant, Input, FpNode
+from oraqle.compiler.nodes import FpConstant, FpInput, FpNode
 from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
-from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Product
+from oraqle.compiler.nodes.fp.arbitrary_arithmetic import FpProduct
 
 
-def construct_subcircuit(expression, gf, modulus: int, inputs: Dict[str, Input]) -> FpNode:  # noqa: PLR0912
+def construct_subcircuit(expression, gf, modulus: int, inputs: Dict[str, FpInput]) -> FpNode:  # noqa: PLR0912
     """Build a circuit with a single output given an expression of simple arithmetic operations in Sympy.
     
     Raises:
@@ -36,9 +36,9 @@ def construct_subcircuit(expression, gf, modulus: int, inputs: Dict[str, Input])
         first = next(arg_iter)
         if first.func in {Integer, NegativeOne}:
             if first.func == Integer:
-                scalar = Constant(gf(int(first) % modulus))
+                scalar = FpConstant(gf(int(first) % modulus))
             else:
-                scalar = Constant(-gf(1))
+                scalar = FpConstant(-gf(1))
             result = scalar + construct_subcircuit(next(arg_iter), gf, modulus, inputs)
         else:
             # TODO: Replace this entire part with a sum
@@ -57,9 +57,9 @@ def construct_subcircuit(expression, gf, modulus: int, inputs: Dict[str, Input])
         first = next(arg_iter)
         if first.func in {Integer, NegativeOne}:
             if first.func == Integer:
-                scalar = Constant(gf(int(first) % modulus))
+                scalar = FpConstant(gf(int(first) % modulus))
             else:
-                scalar = Constant(-gf(1))
+                scalar = FpConstant(-gf(1))
             result = scalar * construct_subcircuit(next(arg_iter), gf, modulus, inputs)
         else:
             # TODO: Replace this entire part with a product
@@ -77,7 +77,7 @@ def construct_subcircuit(expression, gf, modulus: int, inputs: Dict[str, Input])
         # Change powers to series of multiplications
         subcircuit = construct_subcircuit(expression.args[0], gf, modulus, inputs)
         # TODO: This is not the most efficient way; we can use re-balancing.
-        return Product(
+        return FpProduct(
             Counter({UnoverloadedWrapper(subcircuit): int(expression.args[1])}), gf
         )  # FIXME: This could be flattened
     elif expression.func == Symbol:
@@ -85,7 +85,7 @@ def construct_subcircuit(expression, gf, modulus: int, inputs: Dict[str, Input])
         var = str(expression)
         if var in inputs:
             return inputs[var]
-        new_input = Input(var, gf)
+        new_input = FpInput(var, gf)
         inputs[var] = new_input
         return new_input
     else:

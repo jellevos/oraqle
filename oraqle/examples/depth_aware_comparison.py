@@ -3,13 +3,13 @@
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 gf = GF(101)
 cost_of_squaring = 1.0
 
-a = Input("a", gf)
-b = Input("b", gf)
+a = FpInput("a", gf)
+b = FpInput("b", gf)
 
 output = a < b
 

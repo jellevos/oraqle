@@ -15,9 +15,9 @@ from oraqle.compiler.nodes.fp.abstract import (
     CostParetoFront,
 )
 from oraqle.compiler.nodes.fp.fixed import ArithmeticNode, _to_fpd_node
-from oraqle.compiler.nodes.fp.binary_arithmetic import Addition, Multiplication
-from oraqle.compiler.nodes.fp.flexible import CommutativeMultiplicityReducibleNode
-from oraqle.compiler.nodes.fp.leafs import Constant
+from oraqle.compiler.nodes.fp.binary_arithmetic import FpAddition, FpMultiplication
+from oraqle.compiler.nodes.fp.flexible import CommutativeMultiplicityReducibleFpNode, CommutativeMultiplicityReducibleNode
+from oraqle.compiler.nodes.fp.leafs import FpConstant
 from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantAddition, ConstantMultiplication
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
@@ -25,7 +25,7 @@ from oraqle.compiler.nodes.fpd.abstract import FpNode
 # TODO: This is mostly copied from generate_multiplication_tree (depth is different)
 def _generate_addition_tree(
     summands: Iterable[Tuple[int, ArithmeticNode]], counts: Iterable[int]
-) -> Tuple[int, Addition]:
+) -> Tuple[int, FpAddition]:
     queue = [
         _PrioritizedItem(*summand) for summand, count in zip(summands, counts) for _ in range(count)
     ]
@@ -35,8 +35,8 @@ def _generate_addition_tree(
         a = heappop(queue)
         b = heappop(queue)
 
-        a_const = isinstance(a.item, Constant)
-        b_const = isinstance(b.item, Constant)
+        a_const = isinstance(a.item, FpConstant)
+        b_const = isinstance(b.item, FpConstant)
 
         # TODO: This should move to Node
         if a_const:
@@ -47,7 +47,7 @@ def _generate_addition_tree(
         elif b_const:
             new = a.item if b.item._value == 0 else ConstantAddition(a.item, b.item._value)
         else:
-            new = Addition(a.item, b.item, a.item._gf)
+            new = FpAddition(a.item, b.item, a.item._gf)
 
         heappush(
             queue,
@@ -57,7 +57,7 @@ def _generate_addition_tree(
     return (queue[0].priority, queue[0].item)
 
 
-class Sum(CommutativeMultiplicityReducibleNode):
+class FpSum(CommutativeMultiplicityReducibleFpNode):
     """This node represents a sum between two or more operands, or at least one operand and a constant."""
 
     @property
@@ -72,24 +72,27 @@ class Sum(CommutativeMultiplicityReducibleNode):
     def _identity(self) -> FieldArray:
         return self._gf(0)
 
-    def _arithmetize_inner(self, strategy: str) -> ArithmeticNode:
+    def _arithmetize_inner(self, strategy: str, circuit_gf: Type[FieldArray]) -> ArithmeticNode:
+        # For now, we only support that the GF matches
+        assert self._gf == circuit_gf
+
         # TODO: Wrap exponents
         new_operands = Counter()
         new_constant = self._constant
         for operand, count in self._operands.items():
             new_operand = operand.node.arithmetize(strategy)
 
-            if isinstance(new_operand, Constant):
+            if isinstance(new_operand, FpConstant):
                 new_constant += new_operand._value * count
             else:
                 new_operands[UnoverloadedWrapper(new_operand)] += count
 
         if len(new_operands) == 0:
-            return Constant(new_constant)
+            return FpConstant(new_constant)
         elif sum(new_operands.values()) == 1 and new_constant == self._identity:
             return next(iter(new_operands)).node
 
-        return Sum(new_operands, self._gf, new_constant).to_arithmetic()  # TODO: Merge the code from to_arithmetic; we do not need it anymore
+        return FpSum(new_operands, self._gf, new_constant).to_arithmetic(circuit_gf)  # TODO: Merge the code from to_arithmetic; we do not need it anymore
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         # FIXME: This could be done way more efficiently by iterating over increasing depth
@@ -105,9 +108,9 @@ class Sum(CommutativeMultiplicityReducibleNode):
                 ((d, operand) for d, _, operand in operands), self._operands.values()
             )
             if self._constant != self._identity:
-                if isinstance(addition_tree[1], Constant):
+                if isinstance(addition_tree[1], FpConstant):
                     return CostParetoFront.from_leaf(
-                        Constant(addition_tree[1]._value + self._constant), cost_of_squaring
+                        FpConstant(addition_tree[1]._value + self._constant), cost_of_squaring
                     )
 
                 addition_tree = (
@@ -119,26 +122,26 @@ class Sum(CommutativeMultiplicityReducibleNode):
         assert not front.is_empty()
         return front
 
-    def to_arithmetic(self) -> ArithmeticNode:  # noqa: D102
+    def to_arithmetic(self, circuit_gf: Type[FieldArray]) -> ArithmeticNode:  # noqa: D102
         if self._arithmetic_cache is None:
             # FIXME: Perform actual rebalancing
             operands = iter(self._operands.elements())
 
             # TODO: There is a lot of duplication between this and multiplications
             if self._constant == self._identity:
-                self._arithmetic_cache = Addition(
+                self._arithmetic_cache = FpAddition(
                     next(operands).node.to_arithmetic(),
                     next(operands).node.to_arithmetic(),
-                    self._gf,
+                    circuit_gf,
                 )
             else:
                 self._arithmetic_cache = ConstantAddition(
-                    next(operands).node.to_arithmetic(), self._constant
+                    next(operands).node.to_arithmetic(), self._constant, circuit_gf
                 )
 
             for operand in operands:
-                self._arithmetic_cache = Addition(
-                    self._arithmetic_cache, operand.node.to_arithmetic(), self._gf
+                self._arithmetic_cache = FpAddition(
+                    self._arithmetic_cache, operand.node.to_arithmetic(), circuit_gf
                 )
 
         return self._arithmetic_cache
@@ -164,19 +167,19 @@ class Sum(CommutativeMultiplicityReducibleNode):
         """
         order = self._gf.order
         # TODO: Consider already assigning values to e.g. result._depth
-        if isinstance(other, Sum):
+        if isinstance(other, FpSum):
             counter = self._operands + other._operands
             counter_dict = {
                 el: count % order for el, count in counter.items() if count % order != 0
             }
             constant = self._constant + other._constant
             if len(counter_dict) == 0:
-                return Constant(constant)  # type: ignore
-            return Sum(Counter(counter_dict), self._gf, constant)  # type: ignore
-        elif isinstance(other, Constant):
+                return FpConstant(constant)  # type: ignore
+            return FpSum(Counter(counter_dict), self._gf, constant)  # type: ignore
+        elif isinstance(other, FpConstant):
             if sum(self._operands.values()) == 1 and int(self._constant + other._value) == 0:
                 return next(iter(self._operands)).node
-            return Sum(self._operands, self._gf, self._constant + other._value)  # type: ignore
+            return FpSum(self._operands, self._gf, self._constant + other._value)  # type: ignore
 
         counter = self._operands.copy()
         unoverloaded_other = UnoverloadedWrapper(other)
@@ -186,7 +189,7 @@ class Sum(CommutativeMultiplicityReducibleNode):
 
         # FIXME: If empty, return Constant(0)
 
-        return Sum(counter, self._gf, self._constant)
+        return FpSum(counter, self._gf, self._constant)
 
 
 @dataclass(order=True)
@@ -197,7 +200,7 @@ class _PrioritizedItem:
 
 def _generate_multiplication_tree(
     multiplicands: Iterable[Tuple[int, ArithmeticNode]], counts: Iterable[int]
-) -> Tuple[int, Multiplication]:
+) -> Tuple[int, FpMultiplication]:
     queue = [
         _PrioritizedItem(*multiplicand)
         for multiplicand, count in zip(multiplicands, counts)
@@ -209,8 +212,8 @@ def _generate_multiplication_tree(
         a = heappop(queue)
         b = heappop(queue)
 
-        a_const = isinstance(a.item, Constant)
-        b_const = isinstance(b.item, Constant)
+        a_const = isinstance(a.item, FpConstant)
+        b_const = isinstance(b.item, FpConstant)
 
         # TODO: This should move to Node
         if a_const:
@@ -223,7 +226,7 @@ def _generate_multiplication_tree(
         elif b_const:
             new = a.item if b.item._value == 1 else ConstantMultiplication(a.item, b.item._value)
         else:
-            new = Multiplication(a.item, b.item, a.item._gf)
+            new = FpMultiplication(a.item, b.item, a.item._gf)
 
         heappush(
             queue,
@@ -233,7 +236,7 @@ def _generate_multiplication_tree(
     return (queue[0].priority, queue[0].item)
 
 
-class Product(CommutativeMultiplicityReducibleNode):
+class FpProduct(CommutativeMultiplicityReducibleFpNode):
     """This node represents a product between two or more operands, or at least one operand and a constant."""
 
     def __init__(
@@ -243,7 +246,8 @@ class Product(CommutativeMultiplicityReducibleNode):
         constant: Optional[FieldArray] = None,
     ):
         """Initialize a `Product` with the given `Counter` as operands and an optional `constant`."""
-        super().__init__(operands, gf, constant)
+        CommutativeMultiplicityReducibleNode.__init__(self, operands, constant)
+        FpNode.__init__(self, gf)
         assert constant != 0
 
     @property
@@ -268,20 +272,20 @@ class Product(CommutativeMultiplicityReducibleNode):
         for operand, count in self._operands.items():
             new_operand = operand.node.arithmetize(strategy)
 
-            if isinstance(new_operand, Constant):
+            if isinstance(new_operand, FpConstant):
                 new_constant *= new_operand._value**count
             else:
                 new_operands[UnoverloadedWrapper(new_operand)] += count
 
         if len(new_operands) == 0:
-            return Constant(new_constant)
+            return FpConstant(new_constant)
         elif sum(new_operands.values()) == 1 and new_constant == self._identity:
             return next(iter(new_operands)).node
 
         if new_constant == 0:
-            return Constant(self._gf(0))
+            return FpConstant(self._gf(0))
 
-        return Product(new_operands, self._gf, new_constant).to_arithmetic()  # TODO: Merge the code from to_arithmetic; we do not need it anymore
+        return FpProduct(new_operands, self._gf, new_constant).to_arithmetic()  # TODO: Merge the code from to_arithmetic; we do not need it anymore
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         # TODO: This could be done more efficiently by going breadth-wise
@@ -297,9 +301,9 @@ class Product(CommutativeMultiplicityReducibleNode):
                 ((d, operand) for d, _, operand in operands), self._operands.values()
             )
             if self._constant != self._identity:
-                if isinstance(multiplication_tree[1], Constant):
+                if isinstance(multiplication_tree[1], FpConstant):
                     return CostParetoFront.from_leaf(
-                        Constant(multiplication_tree[1]._value * self._constant), cost_of_squaring
+                        FpConstant(multiplication_tree[1]._value * self._constant), cost_of_squaring
                     )
 
                 multiplication_tree = (
@@ -317,7 +321,7 @@ class Product(CommutativeMultiplicityReducibleNode):
             operands = iter(self._operands.elements())
 
             if self._constant == self._identity:
-                self._arithmetic_cache = Multiplication(
+                self._arithmetic_cache = FpMultiplication(
                     next(operands).node.to_arithmetic(),
                     next(operands).node.to_arithmetic(),
                     self._gf,
@@ -328,7 +332,7 @@ class Product(CommutativeMultiplicityReducibleNode):
                 )
 
             for operand in operands:
-                self._arithmetic_cache = Multiplication(
+                self._arithmetic_cache = FpMultiplication(
                     self._arithmetic_cache, operand.node.to_arithmetic(), self._gf
                 )
 
@@ -348,17 +352,17 @@ class Product(CommutativeMultiplicityReducibleNode):
             A `Product` node containing the flattened product, or a `Constant` node.
         """
         # TODO: Consider already assigning values to e.g. result._depth
-        if isinstance(other, Product):
+        if isinstance(other, FpProduct):
             # TODO: Wrap powers (due to modulo arithmetic)
-            return Product(self._operands + other._operands, self._gf, self._constant * other._constant)  # type: ignore
-        elif isinstance(other, Constant):
+            return FpProduct(self._operands + other._operands, self._gf, self._constant * other._constant)  # type: ignore
+        elif isinstance(other, FpConstant):
             if other._value == 0:
-                return Constant(self._gf(0))
-            return Product(self._operands, self._gf, self._constant * other._value)  # type: ignore
+                return FpConstant(self._gf(0))
+            return FpProduct(self._operands, self._gf, self._constant * other._value)  # type: ignore
 
         counter = self._operands.copy()
         counter[UnoverloadedWrapper(other)] += 1  # type: ignore
-        return Product(counter, self._gf, self._constant)
+        return FpProduct(counter, self._gf, self._constant)
 
 
 def _first_gf(*operands: Union[FpNode, int, bool]) -> Optional[Type[FieldArray]]:
@@ -367,7 +371,7 @@ def _first_gf(*operands: Union[FpNode, int, bool]) -> Optional[Type[FieldArray]]
             return operand._gf
 
 
-def sum_(*operands: Union[FpNode, int, bool]) -> Sum:
+def sum_(*operands: Union[FpNode, int, bool]) -> FpSum:
     """Performs a sum between any number of nodes (or operands such as integers).
     
     Returns:
@@ -376,10 +380,10 @@ def sum_(*operands: Union[FpNode, int, bool]) -> Sum:
     assert len(operands) > 0
     gf = _first_gf(*operands)
     assert gf is not None
-    return Sum(Counter(UnoverloadedWrapper(_to_fpd_node(operand, gf)) for operand in operands), gf)
+    return FpSum(Counter(UnoverloadedWrapper(_to_fpd_node(operand, gf)) for operand in operands), gf)
 
 
-def product_(*operands: FpNode) -> Product:
+def product_(*operands: FpNode) -> FpProduct:
     """Performs a product between any number of nodes (or operands such as integers).
     
     Returns:
@@ -388,4 +392,4 @@ def product_(*operands: FpNode) -> Product:
     assert len(operands) > 0
     gf = _first_gf(*operands)
     assert gf is not None
-    return Product(Counter(UnoverloadedWrapper(_to_fpd_node(operand, gf)) for operand in operands), gf)
+    return FpProduct(Counter(UnoverloadedWrapper(_to_fpd_node(operand, gf)) for operand in operands), gf)

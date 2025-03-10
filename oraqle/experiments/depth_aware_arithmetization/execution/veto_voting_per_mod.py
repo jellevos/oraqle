@@ -9,7 +9,7 @@ from oraqle.compiler.boolean.bool_or import Or
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 from oraqle.experiments.oraqle_spotlight.experiments.veto_voting_minimal_cost import (
     exponentiation_results,
 )
@@ -24,7 +24,7 @@ def generate_all_fronts():
         print(f"------ p = {p} ------")
         for k in range(2, 51):
             gf = GF(p)
-            xs = [Input(f"x{i}", gf) for i in range(k)]
+            xs = [FpInput(f"x{i}", gf) for i in range(k)]
 
             circuit = Circuit([Or(set(UnoverloadedWrapper(x) for x in xs), gf)])
             front = circuit.arithmetize_depth_aware(cost_of_squaring=1.0)

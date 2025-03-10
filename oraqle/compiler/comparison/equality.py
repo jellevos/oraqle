@@ -6,7 +6,7 @@ from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.binary_arithmetic import CommutativeBinaryNode
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
@@ -30,7 +30,7 @@ class IsNonZero(UnivariateFpNode):
         return input != 0
 
     def _arithmetize_inner(self, strategy: str) -> FpNode:
-        return Power(self._node, self._gf.order - 1, self._gf).arithmetize(strategy)
+        return Power(self._node, self._gf.order - 1, self._gf).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         return Power(self._node, self._gf.order - 1, self._gf).arithmetize_depth_aware(
@@ -56,7 +56,7 @@ class Equals(CommutativeBinaryNode):
         return Neg(
             IsNonZero(Subtraction(self._left, self._right, self._gf), self._gf),
             self._gf,
-        ).arithmetize(strategy)
+        ).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         return Neg(
@@ -68,8 +68,8 @@ class Equals(CommutativeBinaryNode):
 def test_evaluate_mod5():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = Equals(a, b, gf)
 
     assert node.evaluate({"a": gf(3), "b": gf(2)}) == gf(0)
@@ -84,8 +84,8 @@ def test_evaluate_mod5():  # noqa: D103
 def test_evaluate_arithmetized_mod5():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = Equals(a, b, gf).arithmetize("best-effort")
     node.clear_cache(set())
 
@@ -101,7 +101,7 @@ def test_evaluate_arithmetized_mod5():  # noqa: D103
 def test_equality_equivalence_commutative():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
 
     assert (a == b).is_equivalent(b == a)

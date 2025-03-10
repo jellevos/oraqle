@@ -4,19 +4,19 @@ from galois import GF
 
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.fp.arbitrary_arithmetic import sum_
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
 def generate_nodes() -> Tuple[FpNode, FpNode]:
     gf = GF(31)
 
-    x = Input("x", gf)
-    y = Input("y", gf)
-    z1 = Input("z1", gf)
-    z2 = Input("z2", gf)
-    z3 = Input("z3", gf)
-    z4 = Input("z4", gf)
+    x = FpInput("x", gf)
+    y = FpInput("y", gf)
+    z1 = FpInput("z1", gf)
+    z2 = FpInput("z2", gf)
+    z3 = FpInput("z3", gf)
+    z4 = FpInput("z4", gf)
 
     comparison = x < y
     sum = sum_(z1, z2, z3, z4)

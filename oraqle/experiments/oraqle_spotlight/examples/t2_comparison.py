@@ -1,13 +1,13 @@
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 p = 7
 gf = GF(p)
 
-x = Input("x", gf)
-y = Input("y", gf)
+x = FpInput("x", gf)
+y = FpInput("y", gf)
 
 comparison = 0
 

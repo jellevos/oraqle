@@ -9,7 +9,7 @@ from sympy import sieve
 
 from oraqle.compiler.boolean.bool_and import all_
 from oraqle.compiler.circuit import ArithmeticCircuit, Circuit
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 
 def generate_circuits(bits: int) -> List[Tuple[int, ArithmeticCircuit, int, float]]:
@@ -27,8 +27,8 @@ def generate_circuits(bits: int) -> List[Tuple[int, ArithmeticCircuit, int, floa
 
         gf = GF(p)
 
-        xs = [Input(f"x{i}", gf) for i in range(limbs)]
-        ys = [Input(f"y{i}", gf) for i in range(limbs)]
+        xs = [FpInput(f"x{i}", gf) for i in range(limbs)]
+        ys = [FpInput(f"y{i}", gf) for i in range(limbs)]
         circuit = Circuit([all_(*(xs[i] == ys[i] for i in range(limbs)))])
 
         inbetween = time.monotonic()

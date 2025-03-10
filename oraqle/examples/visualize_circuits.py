@@ -5,18 +5,18 @@ from galois import GF
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.circuit import ArithmeticCircuit, Circuit
-from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.binary_arithmetic import FpMultiplication
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 gf = GF(5)
 
-x1 = Input("x1", gf)
-x2 = Input("x2", gf)
-x3 = Input("x3", gf)
-x4 = Input("x4", gf)
-x5 = Input("x5", gf)
-x6 = Input("x6", gf)
-x7 = Input("x7", gf)
+x1 = FpInput("x1", gf)
+x2 = FpInput("x2", gf)
+x3 = FpInput("x3", gf)
+x4 = FpInput("x4", gf)
+x5 = FpInput("x5", gf)
+x6 = FpInput("x6", gf)
+x7 = FpInput("x7", gf)
 
 sum1 = x1 + x2 + x3 + x4
 exp1 = Power(sum1, 4, gf)
@@ -57,24 +57,24 @@ arithmetic_circuit = circuit.arithmetize()
 arithmetic_circuit.to_graph("arithmetic_circuit2.dot")
 
 
-inv1 = Neg(x1, gf).arithmetize("best-effort").to_arithmetic()
-inv2 = Neg(x2, gf).arithmetize("best-effort").to_arithmetic()
-inv3 = Neg(x3, gf).arithmetize("best-effort").to_arithmetic()
-inv4 = Neg(x4, gf).arithmetize("best-effort").to_arithmetic()
-inv5 = Neg(x5, gf).arithmetize("best-effort").to_arithmetic()
-inv6 = Neg(x6, gf).arithmetize("best-effort").to_arithmetic()
-inv7 = Neg(x7, gf).arithmetize("best-effort").to_arithmetic()
+inv1 = Neg(x1, gf).arithmetize_fpd("best-effort").to_arithmetic()
+inv2 = Neg(x2, gf).arithmetize_fpd("best-effort").to_arithmetic()
+inv3 = Neg(x3, gf).arithmetize_fpd("best-effort").to_arithmetic()
+inv4 = Neg(x4, gf).arithmetize_fpd("best-effort").to_arithmetic()
+inv5 = Neg(x5, gf).arithmetize_fpd("best-effort").to_arithmetic()
+inv6 = Neg(x6, gf).arithmetize_fpd("best-effort").to_arithmetic()
+inv7 = Neg(x7, gf).arithmetize_fpd("best-effort").to_arithmetic()
 
-mul1 = Multiplication(inv1, inv2, gf)
-mul2 = Multiplication(inv3, inv4, gf)
-mul3 = Multiplication(inv5, inv6, gf)
+mul1 = FpMultiplication(inv1, inv2, gf)
+mul2 = FpMultiplication(inv3, inv4, gf)
+mul3 = FpMultiplication(inv5, inv6, gf)
 
-mul4 = Multiplication(mul1, mul2, gf)
-mul5 = Multiplication(mul3, inv7, gf)
+mul4 = FpMultiplication(mul1, mul2, gf)
+mul5 = FpMultiplication(mul3, inv7, gf)
 
-mul6 = Multiplication(mul4, mul5, gf)
+mul6 = FpMultiplication(mul4, mul5, gf)
 
-inv = Neg(mul6, gf).arithmetize("best-effort").to_arithmetic()
+inv = Neg(mul6, gf).arithmetize_fpd("best-effort").to_arithmetic()
 
 arithmetic_circuit = ArithmeticCircuit([inv])
 arithmetic_circuit.to_graph("arithmetic_circuit3.dot")

@@ -3,12 +3,12 @@
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 
 gf = GF(11)
 
-a = Input("a", gf)
-b = Constant(gf(3))  # Input("b")
+a = FpInput("a", gf)
+b = FpConstant(gf(3))  # Input("b")
 
 output = a < b
 

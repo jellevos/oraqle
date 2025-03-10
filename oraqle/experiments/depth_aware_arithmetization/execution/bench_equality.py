@@ -1,7 +1,7 @@
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 
 if __name__ == "__main__":
@@ -10,8 +10,8 @@ if __name__ == "__main__":
     for p in [29, 43, 61, 101, 131]:
         gf = GF(p)
 
-        x = Input("x", gf)
-        y = Input("y", gf)
+        x = FpInput("x", gf)
+        y = FpInput("y", gf)
 
         circuit = Circuit([x == y])
 

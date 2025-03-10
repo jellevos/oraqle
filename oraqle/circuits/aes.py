@@ -6,8 +6,8 @@ from galois import GF
 
 from oraqle.compiler.arithmetic.exponentiation import Power
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes import Constant
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes import FpConstant
+from oraqle.compiler.nodes.fp.leafs import FpInput
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 gf = GF(2**8)
@@ -15,9 +15,9 @@ gf = GF(2**8)
 
 def encrypt(plaintext: List[FpNode], key: bytes) -> List[FpNode]:
     """Returns an AES encryption circuit for a constant `key`."""
-    mix = [Constant(gf(2)), Constant(gf(3)), Constant(gf(1)), Constant(gf(1))]
+    mix = [FpConstant(gf(2)), FpConstant(gf(3)), FpConstant(gf(1)), FpConstant(gf(1))]
 
-    round_keys = [[Constant(gf(byte)) for byte in round_key] for round_key in key_schedule(key)]
+    round_keys = [[FpConstant(gf(byte)) for byte in round_key] for round_key in key_schedule(key)]
 
     def additions(nodes: List[FpNode]) -> FpNode:
         node_iter = iter(nodes)
@@ -70,7 +70,7 @@ def encrypt(plaintext: List[FpNode], key: bytes) -> List[FpNode]:
 if __name__ == "__main__":
     # TODO: Consider if we want to support degree > 1
     circuit = Circuit(
-        encrypt([Input(f"{i}", gf) for i in range(16)], b"abcdabcdabcdabcd")
+        encrypt([FpInput(f"{i}", gf) for i in range(16)], b"abcdabcdabcdabcd")
     ).arithmetize()
     print(circuit)
     print(circuit.multiplicative_depth())
@@ -84,4 +84,4 @@ if __name__ == "__main__":
 
 def test_aes_128():  # noqa: D103
     # Only checks if no errors occur
-    Circuit(encrypt([Input(f"{i}", gf) for i in range(16)], b"abcdabcdabcdabcd")).arithmetize()
+    Circuit(encrypt([FpInput(f"{i}", gf) for i in range(16)], b"abcdabcdabcdabcd")).arithmetize()

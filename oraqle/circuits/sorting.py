@@ -4,7 +4,7 @@ from typing import Sequence, Tuple, Type
 from galois import GF, FieldArray
 
 from oraqle.compiler.circuit import ArithmeticCircuit, Circuit
-from oraqle.compiler.nodes import Input
+from oraqle.compiler.nodes import FpInput
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 gf = GF(13)
@@ -29,7 +29,7 @@ def cswp(lhs: FpNode, rhs: FpNode) -> Tuple[FpNode, FpNode]:
 
 def gen_naive_sort_circuit(inputs: Sequence[int], gf: Type[FieldArray]) -> ArithmeticCircuit:
     """Returns a naive sorting circuit for the given sequence of `inputs`."""
-    input_nodes = [Input(f"Input {v}", gf) for v in inputs]
+    input_nodes = [FpInput(f"Input {v}", gf) for v in inputs]
 
     outputs = [n for n in input_nodes]
 

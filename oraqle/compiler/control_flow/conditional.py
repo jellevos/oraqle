@@ -6,7 +6,7 @@ from galois import GF, FieldArray
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.fixed import FixedFpNode
-from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
@@ -54,7 +54,7 @@ class IfElse(FixedFpNode):
         return operands[1] if operands[0] == 1 else operands[2]
 
     def _arithmetize_inner(self, strategy: str) -> FpNode:
-        return (self._condition * (self._positive - self._negative) + self._negative).arithmetize(
+        return (self._condition * (self._positive - self._negative) + self._negative).arithmetize_fpd(
             strategy
         )
 
@@ -78,10 +78,10 @@ def if_else(condition: FpNode, positive: FpNode, negative: FpNode) -> IfElse:
 def test_if_else():  # noqa: D103
     gf = GF(11)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
 
-    output = if_else(a == b, Constant(gf(3)), Constant(gf(5)))
+    output = if_else(a == b, FpConstant(gf(3)), FpConstant(gf(5)))
 
     circuit = Circuit([output])
 
@@ -96,10 +96,10 @@ def test_if_else():  # noqa: D103
 def test_if_else_arithmetized():  # noqa: D103
     gf = GF(11)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
 
-    output = if_else(a == b, Constant(gf(3)), Constant(gf(5)))
+    output = if_else(a == b, FpConstant(gf(3)), FpConstant(gf(5)))
 
     arithmetic_circuit = Circuit([output]).arithmetize()
 

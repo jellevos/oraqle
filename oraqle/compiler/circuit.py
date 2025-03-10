@@ -107,7 +107,7 @@ class Circuit:
             An equivalent arithmetic circuit with low multiplicative size.
         """
         arithmetic_circuit = ArithmeticCircuit(
-            [output.arithmetize(strategy).to_arithmetic() for output in self._outputs]
+            [output.arithmetize_fpd(strategy).to_arithmetic() for output in self._outputs]
         )
         # FIXME: Also call to_arithmetic
         arithmetic_circuit._clear_cache()
@@ -481,12 +481,12 @@ if __name__ == "__main__":
     from galois import GF
 
     from oraqle.compiler.circuit import Circuit
-    from oraqle.compiler.nodes.fp.leafs import Input
+    from oraqle.compiler.nodes.fp.leafs import FpInput
 
     gf = GF(7)
 
-    x = Input("x", gf)
-    y = Input("y", gf)
+    x = FpInput("x", gf)
+    y = FpInput("y", gf)
 
     arithmetic_circuit = Circuit([x < y]).arithmetize()
     arithmetic_circuit.generate_code("main.cpp", iterations=10, measure_time=True)

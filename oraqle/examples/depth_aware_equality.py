@@ -4,12 +4,12 @@ from galois import GF
 
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.comparison.equality import Equals
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 gf = GF(31)
 
-a = Input("a", gf)
-b = Input("b", gf)
+a = FpInput("a", gf)
+b = FpInput("b", gf)
 
 output = Equals(a, b, gf)
 

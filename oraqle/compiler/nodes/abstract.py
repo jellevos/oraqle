@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Iterator, List, Optional, Self, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Self, Set, Tuple, Type, Union
 
 from galois import FieldArray
 
@@ -136,6 +136,29 @@ class Node[Operand: "Node"](ABC):
 
         terms[h] = self
         return self
+    
+    @abstractmethod
+    def arithmetize_fpd(self, strategy: str, circuit_gf: Type[FieldArray]) -> "ArithmeticNode":
+        """Arithmetizes this node, replacing it with only arithmetic operations (constants, additions, and multiplications).
+
+        The current implementation only aims at reducing the total number of multiplications.
+        """
+
+    def galois_arithmetize_fpd(self, circuit_gf: Type[FieldArray]) -> "GaloisArithmeticNode":
+        """
+        The default implementation simply calls arithmetize("best-effort").
+        """
+        return self.arithmetize_fpd("best-effort", circuit_gf)
+
+    @abstractmethod
+    def arithmetize_depth_aware(
+        self, cost_of_squaring: float
+    ) -> "CostParetoFront":
+        """Arithmetizes this node in a depth-aware fashion, replacing high-level nodes with only arithmetic operations (constants, additions, and multiplications).
+        
+        Returns:
+            `CostParetoFront` containing a front that trades off multiplicative depth and multiplicative cost.
+        """
 
     def count_parents(self):
         """Counts the total number of nodes in this subcircuit."""

@@ -3,12 +3,12 @@
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 from oraqle.compiler.polynomials.univariate import UnivariatePoly
 
 gf = GF(11)
 
-x = Input("x", gf)
+x = FpInput("x", gf)
 
 output = UnivariatePoly(x, [gf(1), gf(2), gf(3), gf(4), gf(5), gf(6), gf(1)], gf)
 

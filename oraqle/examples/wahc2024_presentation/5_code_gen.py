@@ -2,13 +2,13 @@
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 if __name__ == "__main__":
     gf = GF(101)
 
-    alex = Input("a", gf)
-    blake = Input("b", gf)
+    alex = FpInput("a", gf)
+    blake = FpInput("b", gf)
 
     output = alex < blake
     circuit = Circuit(outputs=[output])

@@ -78,13 +78,13 @@ class FieldNorm(UnivariateFpNode[FpdNode]):
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("TODO")
     
-    def _arithmetize_galois(self, ):
+    def _galois_arithmetize_inner(self) -> GaloisArithmeticNode:
         # TODO: Implement the HElib strategy, which allows degrees beyond powers of two
-        res = self._node.galois_arithmetize()
+        res = self._node.galois_arithmetize_fpd()
         for i in range(self._gf.degree):
             res = FrobeniusAutomorphism(res, 1 << i) * res
-        return res  # FIXME: Cast to FpNode
-        
+        return res
+
     def _operation_inner(self, input: FieldArray) -> FieldArray:
         return input.field_norm()
 

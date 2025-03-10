@@ -5,11 +5,11 @@ from galois import GF
 from oraqle.compiler.boolean.bool_and import And
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 gf = GF(5)
 
-xs = [Input(f"x{i}", gf) for i in range(15)]
+xs = [FpInput(f"x{i}", gf) for i in range(15)]
 
 output = And(set(UnoverloadedWrapper(x) for x in xs), gf)
 

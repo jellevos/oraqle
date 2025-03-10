@@ -2,15 +2,15 @@
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 if __name__ == "__main__":
     gf = GF(101)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    c = Input("c", gf)
-    d = Input("d", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    c = FpInput("c", gf)
+    d = FpInput("d", gf)
 
     output = a * b * c * d
     circuit_good = Circuit(outputs=[output])

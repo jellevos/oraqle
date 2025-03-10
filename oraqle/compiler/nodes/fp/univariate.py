@@ -7,7 +7,7 @@ from galois import FieldArray
 
 from oraqle.compiler.nodes.abstract import Node
 from oraqle.compiler.nodes.fp.fixed import FixedFpNode
-from oraqle.compiler.nodes.fp.leafs import Constant
+from oraqle.compiler.nodes.fp.leafs import FpConstant
 from oraqle.compiler.nodes.univariate import UnivariateNode
 
 
@@ -17,7 +17,7 @@ class UnivariateFpNode[Operand: Node](UnivariateNode[Operand], FixedFpNode[Opera
     def __init__(self, node: Operand, gf: Type[FieldArray]):
         """Initialize a univariate node."""
         self._node = node
-        assert not isinstance(node, Constant)
+        assert not isinstance(node, FpConstant)
         FixedFpNode.__init__(self, gf)
         UnivariateNode.__init__(self, node)
 

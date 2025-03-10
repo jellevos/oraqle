@@ -6,7 +6,7 @@ from oraqle.compiler.comparison.comparison import (
     SemiStrictComparison,
     T2SemiLessThan,
 )
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 if __name__ == "__main__":
     iterations = 10
@@ -14,8 +14,8 @@ if __name__ == "__main__":
     for p in [29, 43, 61, 101, 131]:
         gf = GF(p)
 
-        x = Input("x", gf)
-        y = Input("y", gf)
+        x = FpInput("x", gf)
+        y = FpInput("y", gf)
 
         print(f"-------- p = {p}: ---------")
         our_circuit = Circuit([SemiStrictComparison(x, y, less_than=True, gf=gf)])

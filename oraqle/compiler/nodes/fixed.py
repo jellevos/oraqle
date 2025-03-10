@@ -40,3 +40,52 @@ class FixedNode[Operand: Node](Node[Operand]):
         self._multiplications = None
         self._squarings = None
         self._depth_cache = None
+
+
+class LeafNode(FixedNode):
+
+    def operands(self) -> List[Node]:  # noqa: D102
+        return []
+
+    def set_operands(self, operands: List[Node]):  # noqa: D102
+        pass
+
+
+class BinaryNode[Operand: Node](FixedNode[Operand]):
+
+    def __init__(self,
+        left: Operand,
+        right: Operand) -> None:
+        super().__init__()
+
+    def operands(self) -> List[Operand]:  # noqa: D102
+        return [self._left, self._right]
+
+    def set_operands(self, operands: List[Operand]):  # noqa: D102
+        self._left = operands[0]
+        self._right = operands[1]
+
+    def __hash__(self) -> int:
+        if self._hash is None:
+            left_hash = hash(self._left)
+            right_hash = hash(self._right)
+
+            # Make the hash commutative
+            if left_hash < right_hash:
+                self._hash = hash((self._hash_name, (left_hash, right_hash)))
+            else:
+                self._hash = hash((self._hash_name, (right_hash, left_hash)))
+
+        return self._hash
+
+    def is_equivalent(self, other: Operand) -> bool:  # noqa: D102
+        if not isinstance(other, self.__class__):
+            return False
+
+        if hash(self) != hash(other):
+            return False
+
+        # Equivalence by commutative equality
+        return (
+            self._left.is_equivalent(other._left) and self._right.is_equivalent(other._right)
+        ) or (self._left.is_equivalent(other._right) and self._right.is_equivalent(other._left))

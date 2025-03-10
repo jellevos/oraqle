@@ -5,16 +5,16 @@ from collections import Counter
 from galois import GF
 
 from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
-from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Sum
+from oraqle.compiler.nodes.fp.arbitrary_arithmetic import FpSum
 from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
-from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 
 
 def test_size_exponentiation_chain():
     """Test."""
     gf = GF(101)
 
-    x = Input("x", gf)
+    x = FpInput("x", gf)
 
     x = x.mul(x, flatten=False)
     x = x.mul(x, flatten=False)
@@ -32,10 +32,10 @@ def test_size_sum_of_products():
     """Test."""
     gf = GF(101)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    c = Input("c", gf)
-    d = Input("d", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    c = FpInput("c", gf)
+    d = FpInput("d", gf)
 
     ab = a * b
     cd = c * d
@@ -54,11 +54,11 @@ def test_size_linear_function():
     """Test."""
     gf = GF(101)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    c = Input("c", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    c = FpInput("c", gf)
 
-    out = Sum(
+    out = FpSum(
         Counter({UnoverloadedWrapper(a): 1, UnoverloadedWrapper(b): 3, UnoverloadedWrapper(c): 1}),
         gf,
         gf(2),
@@ -73,10 +73,10 @@ def test_size_duplicate_nodes():
     """Test."""
     gf = GF(101)
 
-    x = Input("x", gf)
+    x = FpInput("x", gf)
 
-    add1 = x.add(Constant(gf(1)))
-    add2 = x.add(Constant(gf(1)))
+    add1 = x.add(FpConstant(gf(1)))
+    add2 = x.add(FpConstant(gf(1)))
 
     mul1 = x.mul(x, flatten=False)
     mul2 = x.mul(x, flatten=False)

@@ -36,32 +36,13 @@ class FpdNode(Node):
 
         Node.clear_cache(self, already_cleared)
 
-    @abstractmethod
-    def arithmetize(self, strategy: str) -> "ArithmeticNode":
-        """Arithmetizes this node, replacing it with only arithmetic operations (constants, additions, and multiplications).
-
-        The current implementation only aims at reducing the total number of multiplications.
-        """
-
-    def galois_arithmetize(self) -> "GaloisArithmeticNode":
-        """
-        The default implementation simply calls arithmetize("best-effort").
-        """
-        return self.arithmetize("best-effort")
-
-    @abstractmethod
-    def arithmetize_depth_aware(
-        self, cost_of_squaring: float
-    ) -> "CostParetoFront":
-        """Arithmetizes this node in a depth-aware fashion, replacing high-level nodes with only arithmetic operations (constants, additions, and multiplications).
-        
-        Returns:
-            `CostParetoFront` containing a front that trades off multiplicative depth and multiplicative cost.
-        """
-
 
 class FpNode(FpdNode):  # noqa: PLR0904
     """Abstract node representing an element in Fp in a circuit."""
+
+    @property
+    def characteristic(self) -> int:
+        return self._gf.characteristic
 
     def __init__(self, gf: Type[FieldArray]):
         assert gf.degree == 1
@@ -86,24 +67,24 @@ class FpNode(FpdNode):  # noqa: PLR0904
         Returns:
             A possibly flattened `Sum` node or a `Constant` representing self & other.
         """
-        from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Sum
-        from oraqle.compiler.nodes.fp.leafs import Constant
+        from oraqle.compiler.nodes.fp.arbitrary_arithmetic import FpSum
+        from oraqle.compiler.nodes.fp.leafs import FpConstant
 
-        if flatten and isinstance(self, Sum):
+        if flatten and isinstance(self, FpSum):
             return self.add_flatten(other)
 
-        if flatten and isinstance(other, Sum):
+        if flatten and isinstance(other, FpSum):
             return other.add_flatten(self)
 
-        if isinstance(other, Constant):
+        if isinstance(other, FpConstant):
             if int(other._value) == 0:
                 return self
-            return Sum(Counter({UnoverloadedWrapper(self): 1}), self._gf, constant=other._value)
+            return FpSum(Counter({UnoverloadedWrapper(self): 1}), self._gf, constant=other._value)
 
         if id(self) == id(other):
-            return Sum(Counter({UnoverloadedWrapper(self): 2}), self._gf)
+            return FpSum(Counter({UnoverloadedWrapper(self): 2}), self._gf)
         else:
-            return Sum(
+            return FpSum(
                 Counter({UnoverloadedWrapper(self): 1, UnoverloadedWrapper(other): 1}), self._gf
             )
 
@@ -132,26 +113,26 @@ class FpNode(FpdNode):  # noqa: PLR0904
         Returns:
             A possibly flattened `Product` node or a `Constant` representing self & other.
         """
-        from oraqle.compiler.nodes.fp.arbitrary_arithmetic import Product
-        from oraqle.compiler.nodes.fp.leafs import Constant
+        from oraqle.compiler.nodes.fp.arbitrary_arithmetic import FpProduct
+        from oraqle.compiler.nodes.fp.leafs import FpConstant
 
-        if flatten and isinstance(self, Product):
+        if flatten and isinstance(self, FpProduct):
             return self.mul_flatten(other)
 
-        if flatten and isinstance(other, Product):
+        if flatten and isinstance(other, FpProduct):
             return other.mul_flatten(self)
 
-        if isinstance(other, Constant):
+        if isinstance(other, FpConstant):
             if int(other._value) == 0:
                 return other
             if int(other._value) == 1:
                 return self
-            return Product(Counter({UnoverloadedWrapper(self): 1}), self._gf, constant=other._value)
+            return FpProduct(Counter({UnoverloadedWrapper(self): 1}), self._gf, constant=other._value)
 
         if id(self) == id(other):
-            return Product(Counter({UnoverloadedWrapper(self): 2}), self._gf)
+            return FpProduct(Counter({UnoverloadedWrapper(self): 2}), self._gf)
         else:
-            return Product(
+            return FpProduct(
                 Counter({UnoverloadedWrapper(self): 1, UnoverloadedWrapper(other): 1}), self._gf
             )
 
@@ -170,14 +151,14 @@ class FpNode(FpdNode):  # noqa: PLR0904
             A possibly flattened `Or` node or a `Constant` representing self & other.
         """
         from oraqle.compiler.boolean.bool_or import Or
-        from oraqle.compiler.nodes.fp.leafs import Constant
+        from oraqle.compiler.nodes.fp.leafs import FpConstant
 
         if flatten and isinstance(other, Or):
             return other.or_flatten(self)
 
-        if isinstance(other, Constant):
+        if isinstance(other, FpConstant):
             if bool(other._value):
-                return Constant(self._gf(1))
+                return FpConstant(self._gf(1))
             else:
                 return self
 
@@ -201,16 +182,16 @@ class FpNode(FpdNode):  # noqa: PLR0904
             A possibly flattened `And` node or a `Constant` representing self & other.
         """
         from oraqle.compiler.boolean.bool_and import And
-        from oraqle.compiler.nodes.fp.leafs import Constant
+        from oraqle.compiler.nodes.fp.leafs import FpConstant
 
         if flatten and isinstance(other, And):
             return other.and_flatten(self)
 
-        if isinstance(other, Constant):
+        if isinstance(other, FpConstant):
             if bool(other._value):
                 return self
             else:
-                return Constant(self._gf(0))
+                return FpConstant(self._gf(0))
 
         if self.is_equivalent(other):
             return self
@@ -264,9 +245,9 @@ class FpNode(FpdNode):  # noqa: PLR0904
         return Comparison(self, other_node, less_than=False, gf=self._gf)
 
     def __neg__(self) -> "FpNode":
-        from oraqle.compiler.nodes.fp.leafs import Constant
+        from oraqle.compiler.nodes.fp.leafs import FpConstant
 
-        return Constant(-self._gf(1)) * self
+        return FpConstant(-self._gf(1)) * self
 
     def __invert__(self) -> "FpNode":
         from oraqle.compiler.boolean.bool_neg import Neg

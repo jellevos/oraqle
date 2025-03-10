@@ -7,7 +7,7 @@ from matplotlib.ticker import MultipleLocator
 
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.fp.abstract import SizeParetoFront
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 from oraqle.compiler.polynomials.univariate import (
     UnivariatePoly,
     _eval_poly,
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     p = 127  # 31
     gf = GF(p)
     for d in [p - 1]:
-        x = Input("x", gf)
+        x = FpInput("x", gf)
 
         poly = UnivariatePoly.from_function(x, gf, lambda x: x % 7)
         coefficients = poly._coefficients

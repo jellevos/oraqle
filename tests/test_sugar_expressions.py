@@ -4,15 +4,15 @@ from galois import GF
 
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.fp.arbitrary_arithmetic import sum_
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.leafs import FpInput
 
 
 def test_sum():
     """Tests the sum_ function."""
     gf = GF(127)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
 
     arithmetic_circuit = Circuit([sum_(a, 4, b, 3)]).arithmetize()
 

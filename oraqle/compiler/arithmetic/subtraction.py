@@ -2,7 +2,7 @@
 from galois import GF, FieldArray
 
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
-from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 from oraqle.compiler.nodes.fp.non_commutative import NonCommutativeBinaryNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
@@ -28,10 +28,10 @@ class Subtraction(NonCommutativeBinaryNode):
     def _arithmetize_inner(self, strategy: str) -> FpNode:
         # TODO: Reorganize the files: let the arithmetic folder only contain pure arithmetic (including add and mul) and move exponentiation elsewhere.
         # TODO: For schemes that support subtraction we do not need to do this. We should only do this transformation during the compiler stage.
-        return (self._left.arithmetize(strategy) + (Constant(-self._gf(1)) * self._right.arithmetize(strategy))).arithmetize(strategy)  # type: ignore  # TODO: Should we always perform a final arithmetization in every node for constant folding? E.g. in Node?
+        return (self._left.arithmetize_fpd(strategy) + (FpConstant(-self._gf(1)) * self._right.arithmetize_fpd(strategy))).arithmetize(strategy)  # type: ignore  # TODO: Should we always perform a final arithmetization in every node for constant folding? E.g. in Node?
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        result = self._left + (Constant(-self._gf(1)) * self._right)
+        result = self._left + (FpConstant(-self._gf(1)) * self._right)
         front = result.arithmetize_depth_aware(cost_of_squaring)
         return front
 
@@ -39,8 +39,8 @@ class Subtraction(NonCommutativeBinaryNode):
 def test_evaluate_mod5():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = Subtraction(a, b, gf)
 
     assert node.evaluate({"a": gf(3), "b": gf(2)}) == gf(1)
@@ -55,9 +55,9 @@ def test_evaluate_mod5():  # noqa: D103
 def test_evaluate_arithmetized_mod5():  # noqa: D103
     gf = GF(5)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
-    node = Subtraction(a, b, gf).arithmetize("best-effort")
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
+    node = Subtraction(a, b, gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     assert node.evaluate({"a": gf(3), "b": gf(2)}) == gf(1)

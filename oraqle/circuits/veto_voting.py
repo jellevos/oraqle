@@ -9,14 +9,14 @@ from galois import GF, FieldArray
 
 from oraqle.compiler.boolean.bool_or import any_
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes import Input
+from oraqle.compiler.nodes import FpInput
 
 gf = GF(103)
 
 
 def gen_veto_voting_circuit(participants: int, gf: Type[FieldArray]):
     """Returns a veto voting circuit between the number of `participants`."""
-    input_nodes = {Input(f"Input {i}", gf) for i in range(participants)}
+    input_nodes = {FpInput(f"Input {i}", gf) for i in range(participants)}
     return Circuit([any_(*input_nodes)])
 
 

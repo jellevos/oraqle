@@ -5,23 +5,23 @@ from galois import GF, FieldArray
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.boolean.bool_or import any_
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes import Input
+from oraqle.compiler.nodes import FpInput
 from oraqle.compiler.nodes.fp.arbitrary_arithmetic import sum_
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
 def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> FpNode:
     """Returns the cardio circuit from https://arxiv.org/abs/2101.07078."""
-    man = Input("man", gf)
-    smoking = Input("smoking", gf)
-    age = Input("age", gf)
-    diabetic = Input("diabetic", gf)
-    hbp = Input("hbp", gf)
-    cholesterol = Input("cholesterol", gf)
-    weight = Input("weight", gf)
-    height = Input("height", gf)
-    activity = Input("activity", gf)
-    alcohol = Input("alcohol", gf)
+    man = FpInput("man", gf)
+    smoking = FpInput("smoking", gf)
+    age = FpInput("age", gf)
+    diabetic = FpInput("diabetic", gf)
+    hbp = FpInput("hbp", gf)
+    cholesterol = FpInput("cholesterol", gf)
+    weight = FpInput("weight", gf)
+    height = FpInput("height", gf)
+    activity = FpInput("activity", gf)
+    alcohol = FpInput("alcohol", gf)
 
     return sum_(
         man & (age > 50),
@@ -39,16 +39,16 @@ def construct_cardio_risk_circuit(gf: Type[FieldArray]) -> FpNode:
 
 def construct_cardio_elevated_risk_circuit(gf: Type[FieldArray]) -> FpNode:
     """Returns a variant of the cardio circuit that returns a Boolean indicating whether any risk factor returned true."""
-    man = Input("man", gf)
-    smoking = Input("smoking", gf)
-    age = Input("age", gf)
-    diabetic = Input("diabetic", gf)
-    hbp = Input("hbp", gf)
-    cholesterol = Input("cholesterol", gf)
-    weight = Input("weight", gf)
-    height = Input("height", gf)
-    activity = Input("activity", gf)
-    alcohol = Input("alcohol", gf)
+    man = FpInput("man", gf)
+    smoking = FpInput("smoking", gf)
+    age = FpInput("age", gf)
+    diabetic = FpInput("diabetic", gf)
+    hbp = FpInput("hbp", gf)
+    cholesterol = FpInput("cholesterol", gf)
+    weight = FpInput("weight", gf)
+    height = FpInput("height", gf)
+    activity = FpInput("activity", gf)
+    alcohol = FpInput("alcohol", gf)
 
     return any_(
         man & (age > 50),

@@ -9,7 +9,7 @@ from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.flexible import CommutativeUniqueReducibleNode
-from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 # TODO: Reduce code duplication between OR and AND
@@ -41,7 +41,7 @@ class Or(CommutativeUniqueReducibleNode):
                 self._gf,
             ),
             self._gf,
-        ).arithmetize(strategy)
+        ).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         # TODO: This is mostly copied from AND
@@ -51,7 +51,7 @@ class Or(CommutativeUniqueReducibleNode):
             new_operands.add(new_operand)
 
         if len(new_operands) == 0:
-            return CostParetoFront.from_leaf(Constant(self._gf(1)), cost_of_squaring)
+            return CostParetoFront.from_leaf(FpConstant(self._gf(1)), cost_of_squaring)
         elif len(new_operands) == 1:
             return next(iter(new_operands))
 
@@ -63,15 +63,15 @@ class Or(CommutativeUniqueReducibleNode):
         for operands in itertools.product(*(iter(new_operand) for new_operand in new_operands)):
             checked_operands = []
             for depth, cost, node in operands:
-                if isinstance(node, Constant):
+                if isinstance(node, FpConstant):
                     assert node._value in {0, 1}
                     if node._value == 0:
-                        return CostParetoFront.from_leaf(Constant(self._gf(0)), cost_of_squaring)
+                        return CostParetoFront.from_leaf(FpConstant(self._gf(0)), cost_of_squaring)
                 else:
                     checked_operands.append((depth, cost, node))
 
             if len(checked_operands) == 0:
-                return CostParetoFront.from_leaf(Constant(self._gf(1)), cost_of_squaring)
+                return CostParetoFront.from_leaf(FpConstant(self._gf(1)), cost_of_squaring)
 
             if len(checked_operands) == 1:
                 depth, cost, node = checked_operands[0]
@@ -95,9 +95,9 @@ class Or(CommutativeUniqueReducibleNode):
         Returns:
             An `Or` node containing the flattened OR operation, or a `Constant` node.
         """
-        if isinstance(other, Constant):
+        if isinstance(other, FpConstant):
             if bool(other._value):
-                return Constant(self._gf(1))
+                return FpConstant(self._gf(1))
             else:
                 return self
 
@@ -118,8 +118,8 @@ def any_(*operands: FpNode) -> Or:
 def test_evaluate_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = a | b
 
     assert node.evaluate({"a": gf(0), "b": gf(0)}) == gf(0)
@@ -134,8 +134,8 @@ def test_evaluate_mod3():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_mod2():  # noqa: D103
     gf = GF(2)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = a | b
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 
@@ -153,8 +153,8 @@ def test_evaluate_arithmetized_depth_aware_mod2():  # noqa: D103
 def test_evaluate_arithmetized_mod3():  # noqa: D103
     gf = GF(3)
 
-    a = Input("a", gf)
-    b = Input("b", gf)
+    a = FpInput("a", gf)
+    b = FpInput("b", gf)
     node = (a | b).arithmetize("best-effort")
 
     node.clear_cache(set())
@@ -170,7 +170,7 @@ def test_evaluate_arithmetized_mod3():  # noqa: D103
 def test_evaluate_arithmetized_depth_aware_50_mod31():  # noqa: D103
     gf = GF(31)
 
-    xs = {Input(f"x{i}", gf) for i in range(50)}
+    xs = {FpInput(f"x{i}", gf) for i in range(50)}
     node = Or({UnoverloadedWrapper(x) for x in xs}, gf)
     front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
 

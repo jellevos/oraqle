@@ -10,8 +10,8 @@ from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.func2poly import interpolate_polynomial
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
-from oraqle.compiler.nodes.fp.binary_arithmetic import Multiplication
-from oraqle.compiler.nodes.fp.leafs import Constant, Input
+from oraqle.compiler.nodes.fp.binary_arithmetic import FpMultiplication
+from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantMultiplication
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
@@ -114,10 +114,10 @@ class UnivariatePoly(UnivariateFpNode):
 
         """
         if len(self._coefficients) == 0:
-            return Constant(self._gf(0)), {}
+            return FpConstant(self._gf(0)), {}
 
         if len(self._coefficients) == 1:
-            return Constant(self._coefficients[0]), {}
+            return FpConstant(self._coefficients[0]), {}
 
         x = self._node.arithmetize(strategy).to_arithmetic()
 
@@ -149,7 +149,7 @@ class UnivariatePoly(UnivariateFpNode):
         assert best_arithmetization_powers is not None
 
         return (
-            best_arithmetization.arithmetize(strategy),
+            best_arithmetization.arithmetize_fpd(strategy),
             best_arithmetization_powers,
         )
 
@@ -168,10 +168,10 @@ class UnivariatePoly(UnivariateFpNode):
         """
         # TODO: Perhaps this should be cached
         if len(self._coefficients) == 0:
-            return CostParetoFront.from_leaf(Constant(self._gf(0)), cost_of_squaring), {0: {}}
+            return CostParetoFront.from_leaf(FpConstant(self._gf(0)), cost_of_squaring), {0: {}}
 
         if len(self._coefficients) == 1:
-            return CostParetoFront.from_leaf(Constant(self._coefficients[0]), cost_of_squaring), {
+            return CostParetoFront.from_leaf(FpConstant(self._coefficients[0]), cost_of_squaring), {
                 0: {}
             }
 
@@ -261,10 +261,10 @@ def _eval_poly_using_precomputed_ks(
     coefficients: List[FieldArray], precomputed_ks: List[ArithmeticNode], gf
 ) -> ArithmeticNode:
     if len(coefficients) == 0:
-        return Constant(gf(0))
+        return FpConstant(gf(0))
 
     # TODO: What if the constant is 0? Do we want to rely on no-op removal later or do it here already?
-    output = Constant(coefficients[0])
+    output = FpConstant(coefficients[0])
 
     for i in range(1, len(coefficients)):
         if coefficients[i] == 0:
@@ -275,10 +275,10 @@ def _eval_poly_using_precomputed_ks(
             continue
 
         output += (
-            Constant(coefficients[i]).mul(precomputed_ks[i - 1], flatten=False)
+            FpConstant(coefficients[i]).mul(precomputed_ks[i - 1], flatten=False)
         )  # FIXME: Consider just using *
 
-    return output.arithmetize("best-effort").to_arithmetic()
+    return output.arithmetize_fpd("best-effort").to_arithmetic()
 
 
 def _eval_monic_poly_specific(
@@ -289,7 +289,7 @@ def _eval_monic_poly_specific(
     p: int,
 ) -> ArithmeticNode:
     if all(c == 0 for c in coefficients):
-        return Constant(gf(0))
+        return FpConstant(gf(0))
 
     degree = len(coefficients) - 1
 
@@ -336,7 +336,7 @@ def _precompute_ks(x: ArithmeticNode, k: int) -> List[ArithmeticNode]:
         last = ks[-1]
         new_ks = []
         for pre in ks:
-            new_ks.append(Multiplication(pre, last, pre._gf))
+            new_ks.append(FpMultiplication(pre, last, pre._gf))
         ks.extend(new_ks)
 
     return ks[:k]
@@ -350,7 +350,7 @@ def _compute_extended_monomial(
     squaring_cost: float,
 ) -> ArithmeticNode:
     if target == 0:
-        return Constant(gf(1))
+        return FpConstant(gf(1))
 
     # TODO: Use squaring_cost
     p = gf.characteristic
@@ -368,7 +368,7 @@ def _compute_extended_monomial(
     nodes.extend(power_node for _, power_node in precomputed_powers.items())
 
     for i, j in addition_chain:
-        nodes.append(Multiplication(nodes[i], nodes[j], gf))
+        nodes.append(FpMultiplication(nodes[i], nodes[j], gf))
 
     return nodes[-1]
 
@@ -398,7 +398,7 @@ def _eval_poly(
     precomputed_pow2s = [precomputed_ks[-1]]
     for j in range(p - 1):  # TODO: Check if p - 1 is enough
         precomputed_pow2s.append(
-            Multiplication(precomputed_pow2s[-1], precomputed_pow2s[-1], precomputed_pow2s[-1]._gf)
+            FpMultiplication(precomputed_pow2s[-1], precomputed_pow2s[-1], precomputed_pow2s[-1]._gf)
         )
         precomputed_powers[(k * (2 ** (j + 1))) % (gf.characteristic - 1)] = precomputed_pow2s[-1]
 
@@ -435,7 +435,7 @@ def _eval_poly(
         )
         precomputed_powers[new_degree % (gf.characteristic - 1)] = monomial
         evaluation = (
-            Subtraction(evaluation, monomial, gf).arithmetize("best-effort").to_arithmetic()
+            Subtraction(evaluation, monomial, gf).arithmetize_fpd("best-effort").to_arithmetic()
         )  # TODO: We should not have to choose a strategy here
 
     if int(factor) > 1:
@@ -492,7 +492,7 @@ def _eval_poly_divide_conquer_specific(
     p: int,
 ) -> ArithmeticNode:
     if all(c == 0 for c in coefficients):
-        return Constant(gf(0))
+        return FpConstant(gf(0))
 
     degree = len(coefficients) - 1
 
@@ -540,7 +540,7 @@ def _eval_poly_divide_conquer(
     precomputed_pow2s = [precomputed_ks[-1]]
     for j in range(p - 1):  # TODO: Check if p - 1 is enough
         precomputed_pow2s.append(
-            Multiplication(precomputed_pow2s[-1], precomputed_pow2s[-1], precomputed_pow2s[-1]._gf)
+            FpMultiplication(precomputed_pow2s[-1], precomputed_pow2s[-1], precomputed_pow2s[-1]._gf)
         )
         precomputed_powers[(k * (2 ** (j + 1))) % (gf.characteristic - 1)] = precomputed_pow2s[-1]
 
@@ -566,7 +566,7 @@ def test_ps_method():  # noqa: D103
     gf = GF(31)
     coefficients = [gf(i) for i in range(31)]
 
-    x = Input("x", gf)
+    x = FpInput("x", gf)
 
     for k in range(1, len(coefficients)):
         (
@@ -586,7 +586,7 @@ def test_divide_conquer_method():  # noqa: D103
     gf = GF(31)
     coefficients = [gf(i) for i in range(31)]
 
-    x = Input("x", gf)
+    x = FpInput("x", gf)
 
     for k in range(1, len(coefficients)):
         (
@@ -606,7 +606,7 @@ def test_babystep_giantstep_method():  # noqa: D103
     gf = GF(31)
     coefficients = [gf(i) for i in range(31)]
 
-    x = Input("x", gf)
+    x = FpInput("x", gf)
 
     for k in range(1, len(coefficients)):
         (

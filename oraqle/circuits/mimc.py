@@ -5,7 +5,7 @@ from random import randint
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
-from oraqle.compiler.nodes import Constant, Input, FpNode
+from oraqle.compiler.nodes import FpConstant, FpInput, FpNode
 
 gf = GF(680564733841876926926749214863536422929)
 
@@ -17,13 +17,13 @@ def encrypt(plaintext: FpNode, key: int, power_n: int = 129) -> FpNode:
 
     constants = [
         (
-            Constant(gf(0))
+            FpConstant(gf(0))
             if (round == 0) or (round == (rounds - 1))
-            else Constant(gf(randint(0, 2**power_n)))
+            else FpConstant(gf(randint(0, 2**power_n)))
         )
         for round in range(rounds)
     ]
-    key_constant = Constant(gf(key))
+    key_constant = FpConstant(gf(key))
 
     for round in range(rounds):
         added = plaintext + key_constant + constants[round]
@@ -33,7 +33,7 @@ def encrypt(plaintext: FpNode, key: int, power_n: int = 129) -> FpNode:
 
 
 if __name__ == "__main__":
-    node = encrypt(Input("m", gf), 12345)
+    node = encrypt(FpInput("m", gf), 12345)
 
     circuit = Circuit([node]).arithmetize()
     print(circuit.multiplicative_depth())
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
 
 def test_mimc_129():  # noqa: D103
-    node = encrypt(Input("m", gf), 12345)
+    node = encrypt(FpInput("m", gf), 12345)
 
     circuit = Circuit([node]).arithmetize()
 

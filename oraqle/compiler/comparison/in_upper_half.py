@@ -7,8 +7,8 @@ from oraqle.add_chains.addition_chains_front import gen_pareto_front
 from oraqle.add_chains.addition_chains_heuristic import add_chain_guaranteed
 from oraqle.add_chains.solving import extract_indices
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
-from oraqle.compiler.nodes.fp.binary_arithmetic import Addition, Multiplication
-from oraqle.compiler.nodes.fp.leafs import Input
+from oraqle.compiler.nodes.fp.binary_arithmetic import FpAddition, FpMultiplication
+from oraqle.compiler.nodes.fp.leafs import FpInput
 from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantMultiplication
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
@@ -64,7 +64,7 @@ class InUpperHalf(UnivariateFpNode):
         ).arithmetize_custom(strategy)
 
         # Since we skip the first coefficient, we manually multiply the output by the input node.
-        result = Multiplication(input_node, arithmetization, self._gf)
+        result = FpMultiplication(input_node, arithmetization, self._gf)
 
         # Compute the final coefficient using an exponentiation
         precomputed_values = tuple(
@@ -81,11 +81,11 @@ class InUpperHalf(UnivariateFpNode):
         nodes.extend(power_node for exp, power_node in precomputed_powers.items() if ((2 * exp) % (p - 1)) != 0)
 
         for i, j in addition_chain:
-            nodes.append(Multiplication(nodes[i], nodes[j], self._gf))
+            nodes.append(FpMultiplication(nodes[i], nodes[j], self._gf))
 
         final_term = ConstantMultiplication(nodes[-1], self._gf((p + 1) // 2))
 
-        return (Addition(result, final_term, self._gf)).arithmetize(strategy)
+        return (FpAddition(result, final_term, self._gf)).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         # TODO: Handle p = 2 and p = 3 separately
@@ -110,7 +110,7 @@ class InUpperHalf(UnivariateFpNode):
 
             # We do not add the final coefficient, which will be computed later, so we do not do coefficients.append(gf((p + 1) // 2))
 
-            input_node_squared = Multiplication(node, node, self._gf)
+            input_node_squared = FpMultiplication(node, node, self._gf)
             arithmetizations, precomputed_powers = UnivariatePoly(
                 input_node_squared, coefficients, self._gf
             ).arithmetize_depth_aware_custom(cost_of_squaring)
@@ -119,7 +119,7 @@ class InUpperHalf(UnivariateFpNode):
 
             for depth, _, poly_arith in arithmetizations:
                 # Since we skip the first coefficient, we manually multiply the output by the input node.
-                result = Multiplication(node, poly_arith, self._gf)
+                result = FpMultiplication(node, poly_arith, self._gf)
 
                 # Compute the final coefficient using an exponentiation
                 precomputed_values = tuple(
@@ -152,13 +152,13 @@ class InUpperHalf(UnivariateFpNode):
                     nodes.extend(power_node for exp, power_node in precomputed_powers[depth].items() if ((2 * exp) % (p - 1)) != 0)
 
                     for i, j in c:
-                        nodes.append(Multiplication(nodes[i], nodes[j], self._gf))
+                        nodes.append(FpMultiplication(nodes[i], nodes[j], self._gf))
 
                     final_power_front.add(nodes[-1], depth=node_depth + depth2)
 
                 for _, _, final_power in final_power_front:
                     final_term = ConstantMultiplication(final_power, self._gf((p + 1) // 2))
-                    final_front.add(Addition(result, final_term, self._gf))
+                    final_front.add(FpAddition(result, final_term, self._gf))
 
         assert not final_front.is_empty()
         return final_front
@@ -208,7 +208,7 @@ class IliashenkoZuccaInUpperHalf(UnivariateFpNode):
         # We do not add the final coefficient, which will be computed later, so we do not do coefficients.append(gf((p + 1) // 2))
 
         input_node = self._node.arithmetize(strategy).to_arithmetic()
-        input_node_squared = Multiplication(input_node, input_node, self._gf)
+        input_node_squared = FpMultiplication(input_node, input_node, self._gf)
 
         # We decide ahead of time which k to use
         k = round(math.sqrt((p - 3) / 2))
@@ -217,7 +217,7 @@ class IliashenkoZuccaInUpperHalf(UnivariateFpNode):
         )
 
         # Since we skip the first coefficient, we manually multiply the output by the input node.
-        result = Multiplication(input_node, arithmetization, self._gf)
+        result = FpMultiplication(input_node, arithmetization, self._gf)
 
         # Compute the final coefficient using an exponentiation
         precomputed_values = tuple(
@@ -234,12 +234,12 @@ class IliashenkoZuccaInUpperHalf(UnivariateFpNode):
         nodes.extend(power_node for exp, power_node in precomputed_powers.items() if ((2 * exp) % (p - 1)) != 0)
 
         for i, j in addition_chain:
-            nodes.append(Multiplication(nodes[i], nodes[j], self._gf))
+            nodes.append(FpMultiplication(nodes[i], nodes[j], self._gf))
         final_monomial = nodes[-1]
 
         final_term = ConstantMultiplication(final_monomial, self._gf((p + 1) // 2))
 
-        return (Addition(result, final_term, self._gf)).arithmetize(strategy)
+        return (FpAddition(result, final_term, self._gf)).arithmetize_fpd(strategy)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError()
@@ -250,7 +250,7 @@ class IliashenkoZuccaInUpperHalf(UnivariateFpNode):
 def test_evaluate_mod7():  # noqa: D103
     gf = GF(7)
 
-    x = Input("x", gf)
+    x = FpInput("x", gf)
     node = InUpperHalf(x, gf)
 
     for i in range(3):
@@ -264,8 +264,8 @@ def test_evaluate_mod7():  # noqa: D103
 def test_evaluate_arithmetized_mod7():  # noqa: D103
     gf = GF(7)
 
-    x = Input("x", gf)
-    node = InUpperHalf(x, gf).arithmetize("best-effort")
+    x = FpInput("x", gf)
+    node = InUpperHalf(x, gf).arithmetize_fpd("best-effort")
     node.clear_cache(set())
 
     for i in range(3):
