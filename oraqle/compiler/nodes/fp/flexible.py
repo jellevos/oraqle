@@ -21,7 +21,7 @@ class FlexibleNode(FpNode):
 
     # TODO: Ensure that when all inputs are constants, the node is replaced with its evaluation
 
-    def arithmetize(self, strategy: str) -> FpNode:  # noqa: D102
+    def arithmetize(self, strategy: str) -> ArithmeticNode:  # noqa: D102
         if self._arithmetize_cache is None:
             self._arithmetize_cache = self._arithmetize_inner(strategy)
 

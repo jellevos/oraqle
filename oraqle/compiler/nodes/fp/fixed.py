@@ -8,11 +8,12 @@ from oraqle.compiler.instructions import ArithmeticInstruction
 from oraqle.compiler.nodes.abstract import Node
 from oraqle.compiler.nodes.fixed import FixedNode
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront, ParetoFront
-from oraqle.compiler.nodes.fpd.abstract import FpNode
+from oraqle.compiler.nodes.fpd.abstract import FpNode, FpdNode
+from oraqle.compiler.nodes.fpd.fixed import FixedFpdNode
 
 
-def _to_node(obj: Union["FpNode", int, bool], gf: Type[FieldArray]) -> "FpNode":
-    if isinstance(obj, FpNode):
+def _to_fpd_node(obj: Union["FpdNode", int, bool], gf: Type[FieldArray]) -> "FpdNode":
+    if isinstance(obj, FpdNode):
         return obj
 
     if isinstance(obj, int):
@@ -22,8 +23,8 @@ def _to_node(obj: Union["FpNode", int, bool], gf: Type[FieldArray]) -> "FpNode":
 
 
 # TODO: This should output higher level types (not necessarily elements of Fp, Fpd, ..., we do not yet know which it should be)
-def try_to_node(obj: Any, gf: Type[FieldArray]) -> Optional["FpNode"]:
-    """Tries to cast this object into a valid `Node`.
+def try_to_node(obj: Any, gf: Type[FieldArray]) -> Optional["FpdNode"]:
+    """Tries to cast this object into a valid `FpdNode`.
     
     This can be used to transform e.g. an `int` or `bool` into a `Constant`.
     If it is applied to a `Node`, it does nothing.
@@ -31,69 +32,71 @@ def try_to_node(obj: Any, gf: Type[FieldArray]) -> Optional["FpNode"]:
     Returns:
     A `Node` or `None` depending on whether the object is castable.
     """
-    return _to_node(obj, gf)
+    return _to_fpd_node(obj, gf)
 
 
-class FixedFpNode[Operand: Node](FixedNode[Operand], FpNode):
-    """A node with a fixed number of operands."""
+class FixedFpNode[Operand: Node](FixedFpdNode[Operand], FpNode):
+    pass
+
+
+# class FixedFpNode[Operand: Node](FixedNode[Operand], FpNode):
+#     """A node with a fixed number of operands."""
     
-    def arithmetize(self, strategy: str) -> "ArithmeticNode":  # noqa: D102
-        if self._arithmetize_cache is None:
-            if self._arithmetize_depth_cache is not None:
-                return self._arithmetize_depth_cache.get_lowest_value()  # type: ignore
+#     def arithmetize(self, strategy: str) -> "ArithmeticNode":  # noqa: D102
+#         if self._arithmetize_cache is None:
+#             if self._arithmetize_depth_cache is not None:
+#                 return self._arithmetize_depth_cache.get_lowest_value()  # type: ignore
 
-            # If we know all operands we can simply evaluate this node
-            operands = self.operands()
-            if len(operands) > 0 and all(
-                hasattr(operand, "_value") for operand in operands
-            ):  # This is a hacky way of checking whether the operands are all constant
-                from oraqle.compiler.nodes.fp.leafs import Constant
+#             # If we know all operands we can simply evaluate this node
+#             operands = self.operands()
+#             if len(operands) > 0 and all(
+#                 hasattr(operand, "_value") for operand in operands
+#             ):  # This is a hacky way of checking whether the operands are all constant
+#                 from oraqle.compiler.nodes.fp.leafs import Constant
 
-                self._arithmetize_cache = Constant(self.operation([operand._value for operand in self.operands()]))  # type: ignore
-            else:
-                self._arithmetize_cache = self._arithmetize_inner(strategy)
+#                 self._arithmetize_cache = Constant(self.operation([operand._value for operand in self.operands()]))  # type: ignore
+#             else:
+#                 self._arithmetize_cache = self._arithmetize_inner(strategy)
 
-        return self._arithmetize_cache
+#         return self._arithmetize_cache
 
-    @abstractmethod
-    def _arithmetize_inner(self, strategy: str) -> "ArithmeticNode":
-        pass
+#     @abstractmethod
+#     def _arithmetize_inner(self, strategy: str) -> "ArithmeticNode":
+#         pass
 
-    # TODO: Reduce code duplication
+#     # TODO: Reduce code duplication
     
-    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:  # noqa: D102
-        if self._arithmetize_depth_cache is None:
-            if self._arithmetize_cache is not None:
-                raise Exception("This should not happen")
+#     def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:  # noqa: D102
+#         if self._arithmetize_depth_cache is None:
+#             if self._arithmetize_cache is not None:
+#                 raise Exception("This should not happen")
 
-            # If we know all operands we can simply evaluate this node
-            operands = self.operands()
-            if len(operands) > 0 and all(
-                hasattr(operand, "_value") for operand in operands
-            ):  # This is a hacky way of checking whether the operands are all constant
-                from oraqle.compiler.nodes.fp.leafs import Constant
+#             # If we know all operands we can simply evaluate this node
+#             operands = self.operands()
+#             if len(operands) > 0 and all(
+#                 hasattr(operand, "_value") for operand in operands
+#             ):  # This is a hacky way of checking whether the operands are all constant
+#                 from oraqle.compiler.nodes.fp.leafs import Constant
 
-                self._arithmetize_depth_cache = CostParetoFront.from_leaf(Constant(self.operation([operand._value for operand in self.operands()])), cost_of_squaring)  # type: ignore
-            else:
-                self._arithmetize_depth_cache = self._arithmetize_depth_aware_inner(
-                    cost_of_squaring
-                )
+#                 self._arithmetize_depth_cache = CostParetoFront.from_leaf(Constant(self.operation([operand._value for operand in self.operands()])), cost_of_squaring)  # type: ignore
+#             else:
+#                 self._arithmetize_depth_cache = self._arithmetize_depth_aware_inner(
+#                     cost_of_squaring
+#                 )
 
-        assert self._arithmetize_depth_cache is not None
-        return self._arithmetize_depth_cache
+#         assert self._arithmetize_depth_cache is not None
+#         return self._arithmetize_depth_cache
 
-    @abstractmethod
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
-        pass
+#     @abstractmethod
+#     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+#         pass
 
 
 class BinaryFpNode(FixedFpNode):
     """A node with two operands."""
 
 
-
-
-class GaloisArithmeticNode(FixedFpNode["ArithmeticNode"]):
+class GaloisArithmeticNode[Operand: GaloisArithmeticNode](FixedFpdNode[Operand]):
     
     def clear_cache(self, already_cleared: Set[int]):
         """Clears any cached values of the node and any of its operands."""
@@ -170,9 +173,12 @@ class GaloisArithmeticNode(FixedFpNode["ArithmeticNode"]):
 
     def to_arithmetic(self) -> "GaloisArithmeticNode":  # noqa: D102
         return self
+    
+    def __mul__(self, other) -> FpNode:
+        return Multiplication()
 
 
-class ArithmeticNode(GaloisArithmeticNode):
+class ArithmeticNode(GaloisArithmeticNode["ArithmeticNode"]):
     """
     A special type of FixedFpNode that indicates only arithmetic operations. These are the primitives in an arithmetic circuit.
     

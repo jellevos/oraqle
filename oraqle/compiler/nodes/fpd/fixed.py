@@ -15,3 +15,73 @@
 #         # TODO: assert not isinstance(node, FpdConstant)
 #         FixedFpNode.__init__(self, gf)
 #         UnivariateNode.__init__(self, node)
+
+
+from abc import abstractmethod
+from oraqle.compiler.nodes.abstract import Node
+from oraqle.compiler.nodes.fixed import FixedNode
+from oraqle.compiler.nodes.fp.abstract import CostParetoFront
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode, GaloisArithmeticNode
+from oraqle.compiler.nodes.fpd.abstract import FpdNode
+
+
+class FixedFpdNode[Operand: Node](FixedNode[Operand], FpdNode):
+    """A node with a fixed number of operands."""
+    
+    def arithmetize(self, strategy: str) -> "ArithmeticNode":  # noqa: D102
+        if self._arithmetize_cache is None:
+            if self._arithmetize_depth_cache is not None:
+                return self._arithmetize_depth_cache.get_lowest_value()  # type: ignore
+
+            # If we know all operands we can simply evaluate this node
+            operands = self.operands()
+            if len(operands) > 0 and all(
+                hasattr(operand, "_value") for operand in operands
+            ):  # This is a hacky way of checking whether the operands are all constant
+                from oraqle.compiler.nodes.fp.leafs import Constant
+
+                self._arithmetize_cache = Constant(self.operation([operand._value for operand in self.operands()]))  # type: ignore
+            else:
+                self._arithmetize_cache = self._arithmetize_inner(strategy)
+
+        return self._arithmetize_cache
+
+    @abstractmethod
+    def _arithmetize_inner(self, strategy: str) -> "ArithmeticNode":
+        pass
+
+    # TODO: Reduce code duplication
+    
+    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:  # noqa: D102
+        if self._arithmetize_depth_cache is None:
+            if self._arithmetize_cache is not None:
+                raise Exception("This should not happen")
+
+            # If we know all operands we can simply evaluate this node
+            operands = self.operands()
+            if len(operands) > 0 and all(
+                hasattr(operand, "_value") for operand in operands
+            ):  # This is a hacky way of checking whether the operands are all constant
+                from oraqle.compiler.nodes.fp.leafs import Constant
+
+                self._arithmetize_depth_cache = CostParetoFront.from_leaf(Constant(self.operation([operand._value for operand in self.operands()])), cost_of_squaring)  # type: ignore
+            else:
+                self._arithmetize_depth_cache = self._arithmetize_depth_aware_inner(
+                    cost_of_squaring
+                )
+
+        assert self._arithmetize_depth_cache is not None
+        return self._arithmetize_depth_cache
+
+    @abstractmethod
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        pass
+
+    def galois_arithmetize(self) -> GaloisArithmeticNode:
+        if self._galois_arithmetize_cache is None:
+            self._galois_arithmetize_cache = self._galois_arithmetize_inner()
+        
+        return self._galois_arithmetize_cache
+    
+    def _galois_arithmetize_inner(self) -> GaloisArithmeticNode:
+        return self._arithmetize_inner("best-effort")

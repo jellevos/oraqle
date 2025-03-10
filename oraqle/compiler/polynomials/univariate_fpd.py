@@ -7,7 +7,7 @@ from oraqle.compiler.nodes.fpd.galois import FieldNorm
 from oraqle.compiler.nodes.zpx_cycl_pow2.abstract import MultAutParetoFront, PolyRingPow2, ZpxNode
 
 
-def poly_eval_galois_within_degree(gf: Type[FieldArray], coefficients: List[int], element: FpdNode) -> FpNode:
+def poly_eval_galois_within_degree(gf: Type[FieldArray], coefficients: List[int], element: FpNode) -> FpNode:
     assert (len(coefficients) - 1) <= gf.degree
 
     added_coefficients, factor, inverse_factor, poly_degree = None  # TODO: Call Rust code
@@ -21,6 +21,7 @@ def poly_eval_galois_within_degree(gf: Type[FieldArray], coefficients: List[int]
     new_coefficients = [(((a + b) % p) * inverse_factor) % p for a, b in zip(added_coefficients, new_coefficients)]
 
     # Perform the norm computation
+    element_fpd = FpdNode(element, degree=poly_degree)
     alpha: FpdNode = None  # TODO: Call Rust code, also give the characteristic poly?
     res = FieldNorm(alpha - element, poly_degree)
 

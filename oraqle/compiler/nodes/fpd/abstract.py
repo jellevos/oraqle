@@ -15,15 +15,6 @@ class FpdNode(Node):
     An element of F_{p^d}.
     """
 
-    # TODO: Should we not be able to call arithmetize on FpdNode? FpdNode only means the output is in F_{p^d}.
-    @abstractmethod
-    def galois_arithmetize(self) -> "GaloisArithmeticNode":
-        pass
-
-
-class FpNode(FpdNode):  # noqa: PLR0904
-    """Abstract node representing an element in Fp in a circuit."""
-
     def __init__(self, gf: Type[FieldArray]):
         """Creates a new node, of which the result is known by the parties identified by `known_by`, as well as those who know all input operands."""
         self._gf = gf
@@ -33,6 +24,7 @@ class FpNode(FpdNode):  # noqa: PLR0904
         self._arithmetize_cache: Optional[ArithmeticNode] = None
         self._arithmetize_depth_cache: Optional[CostParetoFront] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
+        self._galois_arithmetize_cache: Optional[GaloisArithmeticNode] = None
 
     def clear_cache(self, already_cleared: Set[int]):
         # FIXME: The cache should not be cleared twice for the same node, but there is no way to check this.
@@ -40,6 +32,7 @@ class FpNode(FpdNode):  # noqa: PLR0904
         self._arithmetize_cache: Optional["ArithmeticNode"] = None
         self._arithmetize_depth_cache: Optional[CostParetoFront] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
+        self._galois_arithmetize_cache: Optional[GaloisArithmeticNode] = None
 
         Node.clear_cache(self, already_cleared)
 
@@ -65,6 +58,14 @@ class FpNode(FpdNode):  # noqa: PLR0904
         Returns:
             `CostParetoFront` containing a front that trades off multiplicative depth and multiplicative cost.
         """
+
+
+class FpNode(FpdNode):  # noqa: PLR0904
+    """Abstract node representing an element in Fp in a circuit."""
+
+    def __init__(self, gf: Type[FieldArray]):
+        assert gf.degree == 1
+        super().__init__(gf)
 
     def to_arithmetic(self) -> "ArithmeticNode":
         """Outputs this node's equivalent ArithmeticNode. Errors if this node does not have a direct arithmetic equivalent.

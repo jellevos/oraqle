@@ -195,7 +195,7 @@ class Addition(CommutativeArithmeticBinaryNode, ArithmeticNode):
     def _operation_inner(self, x, y):
         return x + y
 
-    def arithmetize(self, strategy: str) -> FpNode:  # noqa: D102
+    def arithmetize(self, strategy: str) -> ArithmeticNode:  # noqa: D102
         self._left = self._left.arithmetize(strategy)
         self._right = self._right.arithmetize(strategy)
         return self
@@ -252,7 +252,7 @@ class Multiplication(CommutativeArithmeticBinaryNode, ArithmeticNode):
         return x * y
 
     # TODO: This is very hacky! Arithmetic nodes should simply not have to be arithmetized...
-    def arithmetize(self, strategy: str) -> FpNode:  # noqa: D102
+    def arithmetize(self, strategy: str) -> ArithmeticNode:  # noqa: D102
         self._left = self._left.arithmetize(strategy)
         self._right = self._right.arithmetize(strategy)
         return self

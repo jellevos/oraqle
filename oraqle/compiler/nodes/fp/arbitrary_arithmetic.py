@@ -14,7 +14,7 @@ from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.abstract import (
     CostParetoFront,
 )
-from oraqle.compiler.nodes.fp.fixed import ArithmeticNode, _to_node
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode, _to_fpd_node
 from oraqle.compiler.nodes.fp.binary_arithmetic import Addition, Multiplication
 from oraqle.compiler.nodes.fp.flexible import CommutativeMultiplicityReducibleNode
 from oraqle.compiler.nodes.fp.leafs import Constant
@@ -376,7 +376,7 @@ def sum_(*operands: Union[FpNode, int, bool]) -> Sum:
     assert len(operands) > 0
     gf = _first_gf(*operands)
     assert gf is not None
-    return Sum(Counter(UnoverloadedWrapper(_to_node(operand, gf)) for operand in operands), gf)
+    return Sum(Counter(UnoverloadedWrapper(_to_fpd_node(operand, gf)) for operand in operands), gf)
 
 
 def product_(*operands: FpNode) -> Product:
@@ -388,4 +388,4 @@ def product_(*operands: FpNode) -> Product:
     assert len(operands) > 0
     gf = _first_gf(*operands)
     assert gf is not None
-    return Product(Counter(UnoverloadedWrapper(_to_node(operand, gf)) for operand in operands), gf)
+    return Product(Counter(UnoverloadedWrapper(_to_fpd_node(operand, gf)) for operand in operands), gf)
