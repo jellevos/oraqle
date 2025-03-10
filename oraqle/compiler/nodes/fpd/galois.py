@@ -1,4 +1,4 @@
-from typing import List, Optional, Self, Set, Tuple, Type
+from typing import List, Optional, Self, Set, Tuple, Type, override
 
 from galois import FieldArray
 from oraqle.compiler.instructions import ArithmeticInstruction
@@ -27,13 +27,16 @@ class FrobeniusAutomorphism(UnivariateFpdNode[GaloisArithmeticNode], GaloisArith
         self._power = power
         super().__init__(node, node._gf)
 
+    @override
     def _arithmetize_inner(self, strategy: str) -> ArithmeticNode:
         raise NotImplementedError("This automorphism is not an arithmetic node")
     
+    @override
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         raise NotImplementedError("This automorphism is not an arithmetic node")
     
-    def _galois_arithmetize_inner(self) -> GaloisArithmeticNode:
+    def _galois_arithmetize_inner(self, circuit_gf: Type[FieldArray]) -> GaloisArithmeticNode:
+        assert self._gf == circuit_gf
         return self
     
     def multiplicative_depth(self) -> int:

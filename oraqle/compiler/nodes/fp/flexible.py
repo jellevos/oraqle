@@ -22,25 +22,25 @@ class FlexibleNode[Operand: Node](Node[Operand]):
     # TODO: Ensure that when all inputs are constants, the node is replaced with its evaluation
 
     @override
-    def arithmetize_fpd(self, strategy: str) -> ArithmeticNode:  # noqa: D102
+    def arithmetize_fpd(self, strategy: str, circuit_gf: Type[FieldArray]) -> ArithmeticNode:  # noqa: D102
         if self._arithmetize_cache is None:
-            self._arithmetize_cache = self._arithmetize_inner(strategy)
+            self._arithmetize_cache = self._arithmetize_inner(strategy, circuit_gf)
 
         return self._arithmetize_cache
 
     @abstractmethod
-    def _arithmetize_inner(self, strategy: str) -> ArithmeticNode:
+    def _arithmetize_inner(self, strategy: str, circuit_gf: Type[FieldArray]) -> ArithmeticNode:
         pass
 
     @override
-    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:  # noqa: D102
+    def arithmetize_depth_aware(self, cost_of_squaring: float, circuit_gf: Type[FieldArray]) -> CostParetoFront:  # noqa: D102
         if self._arithmetize_depth_cache is None:
-            self._arithmetize_depth_cache = self._arithmetize_depth_aware_inner(cost_of_squaring)
+            self._arithmetize_depth_cache = self._arithmetize_depth_aware_inner(cost_of_squaring, circuit_gf)
 
         return self._arithmetize_depth_cache
 
     @abstractmethod
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float, circuit_gf: Type[FieldArray]) -> CostParetoFront:
         pass
 
 
@@ -167,6 +167,13 @@ class CommutativeMultiplicityReducibleNode[Operand: Node](FlexibleNode[Operand])
                 )
 
         return self._to_graph_cache
+    
+
+class CommutativeUniqueReducibleFpNode[Operand: Node](CommutativeUniqueReducibleNode[Operand], FpNode):
+
+    def __init__(self, operands: Set[UnoverloadedWrapper[Operand]], gf: Type[FieldArray]):
+        CommutativeUniqueReducibleNode.__init__(self, operands)
+        FpNode.__init__(self, gf)
 
 
 class CommutativeMultiplicityReducibleFpNode[Operand: Node](CommutativeMultiplicityReducibleNode[Operand], FpNode):

@@ -9,7 +9,7 @@ from oraqle.add_chains.solving import extract_indices
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.binary_arithmetic import FpAddition, FpMultiplication
 from oraqle.compiler.nodes.fp.leafs import FpInput
-from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantMultiplication
+from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantFpMultiplication
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 from oraqle.compiler.polynomials.univariate import UnivariatePoly, _eval_poly
@@ -83,7 +83,7 @@ class InUpperHalf(UnivariateFpNode):
         for i, j in addition_chain:
             nodes.append(FpMultiplication(nodes[i], nodes[j], self._gf))
 
-        final_term = ConstantMultiplication(nodes[-1], self._gf((p + 1) // 2))
+        final_term = ConstantFpMultiplication(nodes[-1], self._gf((p + 1) // 2))
 
         return (FpAddition(result, final_term, self._gf)).arithmetize_fpd(strategy)
 
@@ -157,7 +157,7 @@ class InUpperHalf(UnivariateFpNode):
                     final_power_front.add(nodes[-1], depth=node_depth + depth2)
 
                 for _, _, final_power in final_power_front:
-                    final_term = ConstantMultiplication(final_power, self._gf((p + 1) // 2))
+                    final_term = ConstantFpMultiplication(final_power, self._gf((p + 1) // 2))
                     final_front.add(FpAddition(result, final_term, self._gf))
 
         assert not final_front.is_empty()
@@ -237,7 +237,7 @@ class IliashenkoZuccaInUpperHalf(UnivariateFpNode):
             nodes.append(FpMultiplication(nodes[i], nodes[j], self._gf))
         final_monomial = nodes[-1]
 
-        final_term = ConstantMultiplication(final_monomial, self._gf((p + 1) // 2))
+        final_term = ConstantFpMultiplication(final_monomial, self._gf((p + 1) // 2))
 
         return (FpAddition(result, final_term, self._gf)).arithmetize_fpd(strategy)
 

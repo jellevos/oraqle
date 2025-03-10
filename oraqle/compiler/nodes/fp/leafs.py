@@ -8,21 +8,13 @@ from oraqle.compiler.instructions import ArithmeticInstruction, InputInstruction
 from oraqle.compiler.nodes.abstract import select_stack_index
 from oraqle.compiler.nodes.fixed import LeafNode
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
-from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
+from oraqle.compiler.nodes.fp.fixed import ArithmeticFpNode, ArithmeticNode
 from oraqle.compiler.nodes.fp.fixed import FixedFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
-class ArithmeticLeafNode(LeafNode, ArithmeticNode):
+class ArithmeticLeafNode(LeafNode, ArithmeticFpNode):
     """An ArithmeticLeafNode is an ArithmeticNode with no inputs."""
-
-    @override
-    def arithmetize_fpd(self, strategy: str, circuit_gf: FieldArray) -> ArithmeticNode:
-        return self
-    
-    @override
-    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
-        return CostParetoFront.from_leaf(self, cost_of_squaring)
     
     def multiplicative_depth(self) -> int:  # noqa: D102
         return 0

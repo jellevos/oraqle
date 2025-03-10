@@ -18,7 +18,7 @@ from oraqle.compiler.nodes.fp.fixed import ArithmeticNode, _to_fpd_node
 from oraqle.compiler.nodes.fp.binary_arithmetic import FpAddition, FpMultiplication
 from oraqle.compiler.nodes.fp.flexible import CommutativeMultiplicityReducibleFpNode, CommutativeMultiplicityReducibleNode
 from oraqle.compiler.nodes.fp.leafs import FpConstant
-from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantAddition, ConstantMultiplication
+from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantFpAddition, ConstantFpMultiplication
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
@@ -43,9 +43,9 @@ def _generate_addition_tree(
             if b_const:
                 new = a.item + b.item
             else:
-                new = b.item if a.item._value == 0 else ConstantAddition(b.item, a.item._value)
+                new = b.item if a.item._value == 0 else ConstantFpAddition(b.item, a.item._value)
         elif b_const:
-            new = a.item if b.item._value == 0 else ConstantAddition(a.item, b.item._value)
+            new = a.item if b.item._value == 0 else ConstantFpAddition(a.item, b.item._value)
         else:
             new = FpAddition(a.item, b.item, a.item._gf)
 
@@ -92,9 +92,12 @@ class FpSum(CommutativeMultiplicityReducibleFpNode):
         elif sum(new_operands.values()) == 1 and new_constant == self._identity:
             return next(iter(new_operands)).node
 
-        return FpSum(new_operands, self._gf, new_constant).to_arithmetic(circuit_gf)  # TODO: Merge the code from to_arithmetic; we do not need it anymore
+        return FpSum(new_operands, self._gf, new_constant).to_arithmetic()  # TODO: Merge the code from to_arithmetic; we do not need it anymore
 
-    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float, circuit_gf: Type[FieldArray]) -> CostParetoFront:
+        # For now, we only support that the GF matches
+        assert self._gf == circuit_gf
+
         # FIXME: This could be done way more efficiently by iterating over increasing depth
         front = CostParetoFront(cost_of_squaring)
 
@@ -115,14 +118,14 @@ class FpSum(CommutativeMultiplicityReducibleFpNode):
 
                 addition_tree = (
                     addition_tree[0],
-                    ConstantAddition(addition_tree[1], self._constant),
+                    ConstantFpAddition(addition_tree[1], self._constant),
                 )
             front.add(addition_tree[1], depth=addition_tree[0])
 
         assert not front.is_empty()
         return front
 
-    def to_arithmetic(self, circuit_gf: Type[FieldArray]) -> ArithmeticNode:  # noqa: D102
+    def to_arithmetic(self) -> ArithmeticNode:  # noqa: D102
         if self._arithmetic_cache is None:
             # FIXME: Perform actual rebalancing
             operands = iter(self._operands.elements())
@@ -132,23 +135,23 @@ class FpSum(CommutativeMultiplicityReducibleFpNode):
                 self._arithmetic_cache = FpAddition(
                     next(operands).node.to_arithmetic(),
                     next(operands).node.to_arithmetic(),
-                    circuit_gf,
+                    self._gf,
                 )
             else:
-                self._arithmetic_cache = ConstantAddition(
-                    next(operands).node.to_arithmetic(), self._constant, circuit_gf
+                self._arithmetic_cache = ConstantFpAddition(
+                    next(operands).node.to_arithmetic(), self._constant
                 )
 
             for operand in operands:
                 self._arithmetic_cache = FpAddition(
-                    self._arithmetic_cache, operand.node.to_arithmetic(), circuit_gf
+                    self._arithmetic_cache, operand.node.to_arithmetic(), self._gf
                 )
 
         return self._arithmetic_cache
 
     def evaluate(self, actual_inputs: Dict[str, FieldArray]) -> FieldArray:  # noqa: D102
         if self._evaluate_cache is None:
-            self._evaluate_cache = reduce(
+            self._evaluate_cache: FieldArray = reduce(
                 lambda a, b: a + b,
                 (
                     operand.node.evaluate(actual_inputs) * count
@@ -222,9 +225,9 @@ def _generate_multiplication_tree(
             elif a.item._value == 1:
                 new = b.item
             else:
-                new = ConstantMultiplication(b.item, a.item._value)
+                new = ConstantFpMultiplication(b.item, a.item._value)
         elif b_const:
-            new = a.item if b.item._value == 1 else ConstantMultiplication(a.item, b.item._value)
+            new = a.item if b.item._value == 1 else ConstantFpMultiplication(a.item, b.item._value)
         else:
             new = FpMultiplication(a.item, b.item, a.item._gf)
 
@@ -308,7 +311,7 @@ class FpProduct(CommutativeMultiplicityReducibleFpNode):
 
                 multiplication_tree = (
                     multiplication_tree[0],
-                    ConstantMultiplication(multiplication_tree[1], self._constant),
+                    ConstantFpMultiplication(multiplication_tree[1], self._constant),
                 )
             front.add(multiplication_tree[1], depth=multiplication_tree[0])
 
@@ -327,7 +330,7 @@ class FpProduct(CommutativeMultiplicityReducibleFpNode):
                     self._gf,
                 )
             else:
-                self._arithmetic_cache = ConstantMultiplication(
+                self._arithmetic_cache = ConstantFpMultiplication(
                     next(operands).node.to_arithmetic(), self._constant
                 )
 

@@ -89,16 +89,16 @@ class FpNode(FpdNode):  # noqa: PLR0904
             )
 
     def __add__(self, other) -> "FpNode":
-        from oraqle.compiler.nodes.fp.fixed import try_to_node
-        other_node = try_to_node(other, self._gf)
+        from oraqle.compiler.nodes.fp.fixed import try_to_fpd_node
+        other_node = try_to_fpd_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this + cannot be made into a Node: {self} - {other}")
 
         return self.add(other_node)
 
     def __radd__(self, other) -> "FpNode":
-        from oraqle.compiler.nodes.fp.fixed import try_to_node
-        other_node = try_to_node(other, self._gf)
+        from oraqle.compiler.nodes.fp.fixed import try_to_fpd_node
+        other_node = try_to_fpd_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The LHS of this + cannot be made into a Node: {other} - {self}")
 
@@ -205,8 +205,8 @@ class FpNode(FpdNode):  # noqa: PLR0904
         return self.bool_and(other)
 
     def __lt__(self, other) -> "FpNode":
-        from oraqle.compiler.nodes.fp.fixed import try_to_node
-        other_node = try_to_node(other, self._gf)
+        from oraqle.compiler.nodes.fp.fixed import try_to_fpd_node
+        other_node = try_to_fpd_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this < cannot be made into a Node: {self} < {other}")
 
@@ -215,8 +215,8 @@ class FpNode(FpdNode):  # noqa: PLR0904
         return StrictComparison(self, other_node, less_than=True, gf=self._gf)
 
     def __gt__(self, other) -> "FpNode":
-        from oraqle.compiler.nodes.fp.fixed import try_to_node
-        other_node = try_to_node(other, self._gf)
+        from oraqle.compiler.nodes.fp.fixed import try_to_fpd_node
+        other_node = try_to_fpd_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this > cannot be made into a Node: {self} > {other}")
 
@@ -225,8 +225,8 @@ class FpNode(FpdNode):  # noqa: PLR0904
         return StrictComparison(self, other_node, less_than=False, gf=self._gf)
 
     def __le__(self, other) -> "FpNode":
-        from oraqle.compiler.nodes.fp.fixed import try_to_node
-        other_node = try_to_node(other, self._gf)
+        from oraqle.compiler.nodes.fp.fixed import try_to_fpd_node
+        other_node = try_to_fpd_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this <= cannot be made into a Node: {self} <= {other}")
 
@@ -235,8 +235,8 @@ class FpNode(FpdNode):  # noqa: PLR0904
         return Comparison(self, other_node, less_than=True, gf=self._gf)
 
     def __ge__(self, other) -> "FpNode":
-        from oraqle.compiler.nodes.fp.fixed import try_to_node
-        other_node = try_to_node(other, self._gf)
+        from oraqle.compiler.nodes.fp.fixed import try_to_fpd_node
+        other_node = try_to_fpd_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this >= cannot be made into a Node: {self} >= {other}")
 
@@ -263,8 +263,8 @@ class FpNode(FpdNode):  # noqa: PLR0904
         return Power(self, other, self._gf)
 
     def __sub__(self, other) -> "FpNode":
-        from oraqle.compiler.nodes.fp.fixed import try_to_node
-        other_node = try_to_node(other, self._gf)
+        from oraqle.compiler.nodes.fp.fixed import try_to_fpd_node
+        other_node = try_to_fpd_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this - cannot be made into a Node: {self} - {other}")
 
@@ -273,8 +273,8 @@ class FpNode(FpdNode):  # noqa: PLR0904
         return Subtraction(self, other_node, self._gf)
 
     def __rsub__(self, other) -> "FpNode":
-        from oraqle.compiler.nodes.fp.fixed import try_to_node
-        other_node = try_to_node(other, self._gf)
+        from oraqle.compiler.nodes.fp.fixed import try_to_fpd_node
+        other_node = try_to_fpd_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The LHS of this - cannot be made into a Node: {other} - {self}")
 
@@ -283,8 +283,8 @@ class FpNode(FpdNode):  # noqa: PLR0904
         return Subtraction(other_node, self, self._gf)
 
     def __eq__(self, other) -> "FpNode":
-        from oraqle.compiler.nodes.fp.fixed import try_to_node
-        other_node = try_to_node(other, self._gf)
+        from oraqle.compiler.nodes.fp.fixed import try_to_fpd_node
+        other_node = try_to_fpd_node(other, self._gf)
         if other_node is None:
             raise Exception(f"The RHS of this == cannot be made into a Node: {self} == {other}")
 

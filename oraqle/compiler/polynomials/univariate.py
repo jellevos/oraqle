@@ -12,7 +12,7 @@ from oraqle.compiler.nodes.fp.abstract import CostParetoFront
 from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.binary_arithmetic import FpMultiplication
 from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
-from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantMultiplication
+from oraqle.compiler.nodes.fp.unary_arithmetic import ConstantFpMultiplication
 from oraqle.compiler.nodes.fp.univariate import UnivariateFpNode
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 from oraqle.config import PS_METHOD_FACTOR_K
@@ -440,7 +440,7 @@ def _eval_poly(
 
     if int(factor) > 1:
         # Make up for the missing factor
-        evaluation = ConstantMultiplication(evaluation, factor)
+        evaluation = ConstantFpMultiplication(evaluation, factor)
 
     return evaluation, precomputed_powers
 

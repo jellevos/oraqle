@@ -15,7 +15,7 @@ from oraqle.compiler.nodes.fp.abstract import (
     CostParetoFront,
     iterate_increasing_depth,
 )
-from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
+from oraqle.compiler.nodes.fp.fixed import ArithmeticFpNode, ArithmeticFpdNode, ArithmeticNode, GaloisArithmeticFpdNode
 from oraqle.compiler.nodes.fp.fixed import BinaryFpNode
 from oraqle.compiler.nodes.fp.leafs import FpConstant
 from oraqle.compiler.nodes.fpd.abstract import FpNode
@@ -76,27 +76,22 @@ class CommutativeBinaryFpNode[Operand: FpNode](BinaryFpNode[Operand]):
         ) or (self._left.is_equivalent(other._right) and self._right.is_equivalent(other._left))
 
 
-class CommutativeArithmeticBinaryNode(BinaryNode[ArithmeticNode], ArithmeticNode):
+class CommutativeArithmeticBinaryFpNode(BinaryNode[ArithmeticFpNode], ArithmeticFpNode):
     """This node has two operands and implements a commutative operation between arithmetic nodes."""
-
-    @property
-    def circuit_algebra(self) -> Type[FieldArray]:
-        return self._circuit_gf
 
     def __init__(
         self,
-        left: ArithmeticNode,
-        right: ArithmeticNode,
-        circuit_gf: Type[FieldArray],
+        left: ArithmeticFpNode,
+        right: ArithmeticFpNode,
+        gf: Type[FieldArray],
     ):
         """Initialize this binary node with the given `left` and `right` operands.
         
         Raises:
             Exception: Neither `left` nor `right` is allowed to be a `Constant`.
         """
+        ArithmeticFpNode.__init__(self, gf)
         BinaryNode.__init__(self, left, right)
-        ArithmeticNode.__init__(self)
-        self._circuit_gf = circuit_gf
 
         self._multiplications: Optional[Set[int]] = None
         self._squarings: Optional[Set[int]] = None
@@ -172,17 +167,9 @@ class CommutativeArithmeticBinaryNode(BinaryNode[ArithmeticNode], ArithmeticNode
                 )
 
         return self._instruction_cache, stack_counter
-    
-    @override
-    def arithmetize_fpd(self, strategy: str) -> ArithmeticNode:  # noqa: D102
-        return self
-
-    @override
-    def arithmetize_depth_aware(self, cost_of_squaring: float) -> CostParetoFront:
-        return CostParetoFront.from_node(self, cost_of_squaring)
 
 
-class FpAddition(CommutativeArithmeticBinaryNode):
+class FpAddition(CommutativeArithmeticBinaryFpNode):
     """Performs modular addition of two previous nodes in an arithmetic circuit."""
 
     @property
@@ -199,19 +186,20 @@ class FpAddition(CommutativeArithmeticBinaryNode):
 
     def __init__(
         self,
-        left: ArithmeticNode,
-        right: ArithmeticNode,
+        left: ArithmeticFpNode,
+        right: ArithmeticFpNode,
         circuit_gf: Type[FieldArray],
     ):
         """Initialize a modular addition between `left` and `right`."""
         self._is_multiplication = False
         super().__init__(left, right, circuit_gf)
 
+    @override
     def _operation_inner(self, x, y):
         return x + y
 
 
-class FpMultiplication(CommutativeArithmeticBinaryNode):
+class FpMultiplication(CommutativeArithmeticBinaryFpNode):
     """Performs modular multiplication of two previous nodes in an arithmetic circuit."""
 
     @property
@@ -228,16 +216,154 @@ class FpMultiplication(CommutativeArithmeticBinaryNode):
 
     def __init__(
         self,
-        left: ArithmeticNode,
-        right: ArithmeticNode,
+        left: ArithmeticFpNode,
+        right: ArithmeticFpNode,
         circuit_gf: Type[FieldArray],
     ):
         """Initialize a modular multiplication between `left` and `right`."""
-        assert isinstance(left, ArithmeticNode)
-        assert isinstance(right, ArithmeticNode)
+        assert isinstance(left, ArithmeticFpNode)
+        assert isinstance(right, ArithmeticFpNode)
 
         self._is_multiplication = True
         super().__init__(left, right, circuit_gf)
 
+    @override
     def _operation_inner(self, x, y):
         return x * y
+
+
+# TODO: Move to a different folder?
+# TODO: Here we make it galois because we also want that it allows galois operands...
+# Maybe that means we should make GaloisArithmeticAddition and ArithmeticAddition instead of e.g. FpAddition and FpdAddition, because these do not accept automorphisms
+class CommutativeGaloisArithmeticBinaryFpdNode(BinaryNode[ArithmeticFpdNode], GaloisArithmeticFpdNode):
+    
+    def __init__(
+        self,
+        left: GaloisArithmeticFpdNode,
+        right: GaloisArithmeticFpdNode,
+        gf: Type[FieldArray],
+    ):
+        """Initialize this binary node with the given `left` and `right` operands.
+        
+        Raises:
+            Exception: Neither `left` nor `right` is allowed to be a `Constant`.
+        """
+        GaloisArithmeticFpdNode.__init__(self, gf)
+        BinaryNode.__init__(self, left, right)
+
+        self._multiplications: Optional[Set[int]] = None
+        self._squarings: Optional[Set[int]] = None
+        self._depth_cache: Optional[int] = None
+
+        if isinstance(left, FpConstant) or isinstance(right, FpConstant):
+            self._is_multiplication = False
+            raise Exception("This should be a constant.")
+
+    def multiplicative_depth(self) -> int:  # noqa: D102
+        if self._depth_cache is None:
+            self._depth_cache = self._is_multiplication + max(
+                self._left.multiplicative_depth(), self._right.multiplicative_depth()
+            )
+
+        return self._depth_cache
+
+    def multiplications(self) -> Set[int]:  # noqa: D102
+        if self._multiplications is None:
+            self._multiplications = set().union(
+                *(operand.multiplications() for operand in self.operands())  # type: ignore
+            )
+            if self._is_multiplication:
+                self._multiplications.add(id(self))
+
+        return self._multiplications
+
+    # TODO: Squaring should probably be a UniveriateNode
+    def squarings(self) -> Set[int]:  # noqa: D102
+        if self._squarings is None:
+            self._squarings = set().union(*(operand.squarings() for operand in self.operands()))  # type: ignore
+            if self._is_multiplication and id(self._left) == id(self._right):
+                self._squarings.add(id(self))
+
+        return self._squarings
+
+    def create_instructions(  # noqa: D102
+        self,
+        instructions: List[ArithmeticInstruction],
+        stack_counter: int,
+        stack_occupied: List[bool],
+    ) -> Tuple[int, int]:
+        self._left: ArithmeticNode
+        self._right: ArithmeticNode
+
+        if self._instruction_cache is None:
+            left_index, stack_counter = self._left.create_instructions(
+                instructions, stack_counter, stack_occupied
+            )
+            right_index, stack_counter = self._right.create_instructions(
+                instructions, stack_counter, stack_occupied
+            )
+
+            # FIXME: Is it possible for e.g. self._left._instruction_cache to be None?
+
+            self._left._parent_count -= 1
+            if self._left._parent_count == 0:
+                stack_occupied[self._left._instruction_cache] = False  # type: ignore
+
+            self._right._parent_count -= 1
+            if self._right._parent_count == 0:
+                stack_occupied[self._right._instruction_cache] = False  # type: ignore
+
+            self._instruction_cache = select_stack_index(stack_occupied)
+
+            if self._is_multiplication:
+                instructions.append(
+                    MultiplicationInstruction(self._instruction_cache, left_index, right_index)
+                )
+            else:
+                instructions.append(
+                    AdditionInstruction(self._instruction_cache, left_index, right_index)
+                )
+
+        return self._instruction_cache, stack_counter
+
+
+# TODO: Should this be a superclass of FpMultiplication? There is also a lot of code duplication.
+class FpdMultiplication(CommutativeGaloisArithmeticBinaryFpdNode):
+    
+    @property
+    def _overriden_graphviz_attributes(self) -> dict:
+        return {"shape": "square", "style": "rounded,filled", "fillcolor": "lightpink"}
+
+    @property
+    def _hash_name(self) -> str:
+        return "mul"
+
+    @property
+    def _node_label(self) -> str:
+        return "×"  # noqa: RUF001
+
+    def __init__(
+        self,
+        left: GaloisArithmeticFpdNode,
+        right: GaloisArithmeticFpdNode,
+        circuit_gf: Type[FieldArray],
+    ):
+        """Initialize a modular multiplication between `left` and `right`."""
+        assert isinstance(left, GaloisArithmeticFpdNode)
+        assert isinstance(right, GaloisArithmeticFpdNode)
+
+        self._is_multiplication = True
+        super().__init__(left, right, circuit_gf)
+
+    @override
+    def _operation_inner(self, x, y):
+        return x * y
+
+    def arithmetize_fpd(self, strategy: str, circuit_gf: FieldArray) -> "ArithmeticNode":
+        assert self._gf == circuit_gf
+        assert isinstance(self._left, ArithmeticNode)
+        assert isinstance(self._right, ArithmeticNode)
+        return self  # type: ignore
+    
+    def arithmetize_depth_aware(self, cost_of_squaring: float) -> "CostParetoFront":
+        raise NotImplementedError("TODO!")

@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, override
 
 from galois import FieldArray
 from oraqle.compiler.nodes.abstract import Node
@@ -64,6 +64,14 @@ class BinaryNode[Operand: Node](FixedNode[Operand]):
     def set_operands(self, operands: List[Operand]):  # noqa: D102
         self._left = operands[0]
         self._right = operands[1]
+
+    @override
+    def operation(self, operands: List[FieldArray]) -> FieldArray:
+        return self._operation_inner(operands[0], operands[1])
+
+    @abstractmethod    
+    def _operation_inner(self, left: FieldArray, right: FieldArray) -> FieldArray:
+        pass
 
     def __hash__(self) -> int:
         if self._hash is None:

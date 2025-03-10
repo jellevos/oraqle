@@ -8,7 +8,7 @@ from oraqle.compiler.instructions import ArithmeticInstruction
 from oraqle.compiler.nodes.abstract import Node
 from oraqle.compiler.nodes.fixed import FixedNode
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront, ParetoFront
-from oraqle.compiler.nodes.fp.binary_arithmetic import FpMultiplication
+from oraqle.compiler.nodes.fp.binary_arithmetic import FpMultiplication, FpdMultiplication
 from oraqle.compiler.nodes.fpd.abstract import FpNode, FpdNode
 from oraqle.compiler.nodes.fpd.fixed import FixedFpdNode
 
@@ -24,7 +24,7 @@ def _to_fpd_node(obj: Union["FpdNode", int, bool], gf: Type[FieldArray]) -> "Fpd
 
 
 # TODO: This should output higher level types (not necessarily elements of Fp, Fpd, ..., we do not yet know which it should be)
-def try_to_node(obj: Any, gf: Type[FieldArray]) -> Optional["FpdNode"]:
+def try_to_fpd_node(obj: Any, gf: Type[FieldArray]) -> Optional["FpdNode"]:
     """Tries to cast this object into a valid `FpdNode`.
     
     This can be used to transform e.g. an `int` or `bool` into a `Constant`.
@@ -172,19 +172,27 @@ class GaloisArithmeticNode[Operand: GaloisArithmeticNode](FixedNode[Operand]):
             This method assumes that the _parent_count of each node is up to date.
         """
 
-    @override
-    def galois_arithmetize_fpd(self, circuit_gf: FieldArray) -> "GaloisArithmeticNode":
-        return self
-
     def to_arithmetic(self) -> "GaloisArithmeticNode":  # noqa: D102
         return self
     
-    def __mul__(self, other) -> "GaloisArithmeticNode":
-        return FpMultiplication()
+    @abstractmethod
+    def __mul__(self, other: "GaloisArithmeticNode") -> "GaloisArithmeticNode":
+        pass
+    
+
+class GaloisArithmeticFpdNode[Operand: GaloisArithmeticFpdNode](GaloisArithmeticNode[Operand], FpdNode):
+
+    @override
+    def galois_arithmetize_fpd(self, circuit_gf: FieldArray) -> "GaloisArithmeticNode":
+        assert self._gf == circuit_gf
+        return self
+    
+    def __mul__(self, other: "GaloisArithmeticFpdNode") -> "GaloisArithmeticFpdNode":
+        return FpdMultiplication(self, other, self._gf)
 
 
 # TODO: These classes should probably be moved to a different folder
-class ArithmeticNode(GaloisArithmeticNode["ArithmeticNode"]):
+class ArithmeticNode[Operand: ArithmeticNode](GaloisArithmeticNode[Operand]):
     """
     A special type of FixedFpNode that indicates only arithmetic operations. These are the primitives in an arithmetic circuit.
     
@@ -193,14 +201,23 @@ class ArithmeticNode(GaloisArithmeticNode["ArithmeticNode"]):
     """
 
     # ArithmeticNode should be like an interface; it should not have an __init__ method.
-
-    @override
-    def arithmetize_fpd(self, strategy: str, circuit_gf: FieldArray) -> "ArithmeticNode":
-        return self
-    
-    @override
-    def arithmetize_depth_aware(self, cost_of_squaring: float) -> "CostParetoFront":
-        return CostParetoFront.from_node(self, cost_of_squaring)
     
     def to_arithmetic(self) -> "ArithmeticNode":  # noqa: D102
         return self
+
+
+class ArithmeticFpdNode[Operand: ArithmeticFpdNode](ArithmeticNode[Operand], GaloisArithmeticFpdNode[Operand]):
+
+    @override
+    def arithmetize_fpd(self, strategy: str, circuit_gf: FieldArray) -> "ArithmeticNode":
+        assert circuit_gf == self._gf
+        return self
+    
+    @override
+    def arithmetize_depth_aware(self, cost_of_squaring: float, circuit_gf: FieldArray) -> "CostParetoFront":
+        assert circuit_gf == self._gf
+        return CostParetoFront.from_node(self, cost_of_squaring)
+
+
+class ArithmeticFpNode(ArithmeticFpdNode["ArithmeticFpNode"], FpNode):
+    pass

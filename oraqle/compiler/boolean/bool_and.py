@@ -25,12 +25,12 @@ from oraqle.compiler.nodes.fp.arbitrary_arithmetic import (
 )
 from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
 from oraqle.compiler.nodes.fp.binary_arithmetic import FpMultiplication
-from oraqle.compiler.nodes.fp.flexible import CommutativeUniqueReducibleNode
+from oraqle.compiler.nodes.fp.flexible import CommutativeUniqueReducibleFpNode, CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 
-class And(CommutativeUniqueReducibleNode):
+class And(CommutativeUniqueReducibleFpNode):
     """Performs an AND operation over several operands. The user must ensure that the operands are Booleans."""
 
     @property
@@ -44,7 +44,7 @@ class And(CommutativeUniqueReducibleNode):
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return self._gf(bool(a) & bool(b))
 
-    def _arithmetize_inner(self, strategy: str) -> FpNode:  # noqa: PLR0911, PLR0912
+    def _arithmetize_inner(self, strategy: str, circuit_gf: Type[FieldArray]) -> ArithmeticNode:  # noqa: PLR0911, PLR0912
         new_operands: Set[UnoverloadedWrapper] = set()
         for operand in self._operands:
             new_operand = operand.node.arithmetize(strategy)
@@ -62,8 +62,8 @@ class And(CommutativeUniqueReducibleNode):
             return next(iter(new_operands)).node
 
         if strategy == "naive":
-            return FpProduct(Counter({operand: 1 for operand in new_operands}), self._gf).arithmetize(
-                strategy
+            return FpProduct(Counter({operand: 1 for operand in new_operands}), self._gf).arithmetize_fpd(
+                strategy, circuit_gf
             )
 
         # TODO: Calling to_arithmetic here should not be necessary if we can decide the predicted depth
@@ -98,7 +98,7 @@ class And(CommutativeUniqueReducibleNode):
                     total_sum += Neg(popped.item, self._gf)
 
             assert total_sum is not None
-            final_result = Neg(IsNonZero(total_sum, self._gf), self._gf).arithmetize_fpd(strategy)
+            final_result = Neg(IsNonZero(total_sum, self._gf), self._gf).arithmetize_fpd(strategy, circuit_gf)
 
             assert max_depth is not None
             heappush(queue, _PrioritizedItem(max_depth, final_result))
@@ -107,7 +107,7 @@ class And(CommutativeUniqueReducibleNode):
             return heappop(queue).item
 
         dummy_node = FpInput("dummy_node", self._gf)
-        is_non_zero = IsNonZero(dummy_node, self._gf).arithmetize_fpd(strategy).to_arithmetic()
+        is_non_zero = IsNonZero(dummy_node, self._gf).arithmetize_fpd(strategy, circuit_gf).to_arithmetic()
         cost = is_non_zero.multiplicative_cost(
             1.0
         )  # FIXME: This needs to be the actual squaring cost
@@ -115,7 +115,7 @@ class And(CommutativeUniqueReducibleNode):
         if len(queue) - 1 < cost:
             return FpProduct(
                 Counter({UnoverloadedWrapper(operand.item): 1 for operand in queue}), self._gf
-            ).arithmetize(strategy)
+            ).arithmetize_fpd(strategy, circuit_gf)
 
         return Neg(
             IsNonZero(
@@ -126,7 +126,7 @@ class And(CommutativeUniqueReducibleNode):
                 self._gf,
             ),
             self._gf,
-        ).arithmetize_fpd(strategy)
+        ).arithmetize_fpd(strategy, circuit_gf)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         new_operands: Set[CostParetoFront] = set()
@@ -196,7 +196,7 @@ def test_evaluate_mod3():  # noqa: D103
 
     a = FpInput("a", gf)
     b = FpInput("b", gf)
-    node = (a & b).arithmetize("best-effort")
+    node = (a & b).arithmetize_fpd("best-effort", gf)
 
     assert node.evaluate({"a": gf(0), "b": gf(0)}) == gf(0)
     node.clear_cache(set())
@@ -212,7 +212,7 @@ def test_evaluate_arithmetized_mod3():  # noqa: D103
 
     a = FpInput("a", gf)
     b = FpInput("b", gf)
-    node = (a & b).arithmetize("best-effort")
+    node = (a & b).arithmetize_fpd("best-effort", gf)
 
     node.clear_cache(set())
     assert node.evaluate({"a": gf(0), "b": gf(0)}) == gf(0)
@@ -267,7 +267,7 @@ def test_evaluate_arithmetized_depth_aware_7_mod5():  # noqa: D103
 
     xs = {FpInput(f"x{i}", gf) for i in range(7)}
     node = And({UnoverloadedWrapper(x) for x in xs}, gf)  # type: ignore
-    front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
+    front = node.arithmetize_depth_aware(cost_of_squaring=1.0, circuit_gf=gf)
 
     for _, _, n in front:
         n.clear_cache(set())
@@ -283,7 +283,7 @@ def test_evaluate_arithmetized_depth_aware_50_mod31():  # noqa: D103
 
     xs = {FpInput(f"x{i}", gf) for i in range(50)}
     node = And({UnoverloadedWrapper(x) for x in xs}, gf)  # type: ignore
-    front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
+    front = node.arithmetize_depth_aware(cost_of_squaring=1.0, circuit_gf=gf)
 
     for _, _, n in front:
         n.clear_cache(set())
@@ -371,7 +371,7 @@ class ProductNaryLogicNode(NaryLogicNode):
                 result = Neg(result, gf)
 
             self._arithmetic_node = result.arithmetize_fpd(
-                "best-effort"
+                "best-effort", circuit_gf
             ).to_arithmetic()  # TODO: This could be more elegant
             self._is_and = is_and
 

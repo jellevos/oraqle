@@ -1,6 +1,6 @@
 """This module contains tools for evaluating OR operations between many inputs."""
 import itertools
-from typing import Set
+from typing import Set, Type
 
 from galois import GF, FieldArray
 
@@ -8,14 +8,15 @@ from oraqle.compiler.boolean.bool_and import And, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.nodes.abstract import UnoverloadedWrapper
 from oraqle.compiler.nodes.fp.abstract import CostParetoFront
-from oraqle.compiler.nodes.fp.flexible import CommutativeUniqueReducibleNode
+from oraqle.compiler.nodes.fp.fixed import ArithmeticNode
+from oraqle.compiler.nodes.fp.flexible import CommutativeUniqueReducibleFpNode, CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.fp.leafs import FpConstant, FpInput
 from oraqle.compiler.nodes.fpd.abstract import FpNode
 
 # TODO: Reduce code duplication between OR and AND
 
 
-class Or(CommutativeUniqueReducibleNode):
+class Or(CommutativeUniqueReducibleFpNode):
     """Performs an OR operation over several operands. The user must ensure that the operands are Booleans."""
 
     @property
@@ -29,19 +30,19 @@ class Or(CommutativeUniqueReducibleNode):
     def _inner_operation(self, a: FieldArray, b: FieldArray) -> FieldArray:
         return self._gf(bool(a) | bool(b))
 
-    def _arithmetize_inner(self, strategy: str) -> FpNode:
+    def _arithmetize_inner(self, strategy: str, circuit_gf: Type[FieldArray]) -> ArithmeticNode:
         # FIXME: Handle what happens when arithmetize outputs a constant!
         # TODO: Also consider the arithmetization using randomness
         return Neg(
             And(
                 {
-                    UnoverloadedWrapper(Neg(operand.node.arithmetize(strategy), self._gf))
+                    UnoverloadedWrapper(Neg(operand.node.arithmetize_fpd(strategy, circuit_gf), self._gf))
                     for operand in self._operands
                 },
                 self._gf,
             ),
             self._gf,
-        ).arithmetize_fpd(strategy)
+        ).arithmetize_fpd(strategy, circuit_gf)
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         # TODO: This is mostly copied from AND
@@ -155,7 +156,7 @@ def test_evaluate_arithmetized_mod3():  # noqa: D103
 
     a = FpInput("a", gf)
     b = FpInput("b", gf)
-    node = (a | b).arithmetize("best-effort")
+    node = (a | b).arithmetize_fpd("best-effort", gf)
 
     node.clear_cache(set())
     assert node.evaluate({"a": gf(0), "b": gf(0)}) == gf(0)
@@ -172,7 +173,7 @@ def test_evaluate_arithmetized_depth_aware_50_mod31():  # noqa: D103
 
     xs = {FpInput(f"x{i}", gf) for i in range(50)}
     node = Or({UnoverloadedWrapper(x) for x in xs}, gf)
-    front = node.arithmetize_depth_aware(cost_of_squaring=1.0)
+    front = node.arithmetize_depth_aware(cost_of_squaring=1.0, circuit_gf=gf)
 
     for _, _, n in front:
         n.clear_cache(set())
