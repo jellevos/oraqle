@@ -24,6 +24,7 @@ from oraqle.compiler.nodes.arbitrary_arithmetic import (
     Product,
     Sum,
     _generate_multiplication_tree,
+    product_,
 )
 from oraqle.compiler.nodes.binary_arithmetic import Multiplication
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
@@ -189,6 +190,9 @@ class And(CommutativeUniqueReducibleNode):
         new_operands = self._operands.copy()
         new_operands.add(UnoverloadedWrapper(other))
         return And(new_operands, self._gf)
+    
+    def _inner_to_naive(self) -> Node:
+        return product_(*{operand.node for operand in self._operands})
 
 
 def test_evaluate_mod3():  # noqa: D103

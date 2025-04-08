@@ -297,6 +297,7 @@ class Node(ABC):  # noqa: PLR0904
         self._instruction_cache: Optional[int] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
         self._parent_count_cache: Optional[int] = None
+        self._naive_cache = None
 
         self._hash = None
 
@@ -331,6 +332,7 @@ class Node(ABC):  # noqa: PLR0904
         self._instruction_cache: Optional[int] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
         self._parent_count_cache: Optional[int] = None
+        self._naive_cache = None
 
         self._hash = None
 
@@ -422,6 +424,15 @@ class Node(ABC):  # noqa: PLR0904
         Returns:
             `CostParetoFront` containing a front that trades off multiplicative depth and multiplicative cost.
         """
+
+    def to_naive(self) -> "Node":
+        if self._naive_cache is None:
+            self._naive_cache = self._inner_to_naive()
+        
+        return self._naive_cache
+        
+    def _inner_to_naive(self) -> "Node":
+        return self
 
     def to_arithmetic(self) -> "ArithmeticNode":
         """Outputs this node's equivalent ArithmeticNode. Errors if this node does not have a direct arithmetic equivalent.

@@ -91,6 +91,9 @@ class Power(UnivariateNode):
                 final_front.add(nodes[-1], depth=depth1 + depth2)
 
         return final_front
+    
+    def _inner_to_naive(self) -> Node:
+        raise NotImplementedError(f"TODO: {self._exponent}")
 
 
 def test_depth_aware_arithmetization():  # noqa: D103

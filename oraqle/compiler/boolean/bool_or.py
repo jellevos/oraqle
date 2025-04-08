@@ -7,6 +7,7 @@ from galois import GF, FieldArray
 from oraqle.compiler.boolean.bool_and import And, _find_depth_cost_front
 from oraqle.compiler.boolean.bool_neg import Neg
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node, UnoverloadedWrapper
+from oraqle.compiler.nodes.arbitrary_arithmetic import product_
 from oraqle.compiler.nodes.flexible import CommutativeUniqueReducibleNode
 from oraqle.compiler.nodes.leafs import Constant, Input
 
@@ -105,6 +106,9 @@ class Or(CommutativeUniqueReducibleNode):
         new_operands = self._operands.copy()
         new_operands.add(UnoverloadedWrapper(other))
         return Or(new_operands, self._gf)
+    
+    def _inner_to_naive(self) -> Node:
+        return Neg(product_(*{Neg(operand.node, self._gf) for operand in self._operands}), self._gf)
 
 
 def any_(*operands: Node) -> Or:

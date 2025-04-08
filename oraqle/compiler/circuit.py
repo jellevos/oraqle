@@ -143,6 +143,9 @@ class Circuit:
         for output in self._outputs:
             output.clear_cache(already_cleared)
 
+    def to_naive(self) -> "Circuit":
+        return Circuit([output.to_naive() for output in self._outputs])
+
 
 helib_preamble = """
 #include <iostream>

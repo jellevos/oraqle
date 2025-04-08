@@ -242,6 +242,12 @@ class SemiComparison(AbstractComparison):
             ),
             self._gf,
         ).arithmetize_depth_aware(cost_of_squaring)
+    
+    def _inner_to_naive(self) -> Node:
+        if self._less_than:
+            return IliashenkoZuccaLessThan(self._left, self._right, self._gf)
+        else:
+            return Neg(IliashenkoZuccaLessThan(self._left, self._right, self._gf), self._gf)
 
 
 class Comparison(AbstractComparison):
@@ -277,6 +283,61 @@ class Comparison(AbstractComparison):
             StrictComparison(self._left, self._right, less_than=not self._less_than, gf=self._gf),
             self._gf,
         ).arithmetize_depth_aware(cost_of_squaring)
+    
+
+class IliashenkoZuccaLessThan(AbstractComparison):
+
+    def __init__(self, left, right, gf: Type[FieldArray]):
+        super().__init__(left, right, True, gf)
+
+    @property
+    def _hash_name(self) -> str:
+        return "comparison_iz"
+
+    @property
+    def _node_label(self) -> str:
+        return "<=[iz]" if self._less_than else ">=[iz]"
+
+    def _operation_inner(self, x, y) -> FieldArray:
+        raise NotImplementedError("TODO")
+    
+    def _arithmetize_inner(self, strategy: str) -> Node:
+        p = self._gf.characteristic
+
+        if self._less_than:
+            left = self._left
+            right = self._right
+        else:
+            left = self._right
+            right = self._left
+
+        left = left.arithmetize(strategy)
+        right = right.arithmetize(strategy)
+
+        left_is_small = IliashenkoZuccaSemiLessThan(
+            left, Constant(self._gf(p // 2)), gf=self._gf
+        )
+        right_is_small = IliashenkoZuccaSemiLessThan(
+            right, Constant(self._gf(p // 2)), gf=self._gf
+        )
+
+        # Test whether left and right are in the same range
+        same_range = (left_is_small & right_is_small) + (
+            Neg(left_is_small, self._gf) & Neg(right_is_small, self._gf)
+        )
+
+        # Performs left < right on the reduced inputs, note that if both are in the upper half the difference is still small enough for a semi-comparison
+        comparison = IliashenkoZuccaSemiLessThan(left, right, gf=self._gf)
+        result = same_range * comparison
+
+        # Performs left < right when one if small and the other is large
+        right_is_larger = left_is_small & Neg(right_is_small, self._gf)
+        result += right_is_larger
+
+        return result.arithmetize(strategy)
+    
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError("TODO")
 
 
 class T2SemiLessThan(NonCommutativeBinaryNode):
@@ -313,11 +374,11 @@ class IliashenkoZuccaSemiLessThan(NonCommutativeBinaryNode):
 
     @property
     def _hash_name(self) -> str:
-        return "less_than_t2"
+        return "less_than_iz"
 
     @property
     def _node_label(self) -> str:
-        return "< [t2]"
+        return "< [iz]"
 
     def _operation_inner(self, x, y) -> FieldArray:
         return self._gf(int(int(x) < int(y)))
