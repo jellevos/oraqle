@@ -180,6 +180,7 @@ class UnivariatePoly(UnivariateNode):
             optimal_k = math.sqrt(2 * len(self._coefficients))
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
             for k in range(1, bound):
+                print(k)
                 (
                     arithmetization,
                     precomputed_powers,
@@ -195,6 +196,7 @@ class UnivariatePoly(UnivariateNode):
                     )
 
             for k in range(1, len(self._coefficients)):
+                print(k)
                 (
                     arithmetization,
                     precomputed_powers,
@@ -210,6 +212,7 @@ class UnivariatePoly(UnivariateNode):
                     )
 
             for k in range(1, len(self._coefficients)):
+                print(k)
                 (
                     arithmetization,
                     precomputed_powers,

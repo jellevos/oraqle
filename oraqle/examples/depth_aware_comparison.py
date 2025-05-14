@@ -5,7 +5,7 @@ from galois import GF
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.leafs import Input
 
-gf = GF(101)
+gf = GF(65537)
 cost_of_squaring = 1.0
 
 a = Input("a", gf)

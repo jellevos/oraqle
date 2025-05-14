@@ -14,6 +14,29 @@ from oraqle.compiler.nodes.univariate import UnivariateNode
 from oraqle.compiler.polynomials.univariate import UnivariatePoly, _eval_poly
 
 
+def compute_coeffs(p):
+    n = p // 2
+    # 1) build initial v[a] = a^(p-2) mod p  for a=1…n
+    #    this is a^(−1) mod p, i.e. the inverse of a
+    v = [pow(a, p - 2, p) for a in range(1, n + 1)]
+
+    # 2) build step w[a] = a^(p-3) mod p = a^(−2) mod p
+    #    so multiplying by w[a] divides by a^2 mod p
+    w = [pow(a, p - 3, p) for a in range(1, n + 1)]
+
+    coefficients = []
+    # We want i = 1, 3, 5, ..., p - 2
+    # The exponent p-1-i starts at p - 2 and decreases by 2 each time
+    for _ in range(1, p-1, 2):
+        print("->", _)
+        coefficient = sum(val for val in v) % p
+        coefficients.append(coefficient)
+        for j in range(n):
+            v[j] = (v[j] * w[j]) % p
+
+    return coefficients
+
+
 class InUpperHalf(UnivariateNode):
     """Returns 1 when the input is contained in the upper half of the field, which are considered the negative numbers.
 
@@ -91,21 +114,25 @@ class InUpperHalf(UnivariateNode):
 
         # TODO: Reduce code duplication
         final_front = CostParetoFront(cost_of_squaring)
+        assert self._gf.degree == 1
 
         for node_depth, _, node in self._node.arithmetize_depth_aware(cost_of_squaring):
             coefficients = []
 
             # From: Faster homomorphic comparison operations for BGV and BFV, Ilia Iliashenko & Vincent Zucca, 2021
             p = self._gf.characteristic
-            for i in range(p - 1):
-                if i % 2 == 0:
-                    # Ignore every even power, we take care of this by squaring the input node.
-                    continue
+            # for i in range(p - 1):
+            #     if i % 2 == 0:
+            #         # Ignore every even power, we take care of this by squaring the input node.
+            #         continue
 
-                coefficient = self._gf(0)
-                for a in range(1, p // 2 + 1):
-                    coefficient += self._gf(a) ** (p - 1 - i)
-                coefficients.append(coefficient)
+            #     coefficient = self._gf(0)
+            #     for a in range(1, p // 2 + 1):
+            #         print(a, p - 1 - i, p)
+            #         coefficient += self._gf(pow(a, p - 1 - i, p)) #self._gf(a) ** (p - 1 - i)
+            #     coefficients.append(coefficient)
+
+            coefficients = [self._gf(coeff) for coeff in compute_coeffs(p)]
 
             # We do not add the final coefficient, which will be computed later, so we do not do coefficients.append(gf((p + 1) // 2))
 
