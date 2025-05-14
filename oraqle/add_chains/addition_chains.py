@@ -1,11 +1,16 @@
 """Tools for generating short addition chains using a MaxSAT formulation."""
+from importlib.resources import files
 import math
+import os
+import time
 from typing import List, Optional, Tuple
 
+from gurobipy import GRB, Model, quicksum
 from pysat.card import CardEnc
 from pysat.formula import WCNF
 
-from oraqle.add_chains.memoization import cache_to_disk
+import oraqle
+from oraqle.add_chains.memoization import ADDCHAIN_CACHE_FILENAME, cache_to_disk
 from oraqle.add_chains.solving import solve, solve_with_time_limit
 from oraqle.config import MAXSAT_TIMEOUT
 
@@ -52,6 +57,7 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
     thurber: bool,
     min_size: int,
     precomputed_values: Optional[Tuple[Tuple[int, int], ...]],
+    use_milp: bool = False,
 ) -> Optional[List[Tuple[int, int]]]:
     """Generates a minimum-cost addition chain for a given target, abiding to the constraints.
 
@@ -77,6 +83,9 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
 
     if target == 1:
         return []
+    
+    if use_milp:
+        return milp(target, max_depth, strict_cost_max, squaring_cost, thurber, min_size, precomputed_values)
 
     def x(i) -> int:
         return i
@@ -213,6 +222,211 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
     return [y_inv(n) for n in model if offset <= n <= y(target, target)]
 
 
+# def milp(
+#     target: int,
+#     max_depth: Optional[int],
+#     strict_cost_max: float,
+#     squaring_cost: float,
+#     thurber: bool,
+#     min_size: int,
+#     precomputed_values: Optional[Tuple[Tuple[int, int], ...]],
+# ) -> Optional[List[Tuple[int, int]]]:
+#     model = Model()
+
+#     # Binary variables
+#     x = {i: model.addVar(vtype=GRB.BINARY, name=f"x_{i}") for i in range(1, target + 1)}
+#     y = {}
+#     d = {}
+#     z = {}
+
+#     # TODO: Use int constraint for depth
+#     if max_depth is not None:
+#         for i in range(1, target + 1):
+#             for depth in range(max_depth + 2):
+#                 d[i, depth] = model.addVar(vtype=GRB.BINARY, name=f"d_{i}_{depth}")
+
+#     for i in range(1, target + 1):
+#         for j in range(i, target + 1 - i):
+#             k = i + j
+#             if max_depth is not None and k > (1 << (max_depth - 1)) and k != target:
+#                 continue
+#             y[i, j] = model.addVar(vtype=GRB.BINARY, name=f"y_{i}_{j}")
+
+#     if precomputed_values is not None:
+#         for k, _ in precomputed_values:
+#             z[k] = model.addVar(vtype=GRB.BINARY, name=f"z_{k}")
+
+#     # Objective
+#     cost_expr = quicksum((squaring_cost if i == j else 1) * y[i, j] for (i, j) in y)
+#     model.setObjective(cost_expr, GRB.MINIMIZE)
+
+#     # Constraints
+#     for (i, j), yij in y.items():
+#         model.addConstr(yij <= x[i])
+#         if i != j:
+#             model.addConstr(yij <= x[j])
+#         model.addConstr(x[i + j] >= yij)
+
+#         if max_depth is not None:
+#             for depth in range(max_depth + 1):
+#                 model.addConstr(d[i + j, depth + 1] >= d[i, depth] + yij - 1)
+#                 if i != j:
+#                     model.addConstr(d[i + j, depth + 1] >= d[j, depth] + yij - 1)
+
+#     if precomputed_values is not None:
+#         for k, k_depth in precomputed_values:
+#             if max_depth is not None:
+#                 model.addConstr(d[k, k_depth] >= z[k])
+#             model.addConstr(x[k] >= z[k])
+
+#     # Ensure target is computed
+#     model.addConstr(x[target] == 1)
+
+#     if max_depth is not None:
+#         model.addConstr(d[1, 0] == 1)
+#         for k in range(2, target + 1):
+#             model.addConstr(d[k, max_depth + 1] == 0)
+
+#     # At least min_size x_i’s are true
+#     model.addConstr(quicksum(x[k] for k in range(2, target + 1)) >= min_size)
+
+#     # Thurber bounds (optional)
+#     if thurber and precomputed_values is None and strict_cost_max:
+#         max_size = math.floor(strict_cost_max / squaring_cost)
+#         for lb, ub in thurber_bounds(target, max_size):
+#             model.addConstr(quicksum(x[i] for i in range(lb, ub + 1)) >= 1)
+
+#     model.optimize()
+
+#     print([(i, var.X) for i, var in x.items()])
+
+#     #print([(i, j, var.X) for (i, j), var in y.items()])
+
+#     return [(i, j) for (i, j), var in y.items() if var.X > 0.5]
+
+
+def milp(
+    target: int,
+    max_depth: Optional[int],
+    strict_cost_max: float,
+    squaring_cost: float,
+    thurber: bool,
+    min_size: int,
+    precomputed_values: Optional[Tuple[Tuple[int, int], ...]],
+) -> Optional[List[Tuple[int, int]]]:
+    model = Model()
+
+    # Binary variables
+    x = {i: model.addVar(vtype=GRB.BINARY, name=f"x_{i}") for i in range(1, target + 1)}
+    y = {}
+    d = {}
+    z = {}
+
+    # TODO: Use int constraint for depth
+    if max_depth is not None:
+        for i in range(1, target + 1):
+            for depth in range(max_depth + 2):
+                d[i, depth] = model.addVar(vtype=GRB.BINARY, name=f"d_{i}_{depth}")
+
+    for i in range(1, target + 1):
+        for j in range(i, target + 1 - i):
+            k = i + j
+            if max_depth is not None and k > (1 << (max_depth - 1)) and k != target:
+                continue
+            y[i, j] = model.addVar(vtype=GRB.BINARY, name=f"y_{i}_{j}")
+
+    if precomputed_values is not None:
+        for k, _ in precomputed_values:
+            z[k] = model.addVar(vtype=GRB.BINARY, name=f"z_{k}")
+
+    # Objective
+    cost_expr = quicksum((squaring_cost if i == j else 1) * y[i, j] for (i, j) in y)
+    model.setObjective(cost_expr, GRB.MINIMIZE)
+
+    # Constraints
+    big_disjunctions = {k: [] for k in range(1, target + 1)}
+    if max_depth is not None:
+        max_depth_pow = 1 << (max_depth - 1)
+    for j in range(1, target + 1):
+        x_j = x[j]
+
+        for i in range(1, min(j + 1, target + 1 - j)):
+            k = i + j
+
+            if max_depth is not None and k > max_depth_pow and k != target:
+                continue
+
+            x_i = x[i]
+            y_ij = y[i, j]
+
+            # y_ij requires that x_i is set
+            model.addConstr(y_ij <= x_i)
+            if i != j:
+                # y_ij requires that x_j is set
+                model.addConstr(y_ij <= x_j)
+
+            # x_k is set when y_ij is set
+            big_disjunctions[k].append(y_ij)
+
+    if precomputed_values is not None:
+        for k, k_depth in precomputed_values:
+            if k == 0 or k > target:
+                continue
+
+            if max_depth is not None and k_depth > max_depth:
+                continue
+
+            # x_k is set when z_k is set
+            big_disjunctions[k].append(z[k])
+
+            if max_depth is not None:
+                # TODO: Use int constraints!!
+                assert False
+                wcnf.append([d(k, k_depth), -z(k)])
+
+    # Ensure target is computed
+    model.addConstr(x[target] == 1)
+
+    for k in range(2, target + 1):
+        #big_disjunctions[k].append(-x(k))
+        #wcnf.append(big_disjunctions[k])
+        model.addConstr(x[k] <= quicksum(var for var in big_disjunctions[k]))
+
+        # Cut some potential additions
+        if precomputed_values is None:
+            # We do not use these bounds when precomputed_values is not None
+            #wcnf.append([x(m) for m in range((k + 1) // 2, k)])  # type: ignore
+            model.addConstr(quicksum(x[m] for m in range((k + 1) // 2, k)) >= 1)
+
+        if max_depth is not None:
+            assert False
+            # May not exceed max_depth
+            wcnf.append([-d(k, max_depth + 1)])
+
+    if max_depth is not None:
+        assert False
+        model.addConstr(d[1, 0] == 1)
+        for k in range(2, target + 1):
+            model.addConstr(d[k, max_depth + 1] == 0)
+
+    # At least min_size x_i’s are true
+    model.addConstr(quicksum(x[k] for k in range(2, target + 1)) >= min_size)
+
+    # Thurber bounds (optional)
+    if thurber and precomputed_values is None and strict_cost_max:
+        max_size = math.floor(strict_cost_max / squaring_cost)
+        for lb, ub in thurber_bounds(target, max_size):
+            model.addConstr(quicksum(x[i] for i in range(lb, ub + 1)) >= 1)
+
+    model.optimize()
+
+    print([(i, var.X) for i, var in x.items()])
+
+    #print([(i, j, var.X) for (i, j), var in y.items()])
+
+    return [(i, j) for (i, j), var in y.items() if var.X > 0.5]
+
+
 def test_addition_chain():  # noqa: D103
     chain = add_chain(
         8,
@@ -224,6 +438,22 @@ def test_addition_chain():  # noqa: D103
         thurber=True,
         min_size=2,
         precomputed_values=None,
+    )
+    assert chain == [(1, 1), (2, 2), (4, 4)]
+
+
+def test_addition_chain_milp():  # noqa: D103
+    chain = add_chain(
+        8,
+        3,
+        2.0,
+        0.5,
+        solver="glucose42",
+        encoding=1,
+        thurber=True,
+        min_size=2,
+        precomputed_values=None,
+        use_milp=True,
     )
     assert chain == [(1, 1), (2, 2), (4, 4)]
 
@@ -243,6 +473,22 @@ def test_addition_chain_precomputed_no_depth():  # noqa: D103
     assert chain == [(1, 7)]
 
 
+def test_addition_chain_precomputed_no_depth_milp():  # noqa: D103
+    chain = add_chain(
+        8,
+        None,
+        2.0,
+        0.5,
+        solver="glucose42",
+        encoding=1,
+        thurber=True,
+        min_size=1,
+        precomputed_values=((7, 2),),
+        use_milp=True,
+    )
+    assert chain == [(1, 7)]
+
+
 def test_addition_chain_precomputed_depth():  # noqa: D103
     chain = add_chain(
         8,
@@ -254,6 +500,22 @@ def test_addition_chain_precomputed_depth():  # noqa: D103
         thurber=True,
         min_size=1,
         precomputed_values=((7, 2),),
+    )
+    assert chain == [(1, 7)]
+
+
+def test_addition_chain_precomputed_depth_milp():  # noqa: D103
+    chain = add_chain(
+        8,
+        3,
+        2.0,
+        0.5,
+        solver="glucose42",
+        encoding=1,
+        thurber=True,
+        min_size=1,
+        precomputed_values=((7, 2),),
+        use_milp=True,
     )
     assert chain == [(1, 7)]
 
@@ -273,6 +535,22 @@ def test_addition_chain_precomputed_depth_too_large():  # noqa: D103
     assert chain == [(1, 1), (2, 2), (4, 4)]
 
 
+def test_addition_chain_precomputed_depth_too_large_milp():  # noqa: D103
+    chain = add_chain(
+        8,
+        3,
+        2.0,
+        0.5,
+        solver="glucose42",
+        encoding=1,
+        thurber=True,
+        min_size=1,
+        precomputed_values=((7, 3),),
+        use_milp=True,
+    )
+    assert chain == [(1, 1), (2, 2), (4, 4)]
+
+
 def test_addition_chain_precomputed_no_depth_squaring():  # noqa: D103
     chain = add_chain(
         18,
@@ -288,7 +566,24 @@ def test_addition_chain_precomputed_no_depth_squaring():  # noqa: D103
     assert chain == [(9, 9)]
 
 
+def test_addition_chain_precomputed_no_depth_squaring_milp():  # noqa: D103
+    chain = add_chain(
+        18,
+        None,
+        2.0,
+        0.5,
+        solver="glucose42",
+        encoding=1,
+        thurber=True,
+        min_size=1,
+        precomputed_values=((9, 3),),
+        use_milp=True,
+    )
+    assert chain == [(9, 9)]
+
+
 if __name__ == "__main__":
+    start = time.monotonic()
     print(add_chain(
         254,
         None,
@@ -299,16 +594,25 @@ if __name__ == "__main__":
         thurber=True,
         min_size=11,
         precomputed_values=None,
+        use_milp=True,
     ))
+    print(time.monotonic() - start)
 
-    print(add_chain(
-        254,
-        None,
-        7.5,
-        0.5,
-        solver="glucose42",
-        encoding=1,
-        thurber=True,
-        min_size=8,
-        precomputed_values=None,
-    ))
+    # print(add_chain(
+    #     254,
+    #     None,
+    #     7.5,
+    #     0.5,
+    #     solver="glucose42",
+    #     encoding=1,
+    #     thurber=True,
+    #     min_size=8,
+    #     precomputed_values=None,
+    #     use_milp=False,
+    # ))
+
+
+
+    oraqle_path = files(oraqle)
+    database_path = oraqle_path.joinpath(ADDCHAIN_CACHE_FILENAME + '.db')
+    os.remove(str(database_path))
