@@ -161,9 +161,9 @@ def test_gen_exponentiation_front_small():  # noqa: D103
 
 if __name__ == "__main__":
     start = time.monotonic()
-    #front = gen_pareto_front(90, None, 0.75)
+    front = gen_pareto_front(90, None, 0.75)
     #front = gen_pareto_front(165, None, 0.75)
-    front = gen_pareto_front(201, None, 0.75)
+    #front = gen_pareto_front(201, None, 0.75)
     print(time.monotonic() - start, front)
 
     oraqle_path = files(oraqle)

@@ -116,17 +116,19 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
 
     # Add constraints
     big_disjunctions = {k: [] for k in range(1, target + 1)}
+    if max_depth is not None:
+        max_depth_pow = 1 << (max_depth - 1)
     for j in range(1, target + 1):
         x_j = x(j)
 
         for i in range(1, min(j + 1, target + 1 - j)):
-            if max_depth is not None and (i + j) != target and math.ceil(math.log2(i + j)) >= max_depth:
+            k = i + j
+
+            if max_depth is not None and k > max_depth_pow and k != target:
                 continue
 
             x_i = x(i)
             y_ij = y(i, j)
-
-            k = i + j
 
             # y_ij requires that x_i is set
             wcnf.append([-y_ij, x_i])
