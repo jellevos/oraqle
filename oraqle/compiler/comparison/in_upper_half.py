@@ -12,24 +12,37 @@ from oraqle.compiler.nodes.leafs import Input
 from oraqle.compiler.nodes.unary_arithmetic import ConstantMultiplication
 from oraqle.compiler.nodes.univariate import UnivariateNode
 from oraqle.compiler.polynomials.univariate import UnivariatePoly, _eval_poly
+from numba import njit
 
 
+@njit
+def mod_pow(base, exp, mod):
+    result = 1
+    base = base % mod
+    while exp > 0:
+        if exp % 2 == 1:
+            result = (result * base) % mod
+        base = (base * base) % mod
+        exp = exp // 2
+    return result
+
+
+@njit
 def compute_coeffs(p):
     n = p // 2
     # 1) build initial v[a] = a^(p-2) mod p  for a=1…n
     #    this is a^(−1) mod p, i.e. the inverse of a
-    v = [pow(a, p - 2, p) for a in range(1, n + 1)]
+    v = [mod_pow(a, p - 2, p) for a in range(1, n + 1)]
 
     # 2) build step w[a] = a^(p-3) mod p = a^(−2) mod p
     #    so multiplying by w[a] divides by a^2 mod p
-    w = [pow(a, p - 3, p) for a in range(1, n + 1)]
+    w = [mod_pow(a, p - 3, p) for a in range(1, n + 1)]
 
     coefficients = []
     # We want i = 1, 3, 5, ..., p - 2
     # The exponent p-1-i starts at p - 2 and decreases by 2 each time
     for _ in range(1, p-1, 2):
-        print("->", _)
-        coefficient = sum(val for val in v) % p
+        coefficient = sum(v) % p
         coefficients.append(coefficient)
         for j in range(n):
             v[j] = (v[j] * w[j]) % p
