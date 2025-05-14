@@ -120,6 +120,9 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
         x_j = x(j)
 
         for i in range(1, min(j + 1, target + 1 - j)):
+            if max_depth is not None and (i + j) != target and math.ceil(math.log2(i + j)) >= max_depth:
+                continue
+
             x_i = x(i)
             y_ij = y(i, j)
 

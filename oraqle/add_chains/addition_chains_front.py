@@ -1,9 +1,15 @@
 """Tools for generating addition chains that trade off depth and cost."""
+from importlib.resources import files
 import math
+import os
+import shelve
+import time
 from typing import List, Optional, Tuple
 
+import oraqle
 from oraqle.add_chains.addition_chains import add_chain
 from oraqle.add_chains.addition_chains_mod import add_chain_modp, hw, size_lower_bound
+from oraqle.add_chains.memoization import ADDCHAIN_CACHE_FILENAME
 
 
 def chain_depth(
@@ -151,3 +157,15 @@ def gen_pareto_front(  # noqa: PLR0912, PLR0913, PLR0917
 def test_gen_exponentiation_front_small():  # noqa: D103
     front = gen_pareto_front(2, None, 0.75)
     assert front == [(1, [(1, 1)])]
+
+
+if __name__ == "__main__":
+    start = time.monotonic()
+    #front = gen_pareto_front(90, None, 0.75)
+    #front = gen_pareto_front(165, None, 0.75)
+    front = gen_pareto_front(201, None, 0.75)
+    print(time.monotonic() - start, front)
+
+    oraqle_path = files(oraqle)
+    database_path = oraqle_path.joinpath(ADDCHAIN_CACHE_FILENAME + '.db')
+    os.remove(str(database_path))
