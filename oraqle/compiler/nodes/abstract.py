@@ -92,12 +92,18 @@ class ParetoFront(ABC):
             value = self._get_value(node)
 
         return self._add(depth, value, node)
-
-    def _add(self, depth: int, value: Union[int, float], node: "ArithmeticNode") -> bool:
-        """Returns True if and only if the node was inserted into the ParetoFront."""
+    
+    def would_improve_front(self, depth: int, value: Union[int, float]) -> bool:
         for d in range(depth + 1):
             if d in self._nodes_by_depth and self._nodes_by_depth[d][0] <= value:
                 return False
+        
+        return True
+
+    def _add(self, depth: int, value: Union[int, float], node: "ArithmeticNode") -> bool:
+        """Returns True if and only if the node was inserted into the ParetoFront."""
+        if not self.would_improve_front(depth, value):
+            return False
 
         self._nodes_by_depth[depth] = (value, node)
         self._highest_depth = max(depth, self._highest_depth)

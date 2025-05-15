@@ -42,6 +42,83 @@ def _format_polynomial(coefficients: List[FieldArray]) -> str:
     return polynomial
 
 
+def _expand_front(
+        poly_eval_construction: Callable[[ArithmeticNode, List[FieldArray], int, Type[FieldArray], float], Tuple[Node, Dict[int, ArithmeticNode]]],
+        lower_bounds: Callable[[ArithmeticNode, List[FieldArray], int, float], Tuple[int, float]],
+        input: ArithmeticNode,
+        coefficients: List[FieldArray],
+        ks: range,
+        gf: Type[FieldArray],
+        front: CostParetoFront,
+        cost_of_squaring: float):
+    # Generate an initial front of interesting values of k by computing lower bounds
+    pre_front = CostParetoFront(cost_of_squaring)
+    bounds = {}
+    for k in ks:
+        print(k)
+        lb_depth, lb_cost = lower_bounds(input, coefficients, k, cost_of_squaring)
+        bounds[k] = (lb_depth, lb_cost)
+        # TODO: This is very hacky (storing k instead of a node)
+        pre_front.add(k, depth=lb_depth, cost=lb_cost)  # type: ignore
+    
+    print(pre_front._nodes_by_depth)
+
+    for lb_depth, remainder in pre_front._nodes_by_depth.items():
+        print(k)
+        lb_cost, k = remainder  # type: ignore
+        k: int
+        if not front.would_improve_front(lb_depth, lb_cost):
+            continue
+        
+        print('lb', lb_depth, lb_cost)
+        (
+            arithmetization,
+            precomputed_powers,
+        ) = poly_eval_construction(input, coefficients, k, gf, cost_of_squaring)
+
+        arithmetization = arithmetization.to_arithmetic()
+        assert isinstance(arithmetization, ArithmeticNode)
+        #print(arithmetization.multiplicative_cost(cost_of_squaring))
+        print(arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring))
+        # TODO: Remove these checks later
+        assert lb_depth <= arithmetization.multiplicative_depth()
+        assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
+
+        # TODO: Handle this
+        added = front.add(arithmetization)
+        # if added:
+        #     all_precomputed_powers[arithmetization.multiplicative_depth()] = (
+        #         precomputed_powers
+        #     )
+
+    for k in ks:
+        print(k)
+        lb_depth, lb_cost = bounds[k]
+        if not front.would_improve_front(lb_depth, lb_cost):
+            continue
+        print("IMPROVED!")
+        
+        print('lb', lb_depth, lb_cost)
+        (
+            arithmetization,
+            precomputed_powers,
+        ) = poly_eval_construction(input, coefficients, k, gf, cost_of_squaring)
+
+        arithmetization = arithmetization.to_arithmetic()
+        assert isinstance(arithmetization, ArithmeticNode)
+        #print(arithmetization.multiplicative_cost(cost_of_squaring))
+        print('actual', arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring))
+        assert lb_depth <= arithmetization.multiplicative_depth()
+        assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
+
+        # TODO: Handle this
+        added = front.add(arithmetization)
+        # if added:
+        #     all_precomputed_powers[arithmetization.multiplicative_depth()] = (
+        #         precomputed_powers
+        #     )
+
+
 class UnivariatePoly(UnivariateNode):
     """Evaluation of a univariate polynomial."""
 
@@ -177,55 +254,121 @@ class UnivariatePoly(UnivariateNode):
         all_precomputed_powers = {}
 
         for _, _, x in self._node.arithmetize_depth_aware(cost_of_squaring):
-            optimal_k = math.sqrt(2 * len(self._coefficients))
+            optimal_k = math.sqrt(len(self._coefficients))
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
-            for k in range(1, bound):
-                print(k)
-                (
-                    arithmetization,
-                    precomputed_powers,
-                ) = _eval_poly(x, self._coefficients, k, self._gf, cost_of_squaring)
+            _expand_front(_eval_poly_alternative, _lower_bounds_alternative, x, self._coefficients, range(1, bound), self._gf, front, cost_of_squaring)
+            print(front._nodes_by_depth)
+            
+            optimal_k = math.sqrt(len(self._coefficients))  # FIXME: Use the exact optimal k (this is not a great approximation)
+            bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
+            _expand_front(_eval_poly_divide_conquer, _lower_bounds_divide_conquer, x, self._coefficients, range(1, bound), self._gf, front, cost_of_squaring)
+            print(front._nodes_by_depth)
 
-                arithmetization = arithmetization.to_arithmetic()
-                assert isinstance(arithmetization, ArithmeticNode)
+            
 
-                added = front.add(arithmetization)
-                if added:
-                    all_precomputed_powers[arithmetization.multiplicative_depth()] = (
-                        precomputed_powers
-                    )
+            # optimal_k = math.sqrt(2 * len(self._coefficients))
+            # bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
+            # for k in range(1, bound):
+            #     print(k)
+            #     (
+            #         arithmetization,
+            #         precomputed_powers,
+            #     ) = _eval_poly(x, self._coefficients, k, self._gf, cost_of_squaring)
 
-            for k in range(1, len(self._coefficients)):
-                print(k)
-                (
-                    arithmetization,
-                    precomputed_powers,
-                ) = _eval_poly_divide_conquer(x, self._coefficients, k, self._gf, cost_of_squaring)
+            #     arithmetization = arithmetization.to_arithmetic()
+            #     assert isinstance(arithmetization, ArithmeticNode)
 
-                arithmetization = arithmetization.to_arithmetic()
-                assert isinstance(arithmetization, ArithmeticNode)
+            #     added = front.add(arithmetization)
+            #     print(added)
+            #     if added:
+            #         all_precomputed_powers[arithmetization.multiplicative_depth()] = (
+            #             precomputed_powers
+            #         )
 
-                added = front.add(arithmetization)
-                if added:
-                    all_precomputed_powers[arithmetization.multiplicative_depth()] = (
-                        precomputed_powers
-                    )
+            # for k in range(1, len(self._coefficients)):
+            #     print(k)
+            #     (
+            #         arithmetization,
+            #         precomputed_powers,
+            #     ) = _eval_poly_divide_conquer(x, self._coefficients, k, self._gf, cost_of_squaring)
 
-            for k in range(1, len(self._coefficients)):
-                print(k)
-                (
-                    arithmetization,
-                    precomputed_powers,
-                ) = _eval_poly_alternative(x, self._coefficients, k, self._gf)
+            #     arithmetization = arithmetization.to_arithmetic()
+            #     assert isinstance(arithmetization, ArithmeticNode)
 
-                arithmetization = arithmetization.to_arithmetic()
-                assert isinstance(arithmetization, ArithmeticNode)
+            #     lb_depth, lb_cost = _lower_bounds_divide_conquer(x, self._coefficients, k, cost_of_squaring)
+            #     print(lb_depth, lb_cost)
+            #     depth, cost = arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring)
+            #     print(depth, cost)
+            #     # assert lb_depth <= depth
+            #     # assert lb_cost <= cost
 
-                added = front.add(arithmetization)
-                if added:
-                    all_precomputed_powers[arithmetization.multiplicative_depth()] = (
-                        precomputed_powers
-                    )
+            #     added = front.add(arithmetization)
+            #     print(added)
+            #     if added:
+            #         all_precomputed_powers[arithmetization.multiplicative_depth()] = (
+            #             precomputed_powers
+            #         )
+
+
+            # pre_front = CostParetoFront(cost_of_squaring)
+            # optimal_k = math.sqrt(len(self._coefficients))
+            # for k in range(1, math.ceil(2 * optimal_k)):
+            #     print(k)
+            #     lb_depth, lb_cost = lower_bounds_alternative(x, self._coefficients, k, cost_of_squaring)
+            #     pre_front.add(k, depth=lb_depth, cost=lb_cost)  # TODO: This is hacky
+            
+            # print(pre_front._nodes_by_depth)
+
+            # for lb_depth, remainder in pre_front._nodes_by_depth.items():
+            #     print(k)
+            #     lb_cost, k = remainder
+            #     if not front.would_improve_front(lb_depth, lb_cost):
+            #         continue
+                
+            #     print('lb', lb_depth, lb_cost)
+            #     (
+            #         arithmetization,
+            #         precomputed_powers,
+            #     ) = _eval_poly_alternative(x, self._coefficients, k, self._gf, cost_of_squaring)
+
+            #     arithmetization = arithmetization.to_arithmetic()
+            #     assert isinstance(arithmetization, ArithmeticNode)
+            #     #print(arithmetization.multiplicative_cost(cost_of_squaring))
+            #     print(arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring))
+            #     assert lb_depth <= arithmetization.multiplicative_depth()
+            #     assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
+
+            #     added = front.add(arithmetization)
+            #     if added:
+            #         all_precomputed_powers[arithmetization.multiplicative_depth()] = (
+            #             precomputed_powers
+            #         )
+
+            # for k in range(1, math.ceil(2 * optimal_k)):
+            #     print(k)
+            #     lb_depth, lb_cost = lower_bounds_alternative(x, self._coefficients, k, cost_of_squaring)
+            #     if not front.would_improve_front(lb_depth, lb_cost):
+            #         continue
+            #     print("IMPROVED!")
+                
+            #     print('lb', lb_depth, lb_cost)
+            #     (
+            #         arithmetization,
+            #         precomputed_powers,
+            #     ) = _eval_poly_alternative(x, self._coefficients, k, self._gf, cost_of_squaring)
+
+            #     arithmetization = arithmetization.to_arithmetic()
+            #     assert isinstance(arithmetization, ArithmeticNode)
+            #     #print(arithmetization.multiplicative_cost(cost_of_squaring))
+            #     print(arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring))
+            #     assert lb_depth <= arithmetization.multiplicative_depth()
+            #     assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
+
+            #     added = front.add(arithmetization)
+            #     if added:
+            #         all_precomputed_powers[arithmetization.multiplicative_depth()] = (
+            #             precomputed_powers
+            #         )
 
         precomputed_powers = {depth: all_precomputed_powers[depth] for depth, _, _ in front}
         return front, precomputed_powers
@@ -446,9 +589,46 @@ def _eval_poly(
     return evaluation, precomputed_powers
 
 
+def poly_degree(coefficients: List[FieldArray]) -> int:
+    for i in reversed(range(len(coefficients))):
+        if coefficients[i] != 0:
+            return i + 1
+    return 0
+
+
+# TODO: Maybe make a separate function to estimate instead of computing a lower bound
+def _lower_bounds_alternative(x: ArithmeticNode, coefficients: List[FieldArray], k: int, cost_of_squaring: float) -> Tuple[int, float]:
+    degree = poly_degree(coefficients)
+
+    iterations = 0
+    if degree > k + 1:
+        iterations += math.ceil((degree - (k + 1)) / k)
+    log_k = math.log2(k)
+
+    depth = x.multiplicative_depth() + iterations + math.ceil(log_k)
+    cost = x.multiplicative_cost(cost_of_squaring) + iterations  # + math.floor(log_k) * (cost_of_squaring - 1) + math.ceil(log_k)
+    # TODO: Instead of this very loose cost bound, check if there are 0s in all strides
+
+    # Check if there are any precomputed values that we could skip because the multiplied coefficients are always 0
+    offset = (degree - 1) % k
+    count = (degree - 1) // k
+    selected = [any(coefficients[offset + i + j * k] != 0 for j in range(count)) for i in range(k - 1)]
+    for i in range(offset):
+        selected[i] |= coefficients[i] != 0
+    cost += sum(selected)
+
+    return depth, cost
+
+
 def _eval_poly_alternative(
-    x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: Type[FieldArray]
+    x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: Type[FieldArray], cost_of_squaring: float,
 ) -> Tuple[Node, Dict[int, ArithmeticNode]]:
+    depth = x.multiplicative_depth()
+    cost = x.multiplicative_cost(cost_of_squaring)
+
+    expected_depth = depth + math.ceil(math.log2(k)) + math.floor(len(coefficients) / k)
+    expected_cost = cost + k + math.floor(len(coefficients) / k)
+
     # Baby-step giant-step algorithm
     assert len(coefficients) > 0
 
@@ -467,6 +647,8 @@ def _eval_poly_alternative(
     chunk = coefficients[-(k + 1) :]
     aggregator = _eval_poly_using_precomputed_ks(chunk, precomputed_ks, gf)
     coefficients = coefficients[: -(k + 1)]
+    depth += math.ceil(math.log2(k))
+    cost += k  # TODO: Count squares
 
     # Go through the coefficients, chunk by chunk
     while len(coefficients) >= k:
@@ -475,13 +657,19 @@ def _eval_poly_alternative(
             chunk, precomputed_ks, gf
         )
         coefficients = coefficients[:-k]
+        depth += 1
+        cost += 1
 
     # If there is a small chunk remaining
     if len(coefficients) > 0:
         aggregator = aggregator * precomputed_ks[
             len(coefficients) - 1
         ] + _eval_poly_using_precomputed_ks(coefficients, precomputed_ks, gf)
+        depth += 1
+        cost += 1
 
+    print(depth, cost)
+    print(expected_depth, expected_cost, expected_depth == depth and expected_cost == cost)
     return aggregator, precomputed_powers
 
 
@@ -525,6 +713,7 @@ def _eval_poly_divide_conquer(
 ) -> Tuple[ArithmeticNode, Dict[int, ArithmeticNode]]:
     # Divide-and-conquer algorithm
     # TODO: Reduce code duplication with poly_eval
+    # TODO: Skip trailing 0s
     degree = len(coefficients) - 1
     precomputed_ks = _precompute_ks(x, k)
     precomputed_powers = {
@@ -550,6 +739,62 @@ def _eval_poly_divide_conquer(
     )
 
     return evaluation, precomputed_powers
+
+
+def _lower_bounds_divide_conquer(x: ArithmeticNode, coefficients: List[FieldArray], k: int, cost_of_squaring: float) -> Tuple[int, float]:
+    # TODO: Skip trailing 0s
+    degree = len(coefficients) - 1
+
+    # Find the largest p such that k * 2^p >= degree
+    p = 0
+    while True:
+        p += 1
+        if 2**p * k >= degree:
+            break
+
+    never_used_precomps = {i for i in range(k)}
+    cost = (k - 1) + (p - 1) * cost_of_squaring
+    ranges = [(2**(p - 1), 0, len(coefficients))]
+    while len(ranges) > 0:
+        pp, lo, hi = ranges.pop()
+        #print(pp, lo, hi)
+        if (hi - lo) - 1 <= k:
+            if len(never_used_precomps) > 0:
+                removing = []
+                for never_used_precomp in never_used_precomps:
+                    if never_used_precomp < lo:
+                        continue
+                    if never_used_precomp >= hi:
+                        continue
+                    if coefficients[never_used_precomp] != 0:
+                        removing.append(never_used_precomp)
+                for never_used_precomp in removing:
+                    never_used_precomps.remove(never_used_precomp)
+            continue
+
+        half = pp * k
+        ppd2 = pp // 2
+
+        # Left side
+        left = coefficients[lo:lo + half]
+        left_const = all(coeff == 0 for coeff in left)
+        if not left_const:
+            ranges.append((ppd2, lo, lo + half))
+        
+        # Right side
+        right = coefficients[lo + half:hi]
+        right_const = all(coeff == 0 for coeff in right)
+        if not right_const:
+            ranges.append((ppd2, lo + half, hi))
+        right_const |= len(left) == 1
+
+        cost += not right_const
+
+    depth = math.ceil(math.log2(k)) + p + 1
+    print(never_used_precomps)
+    cost -= len(never_used_precomps)
+
+    return depth, cost
 
 
 def _eval_coefficients(x: FieldArray, coefficients: List[FieldArray]) -> FieldArray:
@@ -613,7 +858,7 @@ def test_babystep_giantstep_method():  # noqa: D103
         (
             arithmetization,
             _,
-        ) = _eval_poly_alternative(x, coefficients, k, gf)
+        ) = _eval_poly_alternative(x, coefficients, k, gf, 1.0)
         arithmetization.clear_cache(set())
 
         for xx in range(31):
