@@ -6,31 +6,33 @@ from galois import GF
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.leafs import Input
 
-sys.setrecursionlimit(10000)
 
-gf = GF(65537)
-cost_of_squaring = 1.0
+if __name__ == "__main__":
+    sys.setrecursionlimit(10000)
 
-a = Input("a", gf)
-b = Input("b", gf)
+    gf = GF(65537)
+    cost_of_squaring = 1.0
 
-output = a < b
+    a = Input("a", gf)
+    b = Input("b", gf)
 
-circuit = Circuit(outputs=[output])
-circuit.to_graph("high_level_circuit.dot")
+    output = a < b
 
-arithmetic_circuits = circuit.arithmetize_depth_aware(cost_of_squaring)
+    circuit = Circuit(outputs=[output])
+    circuit.to_graph("high_level_circuit.dot")
 
-for depth, cost, arithmetic_circuit in arithmetic_circuits:
-    assert arithmetic_circuit.multiplicative_depth() == depth
-    assert arithmetic_circuit.multiplicative_cost(cost_of_squaring) == cost
+    arithmetic_circuits = circuit.arithmetize_depth_aware(cost_of_squaring)
 
-    print("pre CSE", depth, cost)
+    for depth, cost, arithmetic_circuit in arithmetic_circuits:
+        assert arithmetic_circuit.multiplicative_depth() == depth
+        assert arithmetic_circuit.multiplicative_cost(cost_of_squaring) == cost
 
-    arithmetic_circuit.eliminate_subexpressions()
+        print("pre CSE", depth, cost)
 
-    print(
-        "post CSE",
-        arithmetic_circuit.multiplicative_depth(),
-        arithmetic_circuit.multiplicative_cost(cost_of_squaring),
-    )
+        arithmetic_circuit.eliminate_subexpressions()
+
+        print(
+            "post CSE",
+            arithmetic_circuit.multiplicative_depth(),
+            arithmetic_circuit.multiplicative_cost(cost_of_squaring),
+        )

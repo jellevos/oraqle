@@ -233,7 +233,7 @@ class UnivariatePoly(UnivariateNode):
         A CostParetoFront with the depth-aware arithmetization and a dictionary indexed by the depth of the nodes in the front, returning a dictionary with previously computed powers.
 
         """
-        # TODO: Perhaps this should be cached
+        # TODO: Perhaps this should be cached (we can hash the coefficients along with the plaintext modulus and save which techniques and which ks led to the front)
         if len(self._coefficients) == 0:
             return CostParetoFront.from_leaf(Constant(self._gf(0)), cost_of_squaring), {0: {}}
 

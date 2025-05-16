@@ -68,7 +68,10 @@ def gen_pareto_front(  # noqa: PLR0912, PLR0913, PLR0917
 
     # Find the cheapest chain (i.e. no depth constraints)
     min_size = size_lower_bound(target) if precomputed_values is None else 1
-    if modulus is None:
+    if target > 10000:  # FIXME: Make this tunable
+        cheapest_chain = None
+        print("Skipping optimal chain")
+    elif modulus is None:
         cheapest_chain = add_chain(
             target,
             None,
@@ -96,6 +99,9 @@ def gen_pareto_front(  # noqa: PLR0912, PLR0913, PLR0917
 
     # If no cheapest chain is found that satisfies these bounds, then square and multiply had the same cost
     if cheapest_chain is None:
+        # TODO: Use precomputed values!
+        # TODO: Consider using minchain as well
+
         sam_chain = []
         for i in range(math.ceil(math.log2(sam_target))):
             sam_chain.append((2**i, 2**i))
