@@ -16,6 +16,7 @@ from oraqle.compiler.nodes.leafs import Constant, Input
 from oraqle.compiler.nodes.unary_arithmetic import ConstantMultiplication
 from oraqle.compiler.nodes.univariate import UnivariateNode
 from oraqle.config import PS_METHOD_FACTOR_K
+from numba import njit
 
 
 def _format_polynomial(coefficients: List[FieldArray]) -> str:
@@ -46,7 +47,7 @@ def _format_polynomial(coefficients: List[FieldArray]) -> str:
 
 def _expand_front(
         poly_eval_construction: Callable[[ArithmeticNode, List[FieldArray], int, Type[FieldArray], float], Tuple[Node, Dict[int, ArithmeticNode]]],
-        lower_bounds: Callable[[ArithmeticNode, List[FieldArray], int, float], Tuple[int, float]],
+        lower_bounds: Callable[[ArithmeticNode, List[FieldArray], int, Type[FieldArray], float], Tuple[int, float]],
         input: ArithmeticNode,
         coefficients: List[FieldArray],
         ks: range,
@@ -58,7 +59,7 @@ def _expand_front(
     bounds = {}
     for k in ks:
         print(k)
-        lb_depth, lb_cost = lower_bounds(input, coefficients, k, cost_of_squaring)
+        lb_depth, lb_cost = lower_bounds(input, coefficients, k, gf, cost_of_squaring)
         bounds[k] = (lb_depth, lb_cost)
         # TODO: This is very hacky (storing k instead of a node)
         pre_front.add(k, depth=lb_depth, cost=lb_cost)  # type: ignore
@@ -256,138 +257,33 @@ class UnivariatePoly(UnivariateNode):
         all_precomputed_powers = {}
 
         for _, _, x in self._node.arithmetize_depth_aware(cost_of_squaring):
-            # optimal_k = math.sqrt(len(self._coefficients))
-            # bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
-            # _expand_front(_eval_poly_alternative, _lower_bounds_alternative, x, self._coefficients, range(1, bound), self._gf, front, cost_of_squaring)
-            # print(front._nodes_by_depth)
-            
-            # optimal_k = math.sqrt(len(self._coefficients))  # FIXME: Use the exact optimal k (this is not a great approximation)
-            # bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
-            # _expand_front(_eval_poly_divide_conquer, _lower_bounds_divide_conquer, x, self._coefficients, range(1, bound), self._gf, front, cost_of_squaring)
-            # print(front._nodes_by_depth)
-
-
-
             optimal_k = math.sqrt(2 * len(self._coefficients))
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
-            for k in range(2, bound):
-                print(k)
-                (
-                    arithmetization,
-                    precomputed_powers,
-                ) = _eval_poly(x, self._coefficients, k, self._gf, cost_of_squaring)
+            _expand_front(_eval_poly, _lower_bounds_ps, x, self._coefficients, range(1, bound), self._gf, front, cost_of_squaring)
+            print(front._nodes_by_depth)
 
-                arithmetization = arithmetization.to_arithmetic()
-                assert isinstance(arithmetization, ArithmeticNode)
-                lb_depth, lb_cost = _lower_bounds_ps(x, self._coefficients, k, self._gf, cost_of_squaring)
-                print(lb_depth, lb_cost)
-                print(arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring))
-                assert lb_depth <= arithmetization.multiplicative_depth()
-                assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
+            optimal_k = math.sqrt(len(self._coefficients))  # FIXME: Use the exact optimal k (this is not a great approximation)
+            bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
+            _expand_front(_eval_poly_divide_conquer, _lower_bounds_divide_conquer, x, self._coefficients, range(1, bound), self._gf, front, cost_of_squaring)
+            print(front._nodes_by_depth)
 
-                added = front.add(arithmetization)
-                print(added)
-                if added:
-                    all_precomputed_powers[arithmetization.multiplicative_depth()] = (
-                        precomputed_powers
-                    )
-
-            # for k in range(1, len(self._coefficients)):
-            #     print(k)
-            #     (
-            #         arithmetization,
-            #         precomputed_powers,
-            #     ) = _eval_poly_divide_conquer(x, self._coefficients, k, self._gf, cost_of_squaring)
-
-            #     arithmetization = arithmetization.to_arithmetic()
-            #     assert isinstance(arithmetization, ArithmeticNode)
-
-            #     lb_depth, lb_cost = _lower_bounds_divide_conquer(x, self._coefficients, k, cost_of_squaring)
-            #     print(lb_depth, lb_cost)
-            #     depth, cost = arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring)
-            #     print(depth, cost)
-            #     # assert lb_depth <= depth
-            #     # assert lb_cost <= cost
-
-            #     added = front.add(arithmetization)
-            #     print(added)
-            #     if added:
-            #         all_precomputed_powers[arithmetization.multiplicative_depth()] = (
-            #             precomputed_powers
-            #         )
-
-
-            # pre_front = CostParetoFront(cost_of_squaring)
-            # optimal_k = math.sqrt(len(self._coefficients))
-            # for k in range(1, math.ceil(2 * optimal_k)):
-            #     print(k)
-            #     lb_depth, lb_cost = lower_bounds_alternative(x, self._coefficients, k, cost_of_squaring)
-            #     pre_front.add(k, depth=lb_depth, cost=lb_cost)  # TODO: This is hacky
-            
-            # print(pre_front._nodes_by_depth)
-
-            # for lb_depth, remainder in pre_front._nodes_by_depth.items():
-            #     print(k)
-            #     lb_cost, k = remainder
-            #     if not front.would_improve_front(lb_depth, lb_cost):
-            #         continue
-                
-            #     print('lb', lb_depth, lb_cost)
-            #     (
-            #         arithmetization,
-            #         precomputed_powers,
-            #     ) = _eval_poly_alternative(x, self._coefficients, k, self._gf, cost_of_squaring)
-
-            #     arithmetization = arithmetization.to_arithmetic()
-            #     assert isinstance(arithmetization, ArithmeticNode)
-            #     #print(arithmetization.multiplicative_cost(cost_of_squaring))
-            #     print(arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring))
-            #     assert lb_depth <= arithmetization.multiplicative_depth()
-            #     assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
-
-            #     added = front.add(arithmetization)
-            #     if added:
-            #         all_precomputed_powers[arithmetization.multiplicative_depth()] = (
-            #             precomputed_powers
-            #         )
-
-            # for k in range(1, math.ceil(2 * optimal_k)):
-            #     print(k)
-            #     lb_depth, lb_cost = lower_bounds_alternative(x, self._coefficients, k, cost_of_squaring)
-            #     if not front.would_improve_front(lb_depth, lb_cost):
-            #         continue
-            #     print("IMPROVED!")
-                
-            #     print('lb', lb_depth, lb_cost)
-            #     (
-            #         arithmetization,
-            #         precomputed_powers,
-            #     ) = _eval_poly_alternative(x, self._coefficients, k, self._gf, cost_of_squaring)
-
-            #     arithmetization = arithmetization.to_arithmetic()
-            #     assert isinstance(arithmetization, ArithmeticNode)
-            #     #print(arithmetization.multiplicative_cost(cost_of_squaring))
-            #     print(arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring))
-            #     assert lb_depth <= arithmetization.multiplicative_depth()
-            #     assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
-
-            #     added = front.add(arithmetization)
-            #     if added:
-            #         all_precomputed_powers[arithmetization.multiplicative_depth()] = (
-            #             precomputed_powers
-            #         )
+            optimal_k = math.sqrt(len(self._coefficients))
+            bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
+            _expand_front(_eval_poly_alternative, _lower_bounds_alternative, x, self._coefficients, range(1, bound), self._gf, front, cost_of_squaring)
+            print(front._nodes_by_depth)
 
         precomputed_powers = {depth: all_precomputed_powers[depth] for depth, _, _ in front}
         return front, precomputed_powers
 
 
-def _monic_euclidean_division(
-    a: List[FieldArray], b: List[FieldArray], gf
-) -> Tuple[List[FieldArray], List[FieldArray]]:
-    q = [gf(0) for _ in range(len(a))]
-    r = [el.copy() for el in a]
+@njit
+def _monic_euclidean_division_njit(
+    a: List[int], b: List[int], p: int
+) -> Tuple[List[int], List[int]]:
+    q = [0 for _ in range(len(a))]
+    r = [el for el in a]
     d = len(b) - 1
-    c = b[-1].copy()
+    c = b[-1]
     assert c == 1
     while (len(r) - 1) >= d:
         if r[-1] == 0:
@@ -397,15 +293,43 @@ def _monic_euclidean_division(
         s_monomial = len(r) - 1 - d
         f = r[-1]
         q[s_monomial] += f
+        q[s_monomial] %= p
 
         for i in range(d + 1):
             r[s_monomial + i] -= f * b[i]
+            r[s_monomial + i] %= p
         r.pop()
 
     while len(q) > 0 and q[-1] == 0:
         q.pop()
 
     return q, r
+
+# def _monic_euclidean_division(
+#     a: List[FieldArray], b: List[FieldArray], gf
+# ) -> Tuple[List[FieldArray], List[FieldArray]]:
+#     q = [gf(0) for _ in range(len(a))]
+#     r = [el.copy() for el in a]
+#     d = len(b) - 1
+#     c = b[-1].copy()
+#     assert c == 1
+#     while (len(r) - 1) >= d:
+#         if r[-1] == 0:
+#             r.pop()
+#             continue
+
+#         s_monomial = len(r) - 1 - d
+#         f = r[-1]
+#         q[s_monomial] += f
+
+#         for i in range(d + 1):
+#             r[s_monomial + i] -= f * b[i]
+#         r.pop()
+
+#     while len(q) > 0 and q[-1] == 0:
+#         q.pop()
+
+#     return q, r
 
 
 def _eval_poly_using_precomputed_ks(
@@ -433,10 +357,10 @@ def _eval_poly_using_precomputed_ks(
 
 
 def _eval_monic_poly_specific(
-    coefficients: List[FieldArray],
+    coefficients: List[int],
     precomputed_ks: List[ArithmeticNode],
     precomputed_pow2s: List[ArithmeticNode],
-    gf,
+    gf: Type[FieldArray],
     p: int,
 ) -> ArithmeticNode:
     if all(c == 0 for c in coefficients):
@@ -446,7 +370,7 @@ def _eval_monic_poly_specific(
 
     # Base case, this is free after precomputation
     if degree <= len(precomputed_ks):
-        return _eval_poly_using_precomputed_ks(coefficients, precomputed_ks, gf)
+        return _eval_poly_using_precomputed_ks([gf(el) for el in coefficients], precomputed_ks, gf)
 
     assert degree % len(precomputed_ks) == 0
     assert ((degree // len(precomputed_ks)) + 1) % 2 == 0
@@ -459,18 +383,19 @@ def _eval_monic_poly_specific(
 
     assert (len(q) - 1) == k * (p - 1)
 
-    r[k * (p - 1)] = r[k * (p - 1)].copy() - gf(1)
-    c, s = _monic_euclidean_division(r, q, gf)
+    r[k * (p - 1)] = r[k * (p - 1)] - 1
+    r[k * (p - 1)] %= 1
+    c, s = _monic_euclidean_division_njit(r, q, gf.characteristic)
     assert len(c) - 1 <= (len(precomputed_ks) - 1)
 
     monomial = precomputed_pow2s[int(math.log2(p))]
 
-    c_output = _eval_poly_using_precomputed_ks(c, precomputed_ks, gf)
+    c_output = _eval_poly_using_precomputed_ks([gf(el) for el in c], precomputed_ks, gf)
 
     left = monomial.add(c_output, flatten=False)
     right = _eval_monic_poly_specific(q, precomputed_ks, precomputed_pow2s, gf, p // 2)
 
-    s.append(gf(1))  # This adds the monomial
+    s.append(1)  # This adds the monomial
     assert (len(s) - 1) == k * (p - 1)
     remainder = _eval_monic_poly_specific(s, precomputed_ks, precomputed_pow2s, gf, p // 2)
 
@@ -587,7 +512,7 @@ def _lower_bounds_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, 
 
     ## Recurse
     never_used_precomps = {i for i in range(k)}
-    polys = [(2**qq // 2, new_coefficients)]
+    polys = [(2**qq // 2, [int(el) for el in new_coefficients])]
     while len(polys) > 0:
         pp, coeffs = polys.pop()
         #print(pp, lo, hi)
@@ -606,10 +531,12 @@ def _lower_bounds_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, 
         r = coeffs[: (k * pp - 1) + 1]
         q = coeffs[(k * pp - 1) + 1 :]
 
-        r[k * (pp - 1)] = r[k * (pp - 1)].copy() - gf(1)
-        c, s = _monic_euclidean_division(r, q, gf)
+        r[k * (pp - 1)] -= 1
+        r[k * (pp - 1)] %= p
+        #c, s = _monic_euclidean_division(r, q, gf)
+        c, s = _monic_euclidean_division_njit(r, q, p)
 
-        s.append(gf(1))
+        s.append(1)
 
         # Right (q)
         right_const = all(coeff == 0 for coeff in q)
@@ -629,15 +556,16 @@ def _lower_bounds_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, 
     print(never_used_precomps)
     cost -= len(never_used_precomps)
 
-    nodes = [x]
-    nodes.extend(power_node for _, power_node in precomputed_powers.items())
+    if extended:
+        nodes = [x]
+        nodes.extend(power_node for _, power_node in precomputed_powers.items())
 
-    for i, j in addition_chain:
-        nodes.append(Multiplication(nodes[i], nodes[j], gf))
+        for i, j in addition_chain:
+            nodes.append(Multiplication(nodes[i], nodes[j], gf))
 
-    chain_depth = nodes[-1].multiplicative_depth()
+        depth = max(depth, nodes[-1].multiplicative_depth())
     
-    return max(depth, chain_depth), cost
+    return depth, cost
 
 
 def _eval_poly(
@@ -693,7 +621,7 @@ def _eval_poly(
         extended = False
 
     evaluation = _eval_monic_poly_specific(
-        new_coefficients, precomputed_ks, precomputed_pow2s, gf, 2**p // 2
+        [int(el) for el in new_coefficients], precomputed_ks, precomputed_pow2s, gf, 2**p // 2
     )
     print('evaldepth', evaluation.multiplicative_depth())
 
@@ -721,7 +649,7 @@ def poly_degree(coefficients: List[FieldArray]) -> int:
 
 
 # TODO: Maybe make a separate function to estimate instead of computing a lower bound
-def _lower_bounds_alternative(x: ArithmeticNode, coefficients: List[FieldArray], k: int, cost_of_squaring: float) -> Tuple[int, float]:
+def _lower_bounds_alternative(x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: Type[FieldArray], cost_of_squaring: float) -> Tuple[int, float]:
     degree = poly_degree(coefficients)
 
     iterations = 0
@@ -865,7 +793,7 @@ def _eval_poly_divide_conquer(
     return evaluation, precomputed_powers
 
 
-def _lower_bounds_divide_conquer(x: ArithmeticNode, coefficients: List[FieldArray], k: int, cost_of_squaring: float) -> Tuple[int, float]:
+def _lower_bounds_divide_conquer(x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: Type[FieldArray],  cost_of_squaring: float) -> Tuple[int, float]:
     # TODO: Skip trailing 0s
     degree = len(coefficients) - 1
 
@@ -886,7 +814,7 @@ def _lower_bounds_divide_conquer(x: ArithmeticNode, coefficients: List[FieldArra
             if len(never_used_precomps) > 0:
                 removing = []
                 for never_used_precomp in never_used_precomps:
-                    if lo + never_used_precomp >= hi:
+                    if lo + never_used_precomp >= hi or hi >= len(coefficients):
                         continue
                     if coefficients[lo + never_used_precomp] != 0:
                         removing.append(never_used_precomp)
@@ -912,7 +840,7 @@ def _lower_bounds_divide_conquer(x: ArithmeticNode, coefficients: List[FieldArra
 
         cost += not right_const
 
-    depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + p + 1
+    depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + p
     print(never_used_precomps)
     cost -= len(never_used_precomps)
 
