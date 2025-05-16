@@ -1,10 +1,13 @@
 """Evaluation of univariate polynomials."""
 
+from importlib.resources import files
 import math
+import shelve
 from typing import Callable, Dict, List, Optional, Tuple, Type
 
 from galois import GF, FieldArray
 
+import oraqle
 from oraqle.add_chains.addition_chains_front import chain_depth
 from oraqle.add_chains.addition_chains_heuristic import add_chain_guaranteed
 from oraqle.add_chains.addition_chains_mod import chain_cost
@@ -54,6 +57,8 @@ def _expand_front(
         gf: Type[FieldArray],
         front: CostParetoFront,
         all_precomputed_powers: Dict[int, Dict[int, ArithmeticNode]],
+        all_constructions: Dict[int, Tuple[str, int]],
+        name: str,
         cost_of_squaring: float):
     # Generate an initial front of interesting values of k by computing lower bounds
     pre_front = CostParetoFront(cost_of_squaring)
@@ -84,9 +89,11 @@ def _expand_front(
         # TODO: Handle this
         added = front.add(arithmetization)
         if added:
-            all_precomputed_powers[arithmetization.multiplicative_depth()] = (
+            d = arithmetization.multiplicative_depth()
+            all_precomputed_powers[d] = (
                 precomputed_powers
             )
+            all_constructions[d] = (name, k)
 
     for k in ks:
         lb_depth, lb_cost = bounds[k]
@@ -109,6 +116,7 @@ def _expand_front(
             all_precomputed_powers[arithmetization.multiplicative_depth()] = (
                 precomputed_powers
             )
+            all_constructions[d] = (name, k)
 
 
 class UnivariatePoly(UnivariateNode):
@@ -233,6 +241,38 @@ class UnivariatePoly(UnivariateNode):
         A CostParetoFront with the depth-aware arithmetization and a dictionary indexed by the depth of the nodes in the front, returning a dictionary with previously computed powers.
 
         """
+        oraqle_path = files(oraqle)
+        database_path = oraqle_path.joinpath("poly_eval_cache")
+        db = shelve.open(str(database_path))  # noqa: SIM115
+
+        coeff_modulus_hash = str(hash((tuple(int(coeff) for coeff in self._coefficients), self._gf.characteristic)))
+        if coeff_modulus_hash in db:
+            print("From cache!")
+            all_constructions = db[coeff_modulus_hash]
+            db.close()
+            front = CostParetoFront(cost_of_squaring)
+            all_precomputed_powers = {}
+
+            for _, _, x in self._node.arithmetize_depth_aware(cost_of_squaring):
+                for (name, k) in all_constructions:
+                    name: str
+                    k: int
+                    if name == "ps":
+                        arithmetized, precomputed = _eval_poly(x, self._coefficients, k, self._gf, cost_of_squaring)
+                    elif name == "dc":
+                        arithmetized, precomputed = _eval_poly_divide_conquer(x, self._coefficients, k, self._gf, cost_of_squaring)
+                    elif name == "bg":
+                        arithmetized, precomputed = _eval_poly_alternative(x, self._coefficients, k, self._gf, cost_of_squaring)
+                    else:
+                        raise Exception("Invalid name in poly db")
+
+                    front.add(arithmetized)
+                    all_precomputed_powers[arithmetized.multiplicative_depth()] = precomputed
+            
+            precomputed_powers = {depth: all_precomputed_powers[depth] for depth, _, _ in front}
+            return front, precomputed_powers
+
+
         # TODO: Perhaps this should be cached (we can hash the coefficients along with the plaintext modulus and save which techniques and which ks led to the front)
         if len(self._coefficients) == 0:
             return CostParetoFront.from_leaf(Constant(self._gf(0)), cost_of_squaring), {0: {}}
@@ -244,19 +284,23 @@ class UnivariatePoly(UnivariateNode):
 
         front = CostParetoFront(cost_of_squaring)
         all_precomputed_powers = {}
+        all_constructions = {}
 
         for _, _, x in self._node.arithmetize_depth_aware(cost_of_squaring):
             optimal_k = math.sqrt(2 * len(self._coefficients))
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
-            _expand_front(_eval_poly, _lower_bounds_ps, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, cost_of_squaring)
+            _expand_front(_eval_poly, _lower_bounds_ps, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, all_constructions, 'ps', cost_of_squaring)
 
             optimal_k = math.sqrt(len(self._coefficients))  # FIXME: Use the exact optimal k (this is not a great approximation)
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
-            _expand_front(_eval_poly_divide_conquer, _lower_bounds_divide_conquer, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, cost_of_squaring)
+            _expand_front(_eval_poly_divide_conquer, _lower_bounds_divide_conquer, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, all_constructions, 'dc', cost_of_squaring)
 
             optimal_k = math.sqrt(len(self._coefficients))
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
-            _expand_front(_eval_poly_alternative, _lower_bounds_alternative, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, cost_of_squaring)
+            _expand_front(_eval_poly_alternative, _lower_bounds_alternative, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, all_constructions, 'bg', cost_of_squaring)
+
+        db[coeff_modulus_hash] = list(all_constructions[depth] for depth, _, _ in front)
+        db.close()
 
         precomputed_powers = {depth: all_precomputed_powers[depth] for depth, _, _ in front}
         return front, precomputed_powers
@@ -290,32 +334,6 @@ def _monic_euclidean_division_njit(
         q.pop()
 
     return q, r
-
-# def _monic_euclidean_division(
-#     a: List[FieldArray], b: List[FieldArray], gf
-# ) -> Tuple[List[FieldArray], List[FieldArray]]:
-#     q = [gf(0) for _ in range(len(a))]
-#     r = [el.copy() for el in a]
-#     d = len(b) - 1
-#     c = b[-1].copy()
-#     assert c == 1
-#     while (len(r) - 1) >= d:
-#         if r[-1] == 0:
-#             r.pop()
-#             continue
-
-#         s_monomial = len(r) - 1 - d
-#         f = r[-1]
-#         q[s_monomial] += f
-
-#         for i in range(d + 1):
-#             r[s_monomial + i] -= f * b[i]
-#         r.pop()
-
-#     while len(q) > 0 and q[-1] == 0:
-#         q.pop()
-
-#     return q, r
 
 
 def _eval_poly_using_precomputed_ks(
@@ -654,13 +672,7 @@ def _lower_bounds_alternative(x: ArithmeticNode, coefficients: List[FieldArray],
 
 def _eval_poly_alternative(
     x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: Type[FieldArray], cost_of_squaring: float,
-) -> Tuple[Node, Dict[int, ArithmeticNode]]:
-    depth = x.multiplicative_depth()
-    cost = x.multiplicative_cost(cost_of_squaring)
-
-    expected_depth = depth + math.ceil(math.log2(k)) + math.floor(len(coefficients) / k)
-    expected_cost = cost + k + math.floor(len(coefficients) / k)
-
+) -> Tuple[ArithmeticNode, Dict[int, ArithmeticNode]]:
     # Baby-step giant-step algorithm
     assert len(coefficients) > 0
 
@@ -679,8 +691,6 @@ def _eval_poly_alternative(
     chunk = coefficients[-(k + 1) :]
     aggregator = _eval_poly_using_precomputed_ks(chunk, precomputed_ks, gf)
     coefficients = coefficients[: -(k + 1)]
-    depth += math.ceil(math.log2(k))
-    cost += k  # TODO: Count squares
 
     # Go through the coefficients, chunk by chunk
     while len(coefficients) >= k:
@@ -689,18 +699,14 @@ def _eval_poly_alternative(
             chunk, precomputed_ks, gf
         )
         coefficients = coefficients[:-k]
-        depth += 1
-        cost += 1
 
     # If there is a small chunk remaining
     if len(coefficients) > 0:
         aggregator = aggregator * precomputed_ks[
             len(coefficients) - 1
         ] + _eval_poly_using_precomputed_ks(coefficients, precomputed_ks, gf)
-        depth += 1
-        cost += 1
 
-    return aggregator, precomputed_powers
+    return aggregator.arithmetize("best-effort").to_arithmetic(), precomputed_powers
 
 
 def _eval_poly_divide_conquer_specific(
