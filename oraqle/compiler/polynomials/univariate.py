@@ -8,9 +8,10 @@ from typing import Callable, Dict, List, Optional, Tuple, Type
 from galois import GF, FieldArray
 
 import oraqle
-from oraqle.add_chains.addition_chains_front import chain_depth
+from oraqle.add_chains.addition_chains_front import chain_depth, gen_pareto_front
 from oraqle.add_chains.addition_chains_heuristic import add_chain_guaranteed
 from oraqle.add_chains.addition_chains_mod import chain_cost
+from oraqle.add_chains.solving import extract_indices
 from oraqle.compiler.arithmetic.subtraction import Subtraction
 from oraqle.compiler.func2poly import interpolate_polynomial
 from oraqle.compiler.nodes.abstract import ArithmeticNode, CostParetoFront, Node
@@ -64,7 +65,10 @@ def _expand_front(
     pre_front = CostParetoFront(cost_of_squaring)
     bounds = {}
     for k in ks:
+        print(k, ks)
         lb_depth, lb_cost = lower_bounds(input, coefficients, k, gf, cost_of_squaring)
+        est_depth, est_cost = _estimate_ps(input, coefficients, k, gf, cost_of_squaring)
+        print(est_depth, "==", lb_depth, est_cost, "==", lb_cost)
         bounds[k] = (lb_depth, lb_cost)
         # TODO: This is very hacky (storing k instead of a node)
         pre_front.add(k, depth=lb_depth, cost=lb_cost)  # type: ignore
@@ -442,6 +446,11 @@ def _compute_extended_monomial(
     )
     # TODO: This is copied from Power, but in the future we can probably remove this if we have augmented circuits
     addition_chain = add_chain_guaranteed(target, modulus=p - 1, squaring_cost=squaring_cost, precomputed_values=precomputed_values)
+    # print('Prec', precomputed_values)
+    # print('Chain', addition_chain)
+    # front = gen_pareto_front(target, modulus=p - 1, squaring_cost=squaring_cost, precomputed_values=precomputed_values)
+    # print('Front', front)
+    # exit(0)
 
     nodes = [x]
     nodes.extend(power_node for _, power_node in precomputed_powers.items())
@@ -451,6 +460,72 @@ def _compute_extended_monomial(
 
     return nodes[-1]
 
+
+def _compute_extended_monomial_front(
+    x: ArithmeticNode,
+    precomputed_powers: Dict[int, ArithmeticNode],
+    target: int,
+    gf: Type[FieldArray],
+    squaring_cost: float,
+) -> List[ArithmeticNode]:
+    if target == 0:
+        return [Constant(gf(1))]
+
+    p = gf.characteristic
+    precomputed_values = tuple(
+        (
+            exp % (p - 1),
+            power_node.multiplicative_depth() - x.multiplicative_depth(),
+        )
+        for exp, power_node in precomputed_powers.items()
+    )
+
+    front = gen_pareto_front(target, modulus=p - 1, squaring_cost=squaring_cost, precomputed_values=precomputed_values)
+    
+    for depth, chain in front:
+        indices = extract_indices(chain)
+        print('chain', chain)
+
+        nodes = [x]
+        nodes.extend(power_node for _, power_node in precomputed_powers.items())
+
+        for i, j in addition_chain:
+            nodes.append(Multiplication(nodes[i], nodes[j], gf))
+
+        return nodes[-1]
+
+
+def _estimate_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: Type[FieldArray], cost_of_squaring: float) -> Tuple[int, float]:
+    # TODO: Skip trailing 0s
+    degree = len(coefficients) - 1
+
+    ## Generate the new coefficients
+    # Find the largest p such that k(2^p-1) >= degree
+    qq = 0
+    while True:
+        qq += 1
+        if (2**qq - 1) * k >= degree:
+            break
+
+    # Estimate depth and cost
+    depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + qq
+    cost = 2**(qq - 1) - 1 + (k - 1)
+
+    # FIXME:
+    # # Handle extension
+    # WORK OUT IF NEEDS EXTENDED
+    # new_degree = (2**qq - 1) * k
+
+    # if extended:
+    #     nodes = [x]
+    #     nodes.extend(power_node for _, power_node in precomputed_powers.items())
+
+    #     for i, j in addition_chain:
+    #         nodes.append(Multiplication(nodes[i], nodes[j], gf))
+
+    #     depth = max(depth, nodes[-1].multiplicative_depth())
+
+    return depth, cost
 
 def _lower_bounds_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: Type[FieldArray], cost_of_squaring: float) -> Tuple[int, float]:
     # TODO: Skip trailing 0s
@@ -509,7 +584,10 @@ def _lower_bounds_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, 
             for exp, power_node in precomputed_powers.items()
         )
         # TODO: This is copied from Power, but in the future we can probably remove this if we have augmented circuits
-        addition_chain = add_chain_guaranteed(new_degree % (gf.characteristic - 1), modulus=p - 1, squaring_cost=cost_of_squaring, precomputed_values=precomputed_values)
+        monomial_index = new_degree % (gf.characteristic - 1)
+        if monomial_index == 0:
+            monomial_index = gf.characteristic - 1
+        addition_chain = add_chain_guaranteed(monomial_index, modulus=p - 1, squaring_cost=cost_of_squaring, precomputed_values=precomputed_values)
         cost += chain_cost(addition_chain, cost_of_squaring)
 
     ## Recurse

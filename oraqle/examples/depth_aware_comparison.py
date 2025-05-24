@@ -10,7 +10,7 @@ from oraqle.compiler.nodes.leafs import Input
 if __name__ == "__main__":
     sys.setrecursionlimit(10000)
 
-    gf = GF(65537)
+    gf = GF(786433) #GF(12289)  #GF(65537) 786433
     cost_of_squaring = 1.0
 
     a = Input("a", gf)
@@ -36,3 +36,7 @@ if __name__ == "__main__":
             arithmetic_circuit.multiplicative_depth(),
             arithmetic_circuit.multiplicative_cost(cost_of_squaring),
         )
+
+    _, _, ac = arithmetic_circuits[0]
+    params = ac.generate_code("test_code2.cpp")
+    print(params)

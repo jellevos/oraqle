@@ -57,7 +57,6 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
     thurber: bool,
     min_size: int,
     precomputed_values: Optional[Tuple[Tuple[int, int], ...]],
-    use_milp: bool = False,
 ) -> Optional[List[Tuple[int, int]]]:
     """Generates a minimum-cost addition chain for a given target, abiding to the constraints.
 
@@ -78,14 +77,12 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
     Returns:
         A minimum-cost addition chain, if it exists.
     """
+    print(target, max_depth, strict_cost_max, squaring_cost, precomputed_values)
     # TODO: Maybe precomputed_values should not be optional, but should be ignored if it is empty
     assert target != 0
 
     if target == 1:
         return []
-    
-    if use_milp:
-        return milp(target, max_depth, strict_cost_max, squaring_cost, thurber, min_size, precomputed_values)
 
     def x(i) -> int:
         return i
@@ -218,6 +215,7 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
     if model is None:
         return None
 
+    print('done')
     offset = (target + 1) if precomputed_values is None else 2 * (target + 1)
     return [y_inv(n) for n in model if offset <= n <= y(target, target)]
 
@@ -443,17 +441,14 @@ def test_addition_chain():  # noqa: D103
 
 
 def test_addition_chain_milp():  # noqa: D103
-    chain = add_chain(
+    chain = milp(
         8,
         3,
         2.0,
         0.5,
-        solver="glucose42",
-        encoding=1,
         thurber=True,
         min_size=2,
         precomputed_values=None,
-        use_milp=True,
     )
     assert chain == [(1, 1), (2, 2), (4, 4)]
 
@@ -474,17 +469,14 @@ def test_addition_chain_precomputed_no_depth():  # noqa: D103
 
 
 def test_addition_chain_precomputed_no_depth_milp():  # noqa: D103
-    chain = add_chain(
+    chain = milp(
         8,
         None,
         2.0,
         0.5,
-        solver="glucose42",
-        encoding=1,
         thurber=True,
         min_size=1,
         precomputed_values=((7, 2),),
-        use_milp=True,
     )
     assert chain == [(1, 7)]
 
@@ -505,17 +497,14 @@ def test_addition_chain_precomputed_depth():  # noqa: D103
 
 
 def test_addition_chain_precomputed_depth_milp():  # noqa: D103
-    chain = add_chain(
+    chain = milp(
         8,
         3,
         2.0,
         0.5,
-        solver="glucose42",
-        encoding=1,
         thurber=True,
         min_size=1,
         precomputed_values=((7, 2),),
-        use_milp=True,
     )
     assert chain == [(1, 7)]
 
@@ -536,17 +525,14 @@ def test_addition_chain_precomputed_depth_too_large():  # noqa: D103
 
 
 def test_addition_chain_precomputed_depth_too_large_milp():  # noqa: D103
-    chain = add_chain(
+    chain = milp(
         8,
         3,
         2.0,
         0.5,
-        solver="glucose42",
-        encoding=1,
         thurber=True,
         min_size=1,
         precomputed_values=((7, 3),),
-        use_milp=True,
     )
     assert chain == [(1, 1), (2, 2), (4, 4)]
 
@@ -567,34 +553,28 @@ def test_addition_chain_precomputed_no_depth_squaring():  # noqa: D103
 
 
 def test_addition_chain_precomputed_no_depth_squaring_milp():  # noqa: D103
-    chain = add_chain(
+    chain = milp(
         18,
         None,
         2.0,
         0.5,
-        solver="glucose42",
-        encoding=1,
         thurber=True,
         min_size=1,
         precomputed_values=((9, 3),),
-        use_milp=True,
     )
     assert chain == [(9, 9)]
 
 
 if __name__ == "__main__":
     start = time.monotonic()
-    print(add_chain(
+    print(milp(
         254,
         None,
         8.0,
         0.5,
-        solver="glucose42",
-        encoding=1,
         thurber=True,
         min_size=11,
         precomputed_values=None,
-        use_milp=True,
     ))
     print(time.monotonic() - start)
 
@@ -611,6 +591,7 @@ if __name__ == "__main__":
     #     use_milp=False,
     # ))
 
+    #Change narrative: Measure all our improvements to the original MILP, then compare it for both the commercial MILP solver and open source MaxSAT solver.
 
 
     oraqle_path = files(oraqle)

@@ -80,6 +80,8 @@ def add_chain_guaranteed(  # noqa: PLR0913, PLR0917
     Returns:
         An addition chain.
     """
+    assert target != 0
+
     # We want to do better than square and multiply, so we find an upper bound
     sam_cost = math.ceil(math.log2(target)) * squaring_cost + hw(target) - 1
 
