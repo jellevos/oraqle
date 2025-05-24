@@ -11,7 +11,7 @@ from oraqle.compiler.nodes.leafs import Input
 if __name__ == "__main__":
     iterations = 10
 
-    for p in [29, 43, 61, 101, 131]:
+    for p in [29, 43, 61, 101, 131, 163, 107]:  # FIXME: Deze laatste kan met (8, 18) als we monomial front gebruiken...
         gf = GF(p)
 
         x = Input("x", gf)

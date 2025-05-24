@@ -432,7 +432,7 @@ def _compute_extended_monomial(
     target: int,
     gf: Type[FieldArray],
     squaring_cost: float,
-) -> ArithmeticNode:
+    max_depth: int) -> ArithmeticNode:
     if target == 0:
         return Constant(gf(1))
 
@@ -445,7 +445,7 @@ def _compute_extended_monomial(
         for exp, power_node in precomputed_powers.items()
     )
     # TODO: This is copied from Power, but in the future we can probably remove this if we have augmented circuits
-    addition_chain = add_chain_guaranteed(target, modulus=p - 1, squaring_cost=squaring_cost, precomputed_values=precomputed_values)
+    addition_chain = add_chain_guaranteed(target, modulus=p - 1, squaring_cost=squaring_cost, precomputed_values=precomputed_values, max_depth=max_depth)
     # print('Prec', precomputed_values)
     # print('Chain', addition_chain)
     # front = gen_pareto_front(target, modulus=p - 1, squaring_cost=squaring_cost, precomputed_values=precomputed_values)
@@ -459,40 +459,6 @@ def _compute_extended_monomial(
         nodes.append(Multiplication(nodes[i], nodes[j], gf))
 
     return nodes[-1]
-
-
-def _compute_extended_monomial_front(
-    x: ArithmeticNode,
-    precomputed_powers: Dict[int, ArithmeticNode],
-    target: int,
-    gf: Type[FieldArray],
-    squaring_cost: float,
-) -> List[ArithmeticNode]:
-    if target == 0:
-        return [Constant(gf(1))]
-
-    p = gf.characteristic
-    precomputed_values = tuple(
-        (
-            exp % (p - 1),
-            power_node.multiplicative_depth() - x.multiplicative_depth(),
-        )
-        for exp, power_node in precomputed_powers.items()
-    )
-
-    front = gen_pareto_front(target, modulus=p - 1, squaring_cost=squaring_cost, precomputed_values=precomputed_values)
-    
-    for depth, chain in front:
-        indices = extract_indices(chain)
-        print('chain', chain)
-
-        nodes = [x]
-        nodes.extend(power_node for _, power_node in precomputed_powers.items())
-
-        for i, j in addition_chain:
-            nodes.append(Multiplication(nodes[i], nodes[j], gf))
-
-        return nodes[-1]
 
 
 def _estimate_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: Type[FieldArray], cost_of_squaring: float) -> Tuple[int, float]:
@@ -588,7 +554,8 @@ def _lower_bounds_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, 
         if monomial_index == 0:
             monomial_index = gf.characteristic - 1
         addition_chain = add_chain_guaranteed(monomial_index, modulus=p - 1, squaring_cost=cost_of_squaring, precomputed_values=precomputed_values)
-        cost += chain_cost(addition_chain, cost_of_squaring)
+        # FIXME: We are currently ignoring this!!!
+        #cost += chain_cost(addition_chain, cost_of_squaring)
 
     ## Recurse
     never_used_precomps = {i for i in range(k)}
@@ -633,14 +600,15 @@ def _lower_bounds_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, 
     depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + qq
     cost -= len(never_used_precomps)
 
-    if extended:
-        nodes = [x]
-        nodes.extend(power_node for _, power_node in precomputed_powers.items())
+    # FIXME: We are currently ignoring this!!
+    # if extended:
+    #     nodes = [x]
+    #     nodes.extend(power_node for _, power_node in precomputed_powers.items())
 
-        for i, j in addition_chain:
-            nodes.append(Multiplication(nodes[i], nodes[j], gf))
+    #     for i, j in addition_chain:
+    #         nodes.append(Multiplication(nodes[i], nodes[j], gf))
 
-        depth = max(depth, nodes[-1].multiplicative_depth())
+    #     depth = max(depth, nodes[-1].multiplicative_depth())
     
     return depth, cost
 
@@ -702,8 +670,9 @@ def _eval_poly(
     )
 
     if extended:
+        depth = evaluation.multiplicative_depth()
         monomial = _compute_extended_monomial(
-            x, precomputed_powers, new_degree % (gf.characteristic - 1), gf, squaring_cost
+            x, precomputed_powers, new_degree % (gf.characteristic - 1), gf, squaring_cost, max_depth=depth
         )
         precomputed_powers[new_degree % (gf.characteristic - 1)] = monomial
         evaluation = (
