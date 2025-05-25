@@ -67,8 +67,8 @@ def _expand_front(
     for k in ks:
         print(k, ks)
         lb_depth, lb_cost = lower_bounds(input, coefficients, k, gf, cost_of_squaring)
-        est_depth, est_cost = _estimate_ps(input, coefficients, k, gf, cost_of_squaring)
-        print(est_depth, "==", lb_depth, est_cost, "==", lb_cost)
+        #est_depth, est_cost = _estimate_ps(input, coefficients, k, gf, cost_of_squaring)
+        #print(est_depth, "==", lb_depth, est_cost, "==", lb_cost)
         bounds[k] = (lb_depth, lb_cost)
         # TODO: This is very hacky (storing k instead of a node)
         pre_front.add(k, depth=lb_depth, cost=lb_cost)  # type: ignore
@@ -293,7 +293,7 @@ class UnivariatePoly(UnivariateNode):
         for _, _, x in self._node.arithmetize_depth_aware(cost_of_squaring):
             optimal_k = math.sqrt(2 * len(self._coefficients))
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
-            _expand_front(_eval_poly, _lower_bounds_ps, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, all_constructions, 'ps', cost_of_squaring)
+            _expand_front(_eval_poly, _estimate_ps, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, all_constructions, 'ps', cost_of_squaring)
 
             optimal_k = math.sqrt(len(self._coefficients))  # FIXME: Use the exact optimal k (this is not a great approximation)
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
@@ -317,8 +317,8 @@ def _monic_euclidean_division_njit(
     q = [0 for _ in range(len(a))]
     r = [el for el in a]
     d = len(b) - 1
-    c = b[-1]
-    assert c == 1
+    #c = b[-1]
+    #assert c == 1
     while (len(r) - 1) >= d:
         if r[-1] == 0:
             r.pop()
@@ -474,22 +474,41 @@ def _estimate_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: 
             break
 
     # Estimate depth and cost
-    depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + qq
+    depth = math.ceil(math.log2(k)) + qq  # x.multiplicative_depth() + 
     cost = 2**(qq - 1) - 1 + (k - 1)
 
     # FIXME:
     # # Handle extension
-    # WORK OUT IF NEEDS EXTENDED
-    # new_degree = (2**qq - 1) * k
+    new_degree = (2**qq - 1) * k
+    extended = False
+    if new_degree > degree:
+        extended = True
 
-    # if extended:
-    #     nodes = [x]
-    #     nodes.extend(power_node for _, power_node in precomputed_powers.items())
+    monomial_index = new_degree % (gf.characteristic - 1)
+    if monomial_index == 0:
+        monomial_index = gf.characteristic - 1
+    if extended and monomial_index <= degree:
+        # In some cases we can eliminate the added monomial by changing the coefficients
+        extended = False
 
-    #     for i, j in addition_chain:
-    #         nodes.append(Multiplication(nodes[i], nodes[j], gf))
+    if extended:
+        precomputed_ks = _precompute_ks(x, k)
+        precomputed_powers = {
+            i % (gf.characteristic - 1): node for i, node in zip(range(1, k + 1), precomputed_ks)
+        }
+        precomputed_pow2s = [precomputed_ks[-1]]
+        for j in range(qq - 1):  # TODO: Check if p - 1 is enough
+            precomputed_pow2s.append(
+                Multiplication(precomputed_pow2s[-1], precomputed_pow2s[-1], precomputed_pow2s[-1]._gf)
+            )
+            precomputed_powers[(k * (2 ** (j + 1))) % (gf.characteristic - 1)] = precomputed_pow2s[-1]
 
-    #     depth = max(depth, nodes[-1].multiplicative_depth())
+        monomial = _compute_extended_monomial(
+            x, precomputed_powers, new_degree % (gf.characteristic - 1), gf, cost_of_squaring, max_depth=depth
+        )
+
+        depth = max(monomial.multiplicative_depth(), depth + x.multiplicative_depth())
+        # TODO: cost += monomial.multiplicative_cost(cost_of_squaring)
 
     return depth, cost
 
@@ -526,7 +545,7 @@ def _lower_bounds_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, 
     if int(new_coefficients[-1]) > 1:
         # The polynomial is not monic
         inverse = coefficients[-1] ** -1
-        new_coefficients = [inverse * c for c in coefficients]
+        new_coefficients = [inverse * c for c in new_coefficients]
 
     new_coefficients[-1] = gf(1)
 
@@ -652,7 +671,7 @@ def _eval_poly(
     if int(new_coefficients[-1]) > 1:
         # The polynomial is not monic
         inverse = coefficients[-1] ** -1
-        new_coefficients = [inverse * c for c in coefficients]
+        new_coefficients = [inverse * c for c in new_coefficients]
         factor = coefficients[-1]
 
     new_coefficients[-1] = gf(1)

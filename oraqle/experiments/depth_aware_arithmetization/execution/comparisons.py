@@ -11,7 +11,7 @@ from oraqle.compiler.nodes.leafs import Input
 if __name__ == "__main__":
     iterations = 10
 
-    for p in [29, 43, 61, 101, 131, 163, 107]:  # FIXME: Deze laatste kan met (8, 18) als we monomial front gebruiken...
+    for p in [29, 43, 61, 101, 131, 163, 107]:  # FIXME: 107 can be done in (8, 18) if we use the gen_front method for computing the padding monomial
         gf = GF(p)
 
         x = Input("x", gf)

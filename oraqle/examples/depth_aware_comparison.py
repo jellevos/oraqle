@@ -6,8 +6,14 @@ from galois import GF
 from oraqle.compiler.circuit import Circuit
 from oraqle.compiler.nodes.leafs import Input
 
+import mpmath
+
 
 if __name__ == "__main__":
+    mpmath.mp.dps = 50
+    mpmath.mp.pretty = True
+    mpmath.mp.maxsteps = 1000
+
     sys.setrecursionlimit(10000)
 
     gf = GF(786433) #GF(12289)  #GF(65537) 786433
@@ -40,3 +46,7 @@ if __name__ == "__main__":
     _, _, ac = arithmetic_circuits[0]
     params = ac.generate_code("test_code2.cpp")
     print(params)
+
+
+# pre CSE 24 2872.0
+# post CSE 24 2770.0

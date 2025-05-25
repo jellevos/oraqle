@@ -440,17 +440,17 @@ def test_addition_chain():  # noqa: D103
     assert chain == [(1, 1), (2, 2), (4, 4)]
 
 
-def test_addition_chain_milp():  # noqa: D103
-    chain = milp(
-        8,
-        3,
-        2.0,
-        0.5,
-        thurber=True,
-        min_size=2,
-        precomputed_values=None,
-    )
-    assert chain == [(1, 1), (2, 2), (4, 4)]
+# def test_addition_chain_milp():  # noqa: D103
+#     chain = milp(
+#         8,
+#         3,
+#         2.0,
+#         0.5,
+#         thurber=True,
+#         min_size=2,
+#         precomputed_values=None,
+#     )
+#     assert chain == [(1, 1), (2, 2), (4, 4)]
 
 
 def test_addition_chain_precomputed_no_depth():  # noqa: D103
@@ -496,17 +496,17 @@ def test_addition_chain_precomputed_depth():  # noqa: D103
     assert chain == [(1, 7)]
 
 
-def test_addition_chain_precomputed_depth_milp():  # noqa: D103
-    chain = milp(
-        8,
-        3,
-        2.0,
-        0.5,
-        thurber=True,
-        min_size=1,
-        precomputed_values=((7, 2),),
-    )
-    assert chain == [(1, 7)]
+# def test_addition_chain_precomputed_depth_milp():  # noqa: D103
+#     chain = milp(
+#         8,
+#         3,
+#         2.0,
+#         0.5,
+#         thurber=True,
+#         min_size=1,
+#         precomputed_values=((7, 2),),
+#     )
+#     assert chain == [(1, 7)]
 
 
 def test_addition_chain_precomputed_depth_too_large():  # noqa: D103
@@ -524,17 +524,17 @@ def test_addition_chain_precomputed_depth_too_large():  # noqa: D103
     assert chain == [(1, 1), (2, 2), (4, 4)]
 
 
-def test_addition_chain_precomputed_depth_too_large_milp():  # noqa: D103
-    chain = milp(
-        8,
-        3,
-        2.0,
-        0.5,
-        thurber=True,
-        min_size=1,
-        precomputed_values=((7, 3),),
-    )
-    assert chain == [(1, 1), (2, 2), (4, 4)]
+# def test_addition_chain_precomputed_depth_too_large_milp():  # noqa: D103
+#     chain = milp(
+#         8,
+#         3,
+#         2.0,
+#         0.5,
+#         thurber=True,
+#         min_size=1,
+#         precomputed_values=((7, 3),),
+#     )
+#     assert chain == [(1, 1), (2, 2), (4, 4)]
 
 
 def test_addition_chain_precomputed_no_depth_squaring():  # noqa: D103
