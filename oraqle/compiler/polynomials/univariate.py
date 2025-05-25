@@ -117,6 +117,7 @@ def _expand_front(
         # TODO: Handle this
         added = front.add(arithmetization)
         if added:
+            d = arithmetization.multiplicative_depth()
             all_precomputed_powers[arithmetization.multiplicative_depth()] = (
                 precomputed_powers
             )
@@ -392,7 +393,7 @@ def _eval_monic_poly_specific(
     assert (len(q) - 1) == k * (p - 1)
 
     r[k * (p - 1)] = r[k * (p - 1)] - 1
-    r[k * (p - 1)] %= 1
+    r[k * (p - 1)] %= gf.characteristic
     c, s = _monic_euclidean_division_njit(r, q, gf.characteristic)
     assert len(c) - 1 <= (len(precomputed_ks) - 1)
 
@@ -889,7 +890,7 @@ def _lower_bounds_divide_conquer(x: ArithmeticNode, coefficients: List[FieldArra
 
         cost += not right_const
 
-    depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + p
+    depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + p - 1  # TODO: Double check the minus 1
     cost -= len(never_used_precomps)
 
     return depth, cost
