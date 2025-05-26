@@ -77,7 +77,6 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
     Returns:
         A minimum-cost addition chain, if it exists.
     """
-    print(target, max_depth, strict_cost_max, squaring_cost, precomputed_values)
     # TODO: Maybe precomputed_values should not be optional, but should be ignored if it is empty
     assert target != 0
 
@@ -215,7 +214,6 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
     if model is None:
         return None
 
-    print('done')
     offset = (target + 1) if precomputed_values is None else 2 * (target + 1)
     return [y_inv(n) for n in model if offset <= n <= y(target, target)]
 
@@ -416,9 +414,10 @@ def milp(
         for lb, ub in thurber_bounds(target, max_size):
             model.addConstr(quicksum(x[i] for i in range(lb, ub + 1)) >= 1)
 
+    model.setParam('OutputFlag', 0)
     model.optimize()
 
-    print([(i, var.X) for i, var in x.items()])
+    #print([(i, var.X) for i, var in x.items()])
 
     #print([(i, j, var.X) for (i, j), var in y.items()])
 
