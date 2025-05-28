@@ -5,7 +5,10 @@ import os
 import time
 from typing import List, Optional, Tuple
 
-from gurobipy import GRB, Model, quicksum
+try:
+    from gurobipy import GRB, Model, quicksum
+except:
+    print("Gurobi is not installed, cannot use the MILP formulation")
 from pysat.card import CardEnc
 from pysat.formula import WCNF
 
