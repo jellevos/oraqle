@@ -51,6 +51,7 @@ if __name__ == "__main__":
             ac.multiplicative_cost(cost_of_squaring),
         )
     params = ac.generate_code("mean.cpp", measure_time=True, decrypt_outputs=True)
+    params = ac.generate_code_openfhe("mean_bfv.cpp", measure_time=True, decrypt_outputs=True)
     print(params)
 
     print("--- variance ---")
@@ -69,4 +70,5 @@ if __name__ == "__main__":
             ac.multiplicative_cost(cost_of_squaring),
         )
     params = ac.generate_code("variance.cpp", measure_time=True, decrypt_outputs=True)
+    params = ac.generate_code_openfhe("variance_bfv.cpp", measure_time=True, decrypt_outputs=True)
     print(params)
