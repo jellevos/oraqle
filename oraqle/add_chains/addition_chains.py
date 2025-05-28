@@ -15,6 +15,10 @@ from oraqle.add_chains.solving import solve, solve_with_time_limit
 from oraqle.config import MAXSAT_TIMEOUT
 
 
+minsize_optimization = True
+deepsums_optimization = True
+
+
 def thurber_bounds(target: int, max_size: int) -> List[Tuple[int, int]]:
     """Returns the Thurber bounds for a given target and a maximum size of the addition chain."""
     m = target
@@ -129,7 +133,7 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
         for i in range(1, min(j + 1, target + 1 - j)):
             k = i + j
 
-            if max_depth is not None and k > max_depth_pow and k != target:
+            if deepsums_optimization and max_depth is not None and k > max_depth_pow and k != target:
                 continue
 
             x_i = x(i)
@@ -196,14 +200,15 @@ def add_chain(  # noqa: PLR0912, PLR0913, PLR0915, PLR0917
             wcnf.append([x(i) for i in range(lb, ub + 1)])
 
     # Bound the number of x that are true from below
-    if max_depth is None:
-        top_id = y(target, target)
-    else:
-        top_id = y(target, target) + 1 + (target - 1) * (max_depth + 1) + max_depth + 1
-    at_least_cnf = CardEnc.atleast(
-        [x(k) for k in range(2, target + 1)], bound=min_size, top_id=top_id, encoding=encoding
-    )
-    wcnf.extend(at_least_cnf)
+    if minsize_optimization:
+        if max_depth is None:
+            top_id = y(target, target)
+        else:
+            top_id = y(target, target) + 1 + (target - 1) * (max_depth + 1) + max_depth + 1
+        at_least_cnf = CardEnc.atleast(
+            [x(k) for k in range(2, target + 1)], bound=min_size, top_id=top_id, encoding=encoding
+        )
+        wcnf.extend(at_least_cnf)
 
     # Solve
     if MAXSAT_TIMEOUT is None:
@@ -309,6 +314,7 @@ def milp(
     thurber: bool,
     min_size: int,
     precomputed_values: Optional[Tuple[Tuple[int, int], ...]],
+    include_cuts: bool = True,
 ) -> Optional[List[Tuple[int, int]]]:
     model = Model()
 
@@ -318,16 +324,14 @@ def milp(
     d = {}
     z = {}
 
-    # TODO: Use int constraint for depth
     if max_depth is not None:
         for i in range(1, target + 1):
-            for depth in range(max_depth + 2):
-                d[i, depth] = model.addVar(vtype=GRB.BINARY, name=f"d_{i}_{depth}")
+            d[i] = model.addVar(vtype=GRB.INTEGER, name=f"d_{i}")
 
     for i in range(1, target + 1):
         for j in range(i, target + 1 - i):
             k = i + j
-            if max_depth is not None and k > (1 << (max_depth - 1)) and k != target:
+            if include_cuts and max_depth is not None and k > (1 << (max_depth - 1)) and k != target:
                 continue
             y[i, j] = model.addVar(vtype=GRB.BINARY, name=f"y_{i}_{j}")
 
@@ -349,7 +353,7 @@ def milp(
         for i in range(1, min(j + 1, target + 1 - j)):
             k = i + j
 
-            if max_depth is not None and k > max_depth_pow and k != target:
+            if include_cuts and deepsums_optimization and max_depth is not None and k > max_depth_pow and k != target:
                 continue
 
             x_i = x[i]
@@ -364,6 +368,14 @@ def milp(
             # x_k is set when y_ij is set
             big_disjunctions[k].append(y_ij)
 
+            if max_depth is not None:
+                for depth in range(max_depth + 1):
+                    # d_k,depth+1 is set when d_i,depth and y_ij are set
+                    model.addConstr(d[i] <= d[k] + (1 - y_ij) * (max_depth + 1) - 1)
+                    if i != j:
+                        # d_k,depth+1 is set when d_j,depth and y_ij are set
+                        model.addConstr(d[j] <= d[k] + (1 - y_ij) * (max_depth + 1) - 1)
+
     if precomputed_values is not None:
         for k, k_depth in precomputed_values:
             if k == 0 or k > target:
@@ -376,9 +388,7 @@ def milp(
             big_disjunctions[k].append(z[k])
 
             if max_depth is not None:
-                # TODO: Use int constraints!!
-                assert False
-                wcnf.append([d(k, k_depth), -z(k)])
+                model.addConstr(d[k] >= (k_depth * z[k]))
 
     # Ensure target is computed
     model.addConstr(x[target] == 1)
@@ -394,27 +404,25 @@ def milp(
             #wcnf.append([x(m) for m in range((k + 1) // 2, k)])  # type: ignore
             model.addConstr(quicksum(x[m] for m in range((k + 1) // 2, k)) >= 1)
 
-        if max_depth is not None:
-            assert False
-            # May not exceed max_depth
-            wcnf.append([-d(k, max_depth + 1)])
-
     if max_depth is not None:
-        assert False
-        model.addConstr(d[1, 0] == 1)
+        model.addConstr(d[1] >= 0)
         for k in range(2, target + 1):
-            model.addConstr(d[k, max_depth + 1] == 0)
+            model.addConstr(d[k] <= x[k] * max_depth)
+            min_depth = math.ceil(math.log2(k))
+            model.addConstr(x[k] * min_depth <= d[k])
 
     # At least min_size x_i’s are true
-    model.addConstr(quicksum(x[k] for k in range(2, target + 1)) >= min_size)
+    if include_cuts and minsize_optimization:
+        model.addConstr(quicksum(x[k] for k in range(2, target + 1)) >= min_size)
 
     # Thurber bounds (optional)
-    if thurber and precomputed_values is None and strict_cost_max:
+    if include_cuts and thurber and precomputed_values is None and strict_cost_max:
         max_size = math.floor(strict_cost_max / squaring_cost)
         for lb, ub in thurber_bounds(target, max_size):
             model.addConstr(quicksum(x[i] for i in range(lb, ub + 1)) >= 1)
 
     model.setParam('OutputFlag', 0)
+    model.setParam('Threads', 1)
     model.optimize()
 
     #print([(i, var.X) for i, var in x.items()])
