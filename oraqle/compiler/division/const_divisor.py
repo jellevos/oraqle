@@ -7,7 +7,7 @@ from oraqle.compiler.division.remainder import Remainder
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node
 from oraqle.compiler.nodes.binary_arithmetic import Addition, Multiplication
 from oraqle.compiler.nodes.leafs import Input
-from oraqle.compiler.nodes.unary_arithmetic import ConstantMultiplication
+from oraqle.compiler.nodes.unary_arithmetic import ConstantAddition, ConstantMultiplication
 from oraqle.compiler.nodes.univariate import UnivariateNode
 
 
@@ -37,8 +37,12 @@ class DivideBy(UnivariateNode):
 
     def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
         correction = self._divisor // 2
-        shifted = self._node + correction
-        quantized = shifted - Remainder(shifted, self._divisor)
         p = self._gf.characteristic
         div_inv = mod_pow(self._divisor, p - 2, p)
-        return (quantized * div_inv).arithmetize_depth_aware(cost_of_squaring)
+        front = CostParetoFront(cost_of_squaring)
+        for _, _, arithmetized_node in self._node.arithmetize_depth_aware(cost_of_squaring):
+            shifted = ConstantAddition(arithmetized_node, self._gf(correction))
+            quantized = shifted - Remainder(shifted, self._divisor)
+            for _, _, arithmetized_quantized in quantized.arithmetize_depth_aware(cost_of_squaring):
+                front.add(ConstantMultiplication(arithmetized_quantized, self._gf(div_inv)))
+        return front
