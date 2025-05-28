@@ -78,7 +78,7 @@ class Circuit:
         import graphviz
         from IPython.display import display_png
 
-        src = graphviz.Source(file_content)
+        src = graphviz.Source(file_content)  # type: ignore
         display_png(src, metadata=metadata)
 
     def eliminate_subexpressions(self):
@@ -195,6 +195,65 @@ helib_keygen = """
 """
 
 helib_postamble = """
+    return 0;
+}
+"""
+
+openfhe_preamble = """
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+#include <chrono>
+
+#include "openfhe.h"
+
+typedef lbcrypto::Plaintext ptxt_t;
+typedef lbcrypto::Ciphertext<lbcrypto::DCRTPoly> ctxt_t;
+
+std::map<std::string, int> input_map;
+
+void parse_arguments(int argc, char* argv[]) {
+    for (int i = 1; i < argc; ++i) {
+        std::string argument(argv[i]);
+        size_t pos = argument.find('=');
+        if (pos != std::string::npos) {
+            std::string key = argument.substr(0, pos);
+            int value = std::stoi(argument.substr(pos + 1));
+            input_map[key] = value;
+        }
+    }
+}
+
+int extract_input(const std::string& name) {
+    if (input_map.find(name) != input_map.end()) {
+        return input_map[name];
+    } else {
+        std::cerr << "Error: " << name << " not found" << std::endl;
+        return -1;
+    }
+}
+
+int main(int argc, char* argv[]) {
+    // Parse the inputs
+    parse_arguments(argc, argv);
+"""
+
+openfhe_keygen = """
+    // Determine number of available slots
+    size_t numSlots = context->GetEncodingParams()->GetBatchSize();
+
+    context->Enable(lbcrypto::ENCRYPTION);
+    context->Enable(lbcrypto::SHE);
+
+    // Generate keys
+    auto keys = context->KeyGen();
+    context->EvalMultKeyGen(keys.secretKey);
+    context->EvalSumKeyGen(keys.secretKey);
+    auto& public_key = keys.publicKey;
+"""
+
+openfhe_postamble = """
     return 0;
 }
 """
@@ -327,6 +386,68 @@ class ArithmeticCircuit(Circuit):
         .c(c)
         .build();
 """, (b_args["m"], 1, sum(logq), 3)
+    
+    def _generate_openfhe_params(self) -> Tuple[str, Tuple[int, int, int, int]]:
+        # Returns the code, along with (m, r, bits, c)
+        multiplicative_depth = self.multiplicative_depth()
+        summands_between_mults = self.summands_between_multiplications()
+
+        # This code is adapted from fhegen: https://github.com/Crypto-TII/fhegen
+        # It was written by Johannes Mono, Chiara Marcolla, Georg Land, Tim Güneysu, and Najwa Aaraj
+
+        ops = {
+            "model": "OpenFHE",
+            "muls": multiplicative_depth + 1,
+            "const": True,
+            "rots": 0,
+            "sums": summands_between_mults,
+        }
+
+        sdist = "Ternary"
+        sigma = 3.19
+        ve = sigma * sigma
+        vs = {"Ternary": 2 / 3, "Error": ve}[sdist]
+        b_args = {
+            "m": 4,
+            "t": self._gf.characteristic,
+            "D": 6,
+            "Vs": vs,
+            "Ve": ve,
+        }  # We will loop over increasing m to find a suitable value
+        kswargs = {"method": "Hybrid-RNS", "L": multiplicative_depth + 1, "beta": 2**10, "omega": 3}
+
+        while True:
+            logq, logp = logqP(ops, b_args, kswargs, sdist)
+            log = sum(logq) + logp if logp else sum(logq)
+            if logp and estsecurity(b_args["m"], log, sdist) >= 128:
+                break
+
+            b_args["m"] <<= 1
+
+        # TODO: This is a workaround
+        if self._gf.characteristic == 2:
+            b_args["m"] -= 1
+
+        sec = estsecurity(b_args["m"], sum(logq) + logp, sdist)
+        assert sec >= 128
+
+        return f"""
+    // Set up the HE parameters
+    unsigned long p = {self._gf.characteristic};
+    unsigned long m = {b_args["m"]};
+    unsigned long r = 1;
+    unsigned long bits = {sum(logq)};
+    unsigned long c = 3;
+    CryptoContext<DCRTPoly> context = CryptoContextFactory<DCRTPoly>::genCryptoContextBFVrns(
+        p,
+        r,
+        HEStd_NotSet,
+        bits,
+        c,
+        OPTIMIZED,
+        m
+    );
+""", (b_args["m"], 1, sum(logq), 3)
 
     def generate_code(
         self,
@@ -413,6 +534,91 @@ class ArithmeticCircuit(Circuit):
 
             return params
         
+    def generate_code_openfhe(
+        self,
+        filename: str,
+        iterations: int = 1,
+        measure_time: bool = False,
+        decrypt_outputs: bool = False,
+    ) -> Tuple[int, int, int, int]:
+        """Generates an OpenFHE implementation of the circuit.
+        
+        If decrypt_outputs is True, prints the decrypted output.
+        Otherwise, it prints whether the ciphertext has noise budget remaining (i.e. it is correct with high probability).
+
+        !!! note
+            Decryption is part of the measured run time.
+
+        Args:
+            filename: Test
+            iterations: Number of times to run the circuit
+            measure_time: Whether to output a measurement of the total run time
+            decrypt_outputs: Whether to print the decrypted outputs, or to simply check if there is noise budget remaining
+
+        Returns:
+            Parameters that were chosen: (ring dimension m, Hensel lifting = 1, bits in the modchain, columns in key switching = 3).
+        """
+        from oraqle.compiler.instructions import InputInstruction
+
+        # Generate HElib code
+        with open(filename, "w", encoding="utf8") as file:
+            # Write start of file and parameters
+            file.write(openfhe_preamble)
+            param_code, params = self._generate_openfhe_params()
+            file.write(param_code)
+            file.write("\n")
+            file.write(openfhe_keygen)
+            file.write("\n")
+
+            # Encrypt the inputs
+            program = self.generate_program()
+            inputs = [
+                instruction._name
+                for instruction in program._instructions
+                if isinstance(instruction, InputInstruction)
+            ]
+            file.write("\t// Encrypt the inputs\n")
+            for input in inputs:
+                file.write(
+                    f'\tstd::vector<long> vec_{input}(1, extract_input("{input}"));\n\tptxt_t ptxt_{input} = context->MakePackedPlaintext(vec_{input});\n\tctxt_t ciph_{input} = context->Encrypt(public_key, ptxt_{input});\n'
+                )
+            file.write("\n")
+
+            # If timing is enabled, start the timer
+            if measure_time:
+                file.write("\tauto start = std::chrono::high_resolution_clock::now();\n")
+                file.write("\n")
+
+            # If we perform multiple iterations, wrap in a for loop
+            if iterations > 1:
+                file.write(f"\tfor (int i = 0; i < {iterations}; i++) {{\n")
+
+            # Write the actual instructions
+            file.write("\t// Perform the actual circuit\n")
+            file.write(
+                "\n".join(
+                    f"\t{line}" for line in program.generate_code_openfhe(decrypt_outputs).splitlines()
+                )
+            )
+            file.write("\n")
+
+            # If we perform multiple iterations, close the for loop
+            if iterations > 1:
+                file.write("\t}\n")
+
+            # If timing is enabled, stop the timer
+            if measure_time:
+                file.write("\n")
+                file.write("\tauto end = std::chrono::high_resolution_clock::now();\n")
+                file.write("\tstd::chrono::duration<double> elapsed = end - start;\n")
+                file.write("\tstd::cout << elapsed.count() << std::endl;")
+                file.write("\n")
+
+            # Finish the file
+            file.write(openfhe_postamble)
+
+            return params
+        
     def run_using_helib(self,
         iterations: int,
         measure_time: bool = False,
@@ -489,3 +695,5 @@ if __name__ == "__main__":
 
     arithmetic_circuit = Circuit([x < y]).arithmetize()
     arithmetic_circuit.generate_code("main.cpp", iterations=10, measure_time=True)
+
+    arithmetic_circuit.generate_code_openfhe("main_openfhe.cpp", iterations=10, measure_time=True)

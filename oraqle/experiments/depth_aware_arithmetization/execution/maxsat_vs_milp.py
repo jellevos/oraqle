@@ -52,54 +52,61 @@ def generate_latex_table(res1, res2, res3, res4, res5, res6):
     rows = zip(res1, res2, res3, res4, res5, res6)
     table_lines = []
 
-    for row in rows:
+    for row, target in zip(rows, range(31, 240, 40)):
         formatted_row = [
-            f"${mean:.2f} \\pm {stdev:.2f}$"
+            f"\\small${mean:.2f}$"
             for (mean, stdev) in row
         ]
-        table_lines.append(" & ".join(formatted_row) + r" \\")
-    
+        table_lines.append(f"\\multirow{{2}}{{*}}{{{target}}} & " + " & ".join(formatted_row) + r" \\")
+        stdev_row = [
+            f"\\scriptsize$\\pm {stdev:.2f}$"
+            for (mean, stdev) in row
+        ]
+        table_lines.append(" & " + " & ".join(stdev_row) + r" \\ \midrule")
+
+
     return "\n".join(table_lines)
 
 
 if __name__ == "__main__":
-    # No depth
-    # limit_depth = False
-    # print("MILP without cuts")
-    # res1 = run_set(False, limit_depth, 1.0, cuts=False)
-    # print(res1)
+    run = False
 
-    # print("MILP with cuts")
-    # res2 = run_set(False, limit_depth, 1.0, cuts=False)
-    # print(res2)
+    if run:
+        # No depth
+        limit_depth = False
+        print("MILP without cuts")
+        res1 = run_set(False, limit_depth, 1.0, cuts=False)
+        print(res1)
 
-    # print("MaxSAT")
-    # res3 = run_set(True, limit_depth, 1.0, cuts=True)
-    # print(res3)
+        print("MILP with cuts")
+        res2 = run_set(False, limit_depth, 1.0, cuts=False)
+        print(res2)
 
-    #     MILP without cuts
-    # Set parameter Username
-    # Set parameter LicenseID to value 2648884
-    # Academic license - for non-commercial use only - expires 2026-04-08
-    res1 = [(0.021551087294938043, 0.007175035056124493), (0.884852558298735, 0.06691806472784873), (2.1915751375956463, 0.13203096931834607), (7.478024150090642, 0.2651846015122736), (140.7028930333967, 3.7024836310412934), (4.9165831252059435, 0.11350915242110919)]
-    # MILP with cuts
-    res2 = [(0.024119558301754294, 0.004032472377603644), (0.88682035409729, 0.017034452713540423), (2.1829200999985914, 0.06930042869031651), (7.735762862596312, 0.46319563471283376), (141.0170431125036, 3.566515136210299), (5.035758291601087, 0.18802204362292926)]
-    # MaxSAT
-    res3 = [(0.001372266700491309, 0.004322654202567592), (0.0069955873972503465, 0.02210609120872662), (0.006907954203779809, 0.021828809401639396), (0.0711571376043139, 0.22500146813394986), (0.9406600624002749, 2.974611069893348), (0.23708374570123852, 0.7497016478289941)]
+        print("MaxSAT")
+        res3 = run_set(True, limit_depth, 1.0, cuts=True)
+        print(res3)
 
-    # With depth
-    limit_depth = True
-    print("MILP without cuts")
-    res4 = run_set(False, limit_depth, 1.0, cuts=False)
-    print(res4)
+        # With depth
+        limit_depth = True
+        print("MILP without cuts")
+        res4 = run_set(False, limit_depth, 1.0, cuts=False)
+        print(res4)
 
-    print("MILP with cuts")
-    res5 = run_set(False, limit_depth, 1.0, cuts=False)
-    print(res5)
+        print("MILP with cuts")
+        res5 = run_set(False, limit_depth, 1.0, cuts=False)
+        print(res5)
 
-    print("MaxSAT")
-    res6 = run_set(True, limit_depth, 1.0, cuts=True)
-    print(res6)
+        print("MaxSAT")
+        res6 = run_set(True, limit_depth, 1.0, cuts=True)
+        print(res6)
+    else:
+        res1 = [(0.021551087294938043, 0.007175035056124493), (0.884852558298735, 0.06691806472784873), (2.1915751375956463, 0.13203096931834607), (7.478024150090642, 0.2651846015122736), (140.7028930333967, 3.7024836310412934), (4.9165831252059435, 0.11350915242110919)]
+        res2 = [(0.024119558301754294, 0.004032472377603644), (0.88682035409729, 0.017034452713540423), (2.1829200999985914, 0.06930042869031651), (7.735762862596312, 0.46319563471283376), (141.0170431125036, 3.566515136210299), (5.035758291601087, 0.18802204362292926)]
+        res3 = [(0.001372266700491309, 0.004322654202567592), (0.0069955873972503465, 0.02210609120872662), (0.006907954203779809, 0.021828809401639396), (0.0711571376043139, 0.22500146813394986), (0.9406600624002749, 2.974611069893348), (0.23708374570123852, 0.7497016478289941)]
+        res4 = [(0.056413020807667635, 0.01023610166944956), (1.9657239416992525, 0.25549508195669285), (5.074039975099732, 0.12442169320317975), (15.828733400197233, 0.22400530074070252), (113.75205040010042, 3.587549323965671), (205.16607238750439, 4.454163185518037)]
+        res5 = [(0.0584489080007188, 0.0054635541502224706), (1.8274910540902056, 0.051163500672109515), (5.029276437600492, 0.09013329164645555), (16.063025995704812, 0.14420992712165812), (112.00230236689677, 4.601666843847223), (212.0110860792047, 7.680150632978221)]
+        res6 = [(0.0011954791960306465, 0.003760517240760891), (0.00869051670015324, 0.027464039535918403), (0.6188561163988198, 1.9569762209950259), (0.24689700009766966, 0.7807388891988661), (2.237213462498039, 7.074659101704546), (4.024879900107043, 12.727760854918069)]
+
 
     table = generate_latex_table(res1, res2, res3, res4, res5, res6)
     print(table)
