@@ -1,10 +1,13 @@
 """Depth-aware arithmetization of a comparison modulo 101."""
 
 import math
+import random
 import sys
 from galois import GF
 
 from oraqle.compiler.circuit import Circuit
+from oraqle.compiler.division.const_divisor import DivideBy
+from oraqle.compiler.nodes.arbitrary_arithmetic import sum_
 from oraqle.compiler.nodes.leafs import Input
 from oraqle.compiler.polynomials.univariate import UnivariatePoly
 
@@ -71,6 +74,19 @@ if __name__ == "__main__":
             print(d)
             #break
 
+
+    distr_mean = 6
+    distr_variance = 2
+
+    entry_count = 35747 #71494
+    entries = [random.randint(0, 10) for _ in range(entry_count)]
+    inputs = [Input(f"x_{i}", gf) for i in range(entry_count)]
+    total = sum_(*inputs)
+    mean = DivideBy(total, entry_count)
+
+    const_mean = round(sum(entries) / entry_count)
+    sum_of_squares = sum_(*((inputs[i] - const_mean)**2 for i in range(entry_count))) 
+    variance = DivideBy(sum_of_squares, entry_count)
 
     # circuit = Circuit(outputs=[output])
     # circuit.to_graph("high_level_circuit.dot")

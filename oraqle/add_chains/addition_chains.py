@@ -422,7 +422,7 @@ def milp(
             model.addConstr(quicksum(x[i] for i in range(lb, ub + 1)) >= 1)
 
     model.setParam('OutputFlag', 0)
-    model.setParam('Threads', 1)
+    #model.setParam('Threads', 1)
     model.optimize()
 
     #print([(i, var.X) for i, var in x.items()])
