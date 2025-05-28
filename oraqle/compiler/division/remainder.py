@@ -33,7 +33,7 @@ def compute_coeffs(p: int, m: int) -> List[int]:
     # The exponent p-2i starts at p - 2 and decreases by 2 each time
     for _ in range(1, p-1, 2):
         coefficient = sum(v) % p
-        coefficients.append(p - coefficient)
+        coefficients.append((p - coefficient) % p)
         for j in range(n):
             v[j] = (v[j] * w[j]) % p
 
