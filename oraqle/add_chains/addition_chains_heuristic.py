@@ -151,7 +151,6 @@ def add_chain_guaranteed(  # noqa: PLR0913, PLR0917
         pass
 
     if addition_chain is None:
-        print("SKIP")
         # If no other addition chain algorithm has been called or if we could not do better than square and multiply
 
         # Uses the minchain algorithm from ["Addition chains using continued fractions."][BBBD1989]

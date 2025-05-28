@@ -65,7 +65,7 @@ def _expand_front(
     pre_front = CostParetoFront(cost_of_squaring)
     bounds = {}
     for k in ks:
-        print(k, ks)
+        #print(k, ks)
         lb_depth, lb_cost = lower_bounds(input, coefficients, k, gf, cost_of_squaring)
         #est_depth, est_cost = _estimate_ps(input, coefficients, k, gf, cost_of_squaring)
         #print(est_depth, "==", lb_depth, est_cost, "==", lb_cost)
