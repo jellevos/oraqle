@@ -129,23 +129,24 @@ class ConstantAdditionInstruction(ArithmeticInstruction):
 
     def generate_code(self, stack_initialized: List[bool], _decrypt_outputs: bool) -> str:  # noqa: D102
         if self._stack_index == self._input_stack_index:
-            return f"stack_{self._input_stack_index} += {self._constant}l;\n"
+            return f"stack_{self._input_stack_index} += int64_t({self._constant});\n"
 
         code = ""
         if not stack_initialized[self._stack_index]:
             code += "ctxt_t "
-        code += f"stack_{self._stack_index} = stack_{self._input_stack_index};\nstack_{self._stack_index} += {self._constant}l;\n"
+        code += f"stack_{self._stack_index} = stack_{self._input_stack_index};\nstack_{self._stack_index} += int64_t({self._constant});\n"
         stack_initialized[self._stack_index] = True
         return code
     
     def generate_code_openfhe(self, stack_initialized: List[bool], _decrypt_outputs: bool) -> str:  # noqa: D102
+        plaintext = f"context->MakePackedPlaintext({{ int64_t({self._constant}) }})"
         if self._stack_index == self._input_stack_index:
-            return f"context->EvalAddInPlace(stack_{self._input_stack_index}, {self._constant}l);\n"
+            return f"context->EvalAddInPlace(stack_{self._input_stack_index}, {plaintext});\n"
 
         code = ""
         if not stack_initialized[self._stack_index]:
             code += "ctxt_t "
-        code += f"stack_{self._stack_index} = context->EvalAdd(stack_{self._input_stack_index}, {self._constant}l);\n"
+        code += f"stack_{self._stack_index} = context->EvalAdd(stack_{self._input_stack_index}, {plaintext});\n"
         stack_initialized[self._stack_index] = True
         return code
 
@@ -166,23 +167,24 @@ class ConstantMultiplicationInstruction(ArithmeticInstruction):
 
     def generate_code(self, stack_initialized: List[bool], _decrypt_outputs: bool) -> str:  # noqa: D102
         if self._stack_index == self._input_stack_index:
-            return f"stack_{self._input_stack_index} *= {self._constant}l;\n"
+            return f"stack_{self._input_stack_index} *= int64_t({self._constant});\n"
 
         code = ""
         if not stack_initialized[self._stack_index]:
             code += "ctxt_t "
-        code += f"stack_{self._stack_index} = stack_{self._input_stack_index};\nstack_{self._stack_index} *= {self._constant}l;\n"
+        code += f"stack_{self._stack_index} = stack_{self._input_stack_index};\nstack_{self._stack_index} *= int64_t({self._constant});\n"
         stack_initialized[self._stack_index] = True
         return code
     
     def generate_code_openfhe(self, stack_initialized: List[bool], _decrypt_outputs: bool) -> str:  # noqa: D102
         # if self._stack_index == self._input_stack_index:
         #     return f"context->EvalAddInPlace(stack_{self._input_stack_index}, {self._constant}l);\n"
+        plaintext = f"context->MakePackedPlaintext({{ int64_t({self._constant}) }})"
 
         code = ""
         if not stack_initialized[self._stack_index]:
             code += "ctxt_t "
-        code += f"stack_{self._stack_index} = context->EvalMult(stack_{self._input_stack_index}, {self._constant}l);\n"
+        code += f"stack_{self._stack_index} = context->EvalMult(stack_{self._input_stack_index}, {plaintext});\n"
         stack_initialized[self._stack_index] = True
         return code
 
@@ -231,7 +233,7 @@ class OutputInstruction(ArithmeticInstruction):
         if decrypt_outputs:
             return f"ptxt_t decrypted;\ncontext->Decrypt(keys.secretKey, stack_{self._stack_index}, &decrypted);\nstd::cout << decrypted << std::endl;\n"
         else:
-            return f'std::cout << "Output level: " << context->GetLevel(stack_{self._stack_index}) << std::endl;\n'
+            return f'std::cout << "Done!" << std::endl;\n'
 
 
 class ArithmeticProgram:

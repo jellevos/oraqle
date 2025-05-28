@@ -208,6 +208,8 @@ openfhe_preamble = """
 
 #include "openfhe.h"
 
+using namespace lbcrypto;
+
 typedef lbcrypto::Plaintext ptxt_t;
 typedef lbcrypto::Ciphertext<lbcrypto::DCRTPoly> ctxt_t;
 
@@ -240,11 +242,10 @@ int main(int argc, char* argv[]) {
 """
 
 openfhe_keygen = """
-    // Determine number of available slots
-    size_t numSlots = context->GetEncodingParams()->GetBatchSize();
-
-    context->Enable(lbcrypto::ENCRYPTION);
-    context->Enable(lbcrypto::SHE);
+    context->Enable(lbcrypto::PKE);
+    context->Enable(KEYSWITCH);
+    context->Enable(LEVELEDSHE);
+    context->Enable(ADVANCEDSHE);
 
     // Generate keys
     auto keys = context->KeyGen();
@@ -435,18 +436,15 @@ class ArithmeticCircuit(Circuit):
     // Set up the HE parameters
     unsigned long p = {self._gf.characteristic};
     unsigned long m = {b_args["m"]};
-    unsigned long r = 1;
-    unsigned long bits = {sum(logq)};
-    unsigned long c = 3;
-    CryptoContext<DCRTPoly> context = CryptoContextFactory<DCRTPoly>::genCryptoContextBFVrns(
-        p,
-        r,
-        HEStd_NotSet,
-        bits,
-        c,
-        OPTIMIZED,
-        m
-    );
+    //unsigned long r = 1;
+    //unsigned long bits = {sum(logq)};
+    //unsigned long c = 3;
+    CCParams<CryptoContextBFVRNS> parameters;
+    parameters.SetPlaintextModulus(p);
+    parameters.SetRingDim(m);
+    parameters.SetMultiplicativeDepth({multiplicative_depth});
+    parameters.SetBatchSize(m / 2);
+    CryptoContext<DCRTPoly> context = GenCryptoContext(parameters);
 """, (b_args["m"], 1, sum(logq), 3)
 
     def generate_code(
@@ -580,7 +578,7 @@ class ArithmeticCircuit(Circuit):
             file.write("\t// Encrypt the inputs\n")
             for input in inputs:
                 file.write(
-                    f'\tstd::vector<long> vec_{input}(1, extract_input("{input}"));\n\tptxt_t ptxt_{input} = context->MakePackedPlaintext(vec_{input});\n\tctxt_t ciph_{input} = context->Encrypt(public_key, ptxt_{input});\n'
+                    f'\tstd::vector<int64_t> vec_{input}(1, extract_input("{input}"));\n\tptxt_t ptxt_{input} = context->MakePackedPlaintext(vec_{input});\n\tctxt_t ciph_{input} = context->Encrypt(public_key, ptxt_{input});\n'
                 )
             file.write("\n")
 
