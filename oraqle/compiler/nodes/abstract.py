@@ -303,6 +303,7 @@ class Node(ABC):  # noqa: PLR0904
         self._instruction_cache: Optional[int] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
         self._parent_count_cache: Optional[int] = None
+        self._parent_count_cleared: bool = False
         self._naive_cache = None
 
         self._hash = None
@@ -338,6 +339,7 @@ class Node(ABC):  # noqa: PLR0904
         self._instruction_cache: Optional[int] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
         self._parent_count_cache: Optional[int] = None
+        self._parent_count_cleared: bool = False
         self._naive_cache = None
 
         self._hash = None
@@ -404,6 +406,7 @@ class Node(ABC):  # noqa: PLR0904
     def count_parents(self):
         """Counts the total number of nodes in this subcircuit."""
         self._parent_count += 1
+        self._parent_count_cleared = False
 
         if self._parent_count_cache is None:
             self._parent_count_cache = True
@@ -411,8 +414,10 @@ class Node(ABC):  # noqa: PLR0904
 
     def reset_parent_count(self):
         """Resets the cached number of nodes in this subcircuit to 0."""
-        self._parent_count = 0
-        self.apply_function_to_operands(lambda operand: operand.reset_parent_count())
+        if not self._parent_count_cleared:
+            self._parent_count = 0
+            self.apply_function_to_operands(lambda operand: operand.reset_parent_count())
+        self._parent_count_cleared = True
 
     @abstractmethod
     def arithmetize(self, strategy: str) -> "Node":

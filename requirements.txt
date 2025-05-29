@@ -6,3 +6,4 @@ python-sat
 git+https://github.com/jellevos/fhegen.git
 matplotlib
 ipython
+scipy
