@@ -1,66 +1,72 @@
-from sklearn.datasets import load_breast_cancer
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
 import numpy as np
+from gurobipy import Model, GRB, quicksum
+from sklearn.datasets import load_breast_cancer
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 
-# Load the dataset
+# Load and prepare dataset
 data = load_breast_cancer()
-X = data.data  # type: ignore
-y = data.target  # type: ignore
+X, y = data.data, data.target  # type: ignore
+y = 2 * y - 1  # Convert labels to {-1, 1}
+scaler = MinMaxScaler(feature_range=(-1, 1))
+X = scaler.fit_transform(X)
 
-# Consider the range to be [-50, +50]
-bound = 10_000
+# Consider the range to be [-100, 100]
+bound = 1.0001
 p = 786433
-half = 10000 #p // 2
+half = 100
 
 def fixed_prec(x: float) -> int:
     print(x)
-    assert -bound < x < bound
-    return round(x / bound * half) % p
+    assert -bound <= x <= bound
+    return round(x / bound * half)
 
-X = np.vectorize(fixed_prec)(X)
+X_encoded = np.vectorize(fixed_prec)(X)
+print(X_encoded)
 
 
-# Split into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+# Reduce dataset for demo
+X, X_test, y, y_test = train_test_split(X_encoded, y, train_size=100, random_state=0)
+n_samples, n_features = X.shape
 
-# Initialize and train logistic regression model
-model = LogisticRegression(max_iter=10000, penalty=None, solver='newton-cg')
-model.fit(X_train, y_train)
+# Gurobi model
+model = Model("IntegerLogisticRegression")
+weight_bounds = (-100, 100)
 
-# Make predictions
-y_pred = model.predict(X_test)
+# Add integer weights and continuous intercept
+w = [model.addVar(vtype=GRB.INTEGER, lb=weight_bounds[0], ub=weight_bounds[1], name=f"w_{j}") for j in range(n_features)]
+b = model.addVar(vtype=GRB.INTEGER, name="b")
+model.update()
 
-# Evaluate the model
-accuracy = accuracy_score(y_test, y_pred)
-report = classification_report(y_test, y_pred, target_names=data.target_names)  # type: ignore
+# Build exp(-y_i * (w·x + b)) loss
+loss_terms = []
+for i in range(n_samples):
+    # Create variables
+    yz_var = model.addVar(lb=-GRB.INFINITY, name=f"yz_{i}")
+    exp_var = model.addVar(lb=0.0, name=f"exp_{i}")
 
-print(f"Accuracy: {accuracy:.4f}")
-print("Classification Report:")
-print(report)
+    # yz = -y_i * (w·x + b)
+    model.addConstr(yz_var == -y[i] * (quicksum(w[j] * X[i, j] for j in range(n_features)) + b),
+                    name=f"yz_constraint_{i}")
 
-# Get the coefficients and feature names
-weights = model.coef_[0]
-features = data.feature_names  # type: ignore
+    # z = exp(yz)
+    model.addGenConstrExp(yz_var, exp_var, name=f"exp_constraint_{i}")
+    loss_terms.append(exp_var)
 
-# Combine and sort by weight (optional)
-feature_weights = list(zip(features, weights))
-feature_weights.sort(key=lambda x: x[1], reverse=True)  # Sort by weight descending
+# Objective: minimize total exponential loss
+model.setObjective(quicksum(loss_terms), GRB.MINIMIZE)
 
-# Print the weights
-print("Feature Weights (sorted):")
-for feature, weight in feature_weights:
-    print(f"{feature}: {weight:.4f}")
-
-print(model.intercept_)
-
-# Get the weights and intercept
-factor = 1
-weights = np.round(model.coef_[0] * factor) % p       # Shape: (n_features,)
-intercept = np.round(model.intercept_[0]) % p  # Scalar
+model.setParam('OutputFlag', 1)
+model.optimize()
+assert model.status == GRB.OPTIMAL
 
 # Compute the logits (z = w·x + b) for the test set
+weights = np.array([int(v.X) for v in w])
+intercept = b.X
+print(weights)
+print(intercept)
+print(X_test)
 logits = np.dot(X_test, weights) + intercept
 
 # Find the highest and lowest logits
@@ -74,8 +80,9 @@ print(f"Lowest logit: {min_logit:.4f}")
 correct = 0
 wrong = 0
 for xx, yy in zip(X_test, y_test):
-    logits = (np.dot(xx, weights) + intercept) % p
-    if yy == (logits > 0):
+    prediction = ((np.dot(xx, weights) + intercept) % p) < (p // 2)
+    prediction = prediction * 2 - 1
+    if yy == prediction:
         correct += 1
     else:
         wrong += 1

@@ -14,7 +14,7 @@ from oraqle.compiler.polynomials.univariate import UnivariatePoly
 
 
 if __name__ == "__main__":
-    sys.setrecursionlimit(10000)
+    sys.setrecursionlimit(100000)
 
     cost_of_squaring = 1.0
 

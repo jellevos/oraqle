@@ -68,7 +68,7 @@ if __name__ == "__main__":
         depths2 = []
         sizes2 = []
         for k in range(1, len(coefficients)):
-            res, pows = _eval_poly_alternative(x, coefficients, k, gf)
+            res, pows = _eval_poly_alternative(x, coefficients, k, gf, cost_of_squaring=squaring_cost)
             circ = Circuit([res]).arithmetize()
             depths2.append(circ.multiplicative_depth())
             sizes2.append(circ.multiplicative_size())
