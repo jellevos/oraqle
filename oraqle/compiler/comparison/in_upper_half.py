@@ -223,15 +223,7 @@ class IliashenkoZuccaInUpperHalf(UnivariateNode):
         # TODO: This is copied from above
         # From: Faster homomorphic comparison operations for BGV and BFV, Ilia Iliashenko & Vincent Zucca, 2021
         p = self._gf.characteristic
-        for i in range(p - 1):
-            if i % 2 == 0:
-                # Ignore every even power, we take care of this by squaring the input node.
-                continue
-
-            coefficient = self._gf(0)
-            for a in range(1, p // 2 + 1):
-                coefficient += self._gf(a) ** (p - 1 - i)
-            coefficients.append(coefficient)
+        coefficients = [self._gf(coeff) for coeff in compute_coeffs(p)]
 
         # We do not add the final coefficient, which will be computed later, so we do not do coefficients.append(gf((p + 1) // 2))
 

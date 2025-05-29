@@ -107,35 +107,37 @@ if __name__ == "__main__":
     dot_product = sum_(*[ConstantMultiplication(inputs[i], gf(int(w) % p)) for i, w in zip(range(X.shape[1]), weights)])
     logit = dot_product + int(intercept)
     
-    # Depth aware
-    prediction = logit < (p // 2)
+    if False:
+        # Depth aware
+        prediction = logit < (p // 2)
 
-    circuit = Circuit(outputs=[prediction])
-    start = time.monotonic()
-    arithmetizations = circuit.arithmetize_depth_aware()
-    print("arith", time.monotonic() - start)
-    d, c, ac = arithmetizations[0]
-    print(d, c)
-    # start = time.monotonic()
-    # ac.eliminate_subexpressions()
-    # print("cse", time.monotonic() - start)
-    # print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
+        circuit = Circuit(outputs=[prediction])
+        start = time.monotonic()
+        arithmetizations = circuit.arithmetize_depth_aware()
+        print("arith", time.monotonic() - start)
+        d, c, ac = arithmetizations[0]
+        print(d, c)
+        # start = time.monotonic()
+        # ac.eliminate_subexpressions()
+        # print("cse", time.monotonic() - start)
+        # print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
 
-    ac.generate_code("logistic_regression_helib.cpp", measure_time=True, decrypt_outputs=True)
-    ac.generate_code_openfhe("logistic_regression_openfhe.cpp", measure_time=True, decrypt_outputs=True)
+        ac.generate_code("logistic_regression_helib.cpp", measure_time=True, decrypt_outputs=True)
+        ac.generate_code_openfhe("logistic_regression_openfhe.cpp", measure_time=True, decrypt_outputs=True)
 
-    # Previous work
-    prediction = IliashenkoZuccaLessThan(logit, Constant(gf(p // 2)), gf)
+    if True:
+        # Previous work
+        prediction = IliashenkoZuccaLessThan(logit, Constant(gf(p // 2)), gf)
 
-    circuit = Circuit(outputs=[prediction])
-    start = time.monotonic()
-    ac = circuit.arithmetize()
-    print("arith", time.monotonic() - start)
-    print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
-    # start = time.monotonic()
-    # ac.eliminate_subexpressions()
-    # print("cse", time.monotonic() - start)
-    # print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
+        circuit = Circuit(outputs=[prediction])
+        start = time.monotonic()
+        ac = circuit.arithmetize()
+        print("arith", time.monotonic() - start)
+        print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
+        # start = time.monotonic()
+        # ac.eliminate_subexpressions()
+        # print("cse", time.monotonic() - start)
+        # print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
 
-    ac.generate_code("logistic_regression_helib_iz.cpp", measure_time=True, decrypt_outputs=True)
-    ac.generate_code_openfhe("logistic_regression_openfhe_iz.cpp", measure_time=True, decrypt_outputs=True)
+        ac.generate_code("logistic_regression_helib_iz.cpp", measure_time=True, decrypt_outputs=True)
+        ac.generate_code_openfhe("logistic_regression_openfhe_iz.cpp", measure_time=True, decrypt_outputs=True)
