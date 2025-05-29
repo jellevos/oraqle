@@ -65,7 +65,7 @@ def _expand_front(
     pre_front = CostParetoFront(cost_of_squaring)
     bounds = {}
     for k in ks:
-        #print(k, ks)
+        print('step 1', k, ks)
         lb_depth, lb_cost = lower_bounds(input, coefficients, k, gf, cost_of_squaring)
         #est_depth, est_cost = _estimate_ps(input, coefficients, k, gf, cost_of_squaring)
         #print(est_depth, "==", lb_depth, est_cost, "==", lb_cost)
@@ -76,6 +76,7 @@ def _expand_front(
     for lb_depth, remainder in pre_front._nodes_by_depth.items():
         lb_cost, k = remainder  # type: ignore
         k: int
+        print('step 2', k, len(pre_front._nodes_by_depth))
         if not front.would_improve_front(lb_depth, lb_cost):
             continue
         
@@ -103,6 +104,7 @@ def _expand_front(
         lb_depth, lb_cost = bounds[k]
         if not front.would_improve_front(lb_depth, lb_cost):
             continue
+        print('step 3', k)
         
         (
             arithmetization,
