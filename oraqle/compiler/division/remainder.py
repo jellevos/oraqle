@@ -1,7 +1,9 @@
+import math
 from typing import List, Type
 
 from galois import GF, FieldArray
 from oraqle.add_chains.addition_chains_front import gen_pareto_front
+from oraqle.add_chains.addition_chains_heuristic import add_chain_guaranteed
 from oraqle.add_chains.solving import extract_indices
 from oraqle.compiler.comparison.in_upper_half import mod_pow
 from oraqle.compiler.nodes.abstract import CostParetoFront, Node
@@ -11,7 +13,7 @@ from oraqle.compiler.nodes.unary_arithmetic import ConstantMultiplication
 from oraqle.compiler.nodes.univariate import UnivariateNode
 from numba import njit
 
-from oraqle.compiler.polynomials.univariate import UnivariatePoly
+from oraqle.compiler.polynomials.univariate import UnivariatePoly, _eval_poly
 
 
 @njit
@@ -71,13 +73,11 @@ class Remainder(UnivariateNode):
         final_front = CostParetoFront(cost_of_squaring)
         assert self._gf.degree == 1
 
+        # From: Integer Functions Suitable for Homomorphic Encryption over Finite Fields, Ilia Iliashenko, Christophe Negre, and Vincent Zucca, 2021
+        p = self._gf.characteristic
+        coefficients = [self._gf(coeff) for coeff in compute_coeffs(p, self._m)]
+
         for node_depth, _, node in self._node.arithmetize_depth_aware(cost_of_squaring):
-            coefficients = []
-
-            # From: Integer Functions Suitable for Homomorphic Encryption over Finite Fields, Ilia Iliashenko, Christophe Negre, and Vincent Zucca, 2021
-            p = self._gf.characteristic
-            coefficients = [self._gf(coeff) for coeff in compute_coeffs(p, self._m)]
-
             # We do not add the final coefficient, which will be computed later
 
             input_node_squared = Multiplication(node, node, self._gf)
@@ -134,6 +134,77 @@ class Remainder(UnivariateNode):
 
         assert not final_front.is_empty()
         return final_front
+    
+
+class IliashenkoZuccaRemainder(UnivariateNode):
+
+    @property
+    def _node_shape(self) -> str:
+        return "box"
+
+    @property
+    def _hash_name(self) -> str:
+        return f"modulo_{self._m}_iz21"
+
+    @property
+    def _node_label(self) -> str:
+        return f"% {self._m} [IZ21]"
+
+    def __init__(self, node: Node, modulus: int):
+        self._m = modulus
+        super().__init__(node, node._gf)
+    
+    def _operation_inner(self, input: FieldArray) -> FieldArray:
+        return self._gf(int(input) % self._m)
+
+    def _arithmetize_inner(self, strategy: str) -> Node:
+        coefficients = []
+
+        # TODO: This is copied from above
+        # From: Faster homomorphic comparison operations for BGV and BFV, Ilia Iliashenko & Vincent Zucca, 2021
+        p = self._gf.characteristic
+        coefficients = [self._gf(coeff) for coeff in compute_coeffs(p, self._m)]
+
+        # We do not add the final coefficient, which will be computed later
+
+        input_node = self._node.arithmetize(strategy).to_arithmetic()
+        input_node_squared = Multiplication(input_node, input_node, self._gf)
+
+        # We decide ahead of time which k to use
+        k = round(math.sqrt((p - 3) / 2))
+        arithmetization, precomputed_powers = _eval_poly(
+            input_node_squared, coefficients, k, self._gf, squaring_cost=1.0
+        )
+
+        # Since we skip the first coefficient, we manually multiply the output by the input node.
+        result = Multiplication(input_node, arithmetization, self._gf)
+
+        # Compute the final coefficient using an exponentiation
+        precomputed_values = tuple(
+            (
+                (2 * exp) % (p - 1),
+                power_node.multiplicative_depth() - input_node.multiplicative_depth(),
+            )
+            for exp, power_node in precomputed_powers.items() if ((2 * exp) % (p - 1)) != 0
+        )
+        
+        addition_chain = add_chain_guaranteed(p - 1, p - 1, squaring_cost=1.0, precomputed_values=precomputed_values)
+
+        nodes = [input_node]
+        nodes.extend(power_node for exp, power_node in precomputed_powers.items() if ((2 * exp) % (p - 1)) != 0)
+
+        for i, j in addition_chain:
+            nodes.append(Multiplication(nodes[i], nodes[j], self._gf))
+        final_monomial = nodes[-1]
+
+        highest_coeff = (p + 1) * (self._m - 1) // 2
+        highest_coeff %= p
+        final_term = ConstantMultiplication(final_monomial, self._gf(highest_coeff))
+
+        return (Addition(result, final_term, self._gf)).arithmetize(strategy)
+
+    def _arithmetize_depth_aware_inner(self, cost_of_squaring: float) -> CostParetoFront:
+        raise NotImplementedError()
 
 
 def test_p11_m4_depth_aware():
