@@ -486,7 +486,6 @@ def _estimate_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: 
     depth = math.ceil(math.log2(k)) + qq  # x.multiplicative_depth() + 
     cost = 2**(qq - 1) - 1 + (k - 1)
 
-    # FIXME:
     # # Handle extension
     new_degree = (2**qq - 1) * k
     extended = False
@@ -898,7 +897,7 @@ def _lower_bounds_divide_conquer(x: ArithmeticNode, coefficients: List[FieldArra
 
         cost += not right_const
 
-    depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + p - 1  # TODO: Double check the minus 1
+    depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + p
     cost -= len(never_used_precomps)
 
     return depth, cost
