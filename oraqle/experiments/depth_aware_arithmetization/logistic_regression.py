@@ -107,7 +107,7 @@ if __name__ == "__main__":
     dot_product = sum_(*[ConstantMultiplication(inputs[i], gf(int(w) % p)) for i, w in zip(range(X.shape[1]), weights)])
     logit = dot_product + int(intercept)
     
-    if False:
+    if True:
         # Depth aware
         prediction = logit < (p // 2)
 
@@ -122,10 +122,11 @@ if __name__ == "__main__":
         # print("cse", time.monotonic() - start)
         # print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
 
-        ac.generate_code("logistic_regression_helib.cpp", measure_time=True, decrypt_outputs=True)
-        ac.generate_code_openfhe("logistic_regression_openfhe.cpp", measure_time=True, decrypt_outputs=True)
+        ac.generate_code_chunked("logistic_regression_helib.cpp", "split", measure_time=True, decrypt_outputs=True)
+        # ac.generate_code("logistic_regression_helib.cpp", measure_time=True, decrypt_outputs=True)
+        # ac.generate_code_openfhe("logistic_regression_openfhe.cpp", measure_time=True, decrypt_outputs=True)
 
-    if True:
+    if False:
         # Previous work
         prediction = IliashenkoZuccaLessThan(logit, Constant(gf(p // 2)), gf)
 

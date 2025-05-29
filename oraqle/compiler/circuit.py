@@ -302,6 +302,51 @@ openfhe_postamble = """
 }
 """
 
+openfhe_preamble1 = """
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+#include <chrono>
+
+#include "openfhe.h"
+
+using namespace lbcrypto;
+
+typedef lbcrypto::Plaintext ptxt_t;
+typedef lbcrypto::Ciphertext<lbcrypto::DCRTPoly> ctxt_t;
+
+"""
+
+openfhe_preamble2 = """
+std::map<std::string, int> input_map;
+
+void parse_arguments(int argc, char* argv[]) {
+    for (int i = 1; i < argc; ++i) {
+        std::string argument(argv[i]);
+        size_t pos = argument.find('=');
+        if (pos != std::string::npos) {
+            std::string key = argument.substr(0, pos);
+            int value = std::stoi(argument.substr(pos + 1));
+            input_map[key] = value;
+        }
+    }
+}
+
+int extract_input(const std::string& name) {
+    if (input_map.find(name) != input_map.end()) {
+        return input_map[name];
+    } else {
+        std::cerr << "Error: " << name << " not found" << std::endl;
+        return -1;
+    }
+}
+
+int main(int argc, char* argv[]) {
+    // Parse the inputs
+    parse_arguments(argc, argv);
+"""
+
 
 class ArithmeticCircuit(Circuit):
     """Represents an arithmetic circuit over a fixed finite field, so it only contains arithmetic nodes."""
@@ -612,7 +657,7 @@ class ArithmeticCircuit(Circuit):
         """
         from oraqle.compiler.instructions import InputInstruction
 
-        # Generate HElib code
+        # Generate OpenFHE code
         with open(filename, "w", encoding="utf8") as file:
             # Write start of file and parameters
             file.write(openfhe_preamble)
@@ -800,6 +845,136 @@ class ArithmeticCircuit(Circuit):
             file.write(")\n")
         
         return params
+    
+    def generate_code_chunked_openfhe(
+        self,
+        filename: str,
+        chunkname_prefix: str,
+        iterations: int = 1,
+        measure_time: bool = False,
+        decrypt_outputs: bool = False,
+        chunk_size: int = 1000,
+    ) -> Tuple[int, int, int, int]:
+        """Generates an OpenFHE implementation of the circuit, but with chunked code (multiple files).
+        
+        If decrypt_outputs is True, prints the decrypted output.
+        Otherwise, it prints whether the ciphertext has noise budget remaining (i.e. it is correct with high probability).
+
+        !!! note
+            Decryption is part of the measured run time.
+
+        Args:
+            filename: Test
+            iterations: Number of times to run the circuit
+            measure_time: Whether to output a measurement of the total run time
+            decrypt_outputs: Whether to print the decrypted outputs, or to simply check if there is noise budget remaining
+
+        Returns:
+            Parameters that were chosen: (ring dimension m, Hensel lifting = 1, bits in the modchain, columns in key switching = 3).
+        """
+        from oraqle.compiler.instructions import InputInstruction
+
+        # Generate OpenFHE code
+        with open(filename, "w", encoding="utf8") as file:
+            # Prepend headers to chunks
+            file.write(openfhe_preamble1)
+            program = self.generate_program()
+
+            # Already write how we are going to encrypt the inputs so we can relabel the inputs
+            encrypt = ""
+            inputs = [
+                instruction
+                for instruction in program._instructions
+                if isinstance(instruction, InputInstruction)
+            ]
+            for index, input in enumerate(inputs):
+                # Relabel the inputs
+                name = input._name
+                encrypt += f'\tstd::vector<int64_t> vec_{name}(1, extract_input("{name}"));\n\tptxt_t ptxt_{name} = context->MakePackedPlaintext(vec_{name});\n\tctxt_t ciph_{index} = context->Encrypt(public_key, ptxt_{name});\n'
+                input._name = str(index)
+
+            calling_code, functions = program.generate_code_chunked_openfhe(decrypt_outputs, chunk_size=chunk_size)
+            for func_name, _ in functions:
+                file.write(f'#include "{chunkname_prefix}_{func_name}.hpp"\n')
+            file.write("\n")
+            file.write(calling_code)
+            file.write(openfhe_preamble2)
+            stack_size = program._stack_size
+
+            # Write start of file and parameters
+            param_code, params = self._generate_openfhe_params()
+            file.write(param_code)
+            file.write("\n")
+            file.write(openfhe_keygen)
+            file.write("\n")
+
+            # Encrypt the inputs
+            file.write("\t// Encrypt the inputs\n")
+            file.write(encrypt)
+            file.write("\n")
+            file.write("\tstd::vector<ctxt_t> ciphertexts = {")
+            file.write(", ".join(f"ciph_{j}" for j in range(len(inputs))))
+            file.write("};\n")
+
+            # If timing is enabled, start the timer
+            if measure_time:
+                file.write("\tauto start = std::chrono::high_resolution_clock::now();\n")
+                file.write("\n")
+
+            # If we perform multiple iterations, wrap in a for loop
+            if iterations > 1:
+                file.write(f"\tfor (int i = 0; i < {iterations}; i++) {{\n")
+
+            # Write the actual instructions
+            file.write("\t// Perform the actual circuit\n")
+            file.write("\tstd::vector<ctxt_t> stack;\n")
+            file.write(f"\tstack.reserve({stack_size});\n")
+            file.write("\tfor (int i = 0; i < 7; ++i) {\n")
+            file.write("\t\tstack.emplace_back();\n")
+            file.write("\t}\n")
+            file.write("\tevaluate_program(context, ciphertexts, stack);\n")
+            file.write("\n")
+
+            # If we perform multiple iterations, close the for loop
+            if iterations > 1:
+                file.write("\t}\n")
+
+            # If timing is enabled, stop the timer
+            if measure_time:
+                file.write("\n")
+                file.write("\tauto end = std::chrono::high_resolution_clock::now();\n")
+                file.write("\tstd::chrono::duration<double> elapsed = end - start;\n")
+                file.write("\tstd::cout << elapsed.count() << std::endl;")
+                file.write("\n")
+
+            # Finish the file
+            file.write(openfhe_postamble)
+
+        # Write a common headers file
+        with open(f"{chunkname_prefix}_common.h", "w", encoding="utf8") as file:
+            file.write("#pragma once\n\n")
+            file.write(openfhe_preamble1)
+
+        # Write the chunks to different files
+        for chunk_name, function_code in functions:
+            with open(f"{chunkname_prefix}_{chunk_name}.cpp", "w", encoding="utf8") as file:
+                file.write(f'#include "{chunkname_prefix}_common.h"\n\n')
+                file.write(function_code)
+
+        # Write the chunk header files
+        for chunk_name, function_code in functions:
+            with open(f"{chunkname_prefix}_{chunk_name}.hpp", "w", encoding="utf8") as file:
+                file.write(f'#include "{chunkname_prefix}_common.h"\n\n')
+                file.write(function_code.splitlines()[0][:-2] + ";\n")
+
+        # Include the sources in CMakeLists.txt by writing to additional_commands.cmake
+        with open("additional_commands.cmake", "w", encoding="utf8") as file:
+            file.write("set(GENERATED_SOURCES\n")
+            for chunk_name, _ in functions:
+                file.write(f"\t{chunkname_prefix}_{chunk_name}.cpp\n")
+            file.write(")\n")
+        
+        return params
         
     def run_using_helib(self,
         iterations: int,
@@ -880,4 +1055,5 @@ if __name__ == "__main__":
 
     # arithmetic_circuit.generate_code_openfhe("main_openfhe.cpp", iterations=10, measure_time=True)
 
-    arithmetic_circuit.generate_code_chunked("main.cpp", chunkname_prefix="split", chunk_size=10)
+    #arithmetic_circuit.generate_code_chunked("main.cpp", chunkname_prefix="split", chunk_size=10)
+    arithmetic_circuit.generate_code_chunked_openfhe("main.cpp", chunkname_prefix="split", chunk_size=10)

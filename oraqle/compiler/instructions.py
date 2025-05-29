@@ -323,7 +323,7 @@ class ArithmeticProgram:
         return code
     
     def generate_code_chunked(self, decrypt_outputs: bool, chunk_size: int) -> Tuple[str, List[Tuple[str, str]]]:
-        """Generates HElib code for this program.
+        """Generates chunked HElib code for this program.
 
         If `decrypt_outputs` is true, then the generated code will decrypt the outputs at the end of the circuit.
 
@@ -350,6 +350,39 @@ class ArithmeticProgram:
         calling_code = "void evaluate_program(std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {\n"
         for func_name, _ in functions:
             calling_code += f"    {func_name}(ciphertexts, stack);\n"
+        calling_code += "}\n"
+
+        return calling_code, functions
+    
+    def generate_code_chunked_openfhe(self, decrypt_outputs: bool, chunk_size: int) -> Tuple[str, List[Tuple[str, str]]]:
+        """Generates chunked OpenFHE code for this program.
+
+        If `decrypt_outputs` is true, then the generated code will decrypt the outputs at the end of the circuit.
+
+        Returns:
+            The generated code as a string.
+        """
+        stack_initialized = [(True, 2)] * self._stack_size
+
+        functions = []
+
+        # Split circuit into chunks (functions)
+        for i in range(0, len(self._instructions), chunk_size):
+            chunk = self._instructions[i : i + chunk_size]
+
+            code = f"void chunk_{i // chunk_size}(CryptoContext<DCRTPoly>& context, std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {{\n"
+            for instruction in chunk:
+                line = instruction.generate_code_openfhe(stack_initialized, decrypt_outputs)
+                line = re.sub(r'stack_(\d+)', r'stack[\1]', line)
+                line = re.sub(r'ciph_(\d+)', r'ciphertexts[\1]', line)
+                code += line
+            code += "}\n"
+            functions.append((f"chunk_{i // chunk_size}", code))
+
+        # Create one function that calls all the chunks
+        calling_code = "void evaluate_program(CryptoContext<DCRTPoly>& context, std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {\n"
+        for func_name, _ in functions:
+            calling_code += f"    {func_name}(context, ciphertexts, stack);\n"
         calling_code += "}\n"
 
         return calling_code, functions
