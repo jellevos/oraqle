@@ -1,5 +1,6 @@
 """This module contains the classes that represent instructions and programs for evaluating arithmetic circuits."""
 from abc import ABC, abstractmethod
+import re
 from typing import Dict, List, Optional, Tuple, Type
 
 from galois import GF, FieldArray
@@ -320,6 +321,38 @@ class ArithmeticProgram:
             code += instruction.generate_code_openfhe(stack_initialized, decrypt_outputs)
 
         return code
+    
+    def generate_code_chunked(self, decrypt_outputs: bool, chunk_size: int) -> Tuple[str, List[Tuple[str, str]]]:
+        """Generates HElib code for this program.
+
+        If `decrypt_outputs` is true, then the generated code will decrypt the outputs at the end of the circuit.
+
+        Returns:
+            The generated code as a string.
+        """
+        functions = []
+
+        # Split circuit into chunks (functions)
+        for i in range(0, len(self._instructions), chunk_size):
+            stack_initialized = [False] * self._stack_size
+            chunk = self._instructions[i : i + chunk_size]
+
+            code = f"void chunk_{i // chunk_size}(std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {{\n"
+            for instruction in chunk:
+                line = instruction.generate_code(stack_initialized, decrypt_outputs)
+                line = re.sub(r'stack_(\d+)', r'stack(\1)', line)
+                line = re.sub(r'ciph_(\d+)', r'ciphertexts(\1)', line)
+                code += line
+            code += "}\n"
+            functions.append((f"chunk_{i // chunk_size}", code))
+
+        # Create one function that calls all the chunks
+        calling_code = "void evaluate_program(std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {\n"
+        for func_name, _ in functions:
+            calling_code += f"    {func_name}(ciphertexts, stack);\n"
+        calling_code += "}\n"
+
+        return calling_code, functions
 
 
 def test_instructions_small_comparison():  # noqa: D103
@@ -338,3 +371,22 @@ def test_instructions_small_comparison():  # noqa: D103
         for y in range(7):
             inputs = {"x": gf(x), "y": gf(y)}
             assert arithmetic_circuit.evaluate(inputs) == program.execute(inputs)
+
+
+if __name__ == "__main__":
+    from oraqle.compiler.circuit import Circuit
+    from oraqle.compiler.nodes.leafs import Input
+
+    gf = GF(7)
+
+    x = Input("x", gf)
+    y = Input("y", gf)
+
+    arithmetic_circuit = Circuit([x < y]).arithmetize()
+    program = arithmetic_circuit.generate_program()
+
+    calling, funcs = program.generate_code_chunked(True, chunk_size=10)
+    print(calling)
+    for _, func in funcs:
+        print(func)
+        print()
