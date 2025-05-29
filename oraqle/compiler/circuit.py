@@ -418,7 +418,8 @@ class ArithmeticCircuit(Circuit):
         kswargs = {"method": "Hybrid-RNS", "L": multiplicative_depth + 1, "beta": 2**10, "omega": 3}
 
         while True:
-            logq, logp = logqP(ops, b_args, kswargs, sdist)
+            import fhegen.bfv
+            logq, logp = fhegen.bfv.logqP(ops, b_args, kswargs, sdist)
             log = sum(logq) + logp if logp else sum(logq)
             if logp and estsecurity(b_args["m"], log, sdist) >= 128:
                 break
