@@ -42,13 +42,13 @@ if __name__ == "__main__":
     print("Arith:", time.monotonic() - start)
     start2 = time.monotonic()
     print("Pre CSE", arithmetic_circuit.multiplicative_depth(), arithmetic_circuit.multiplicative_cost(cost_of_squaring))
-    arithmetic_circuit.eliminate_subexpressions()
-    print("CSE:", time.monotonic() - start2)
-    print(
-            "post CSE",
-            arithmetic_circuit.multiplicative_depth(),
-            arithmetic_circuit.multiplicative_cost(cost_of_squaring),
-        )
+    # arithmetic_circuit.eliminate_subexpressions()
+    # print("CSE:", time.monotonic() - start2)
+    # print(
+    #         "post CSE",
+    #         arithmetic_circuit.multiplicative_depth(),
+    #         arithmetic_circuit.multiplicative_cost(cost_of_squaring),
+    #     )
     params = arithmetic_circuit.generate_code("mean.cpp", measure_time=True, decrypt_outputs=True)
     params = arithmetic_circuit.generate_code_openfhe("mean_bfv.cpp", measure_time=True, decrypt_outputs=True)
     print(params)
@@ -60,13 +60,15 @@ if __name__ == "__main__":
     print("Arith:", time.monotonic() - start)
     start2 = time.monotonic()
     print("Pre CSE", arithmetic_circuit.multiplicative_depth(), arithmetic_circuit.multiplicative_cost(cost_of_squaring))
-    arithmetic_circuit.eliminate_subexpressions()
-    print("CSE:", time.monotonic() - start2)
-    print(
-            "post CSE",
-            arithmetic_circuit.multiplicative_depth(),
-            arithmetic_circuit.multiplicative_cost(cost_of_squaring),
-        )
+    # arithmetic_circuit.eliminate_subexpressions()
+    # print("CSE:", time.monotonic() - start2)
+    # print(
+    #         "post CSE",
+    #         arithmetic_circuit.multiplicative_depth(),
+    #         arithmetic_circuit.multiplicative_cost(cost_of_squaring),
+    #     )
     params = arithmetic_circuit.generate_code("variance.cpp", measure_time=True, decrypt_outputs=True)
     params = arithmetic_circuit.generate_code_openfhe("variance_bfv.cpp", measure_time=True, decrypt_outputs=True)
     print(params)
+
+# 619.152179458004

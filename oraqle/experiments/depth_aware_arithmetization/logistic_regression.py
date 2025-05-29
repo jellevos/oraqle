@@ -1,3 +1,4 @@
+import sys
 import time
 from galois import GF
 import numpy as np
@@ -14,6 +15,8 @@ from oraqle.compiler.nodes.leafs import Constant, Input
 from oraqle.compiler.nodes.unary_arithmetic import ConstantMultiplication
 
 if __name__ == "__main__":
+    sys.setrecursionlimit(100000)
+    
     # Load and prepare dataset
     data = load_breast_cancer()
     X, y = data.data, data.target  # type: ignore
@@ -24,12 +27,11 @@ if __name__ == "__main__":
     # Consider the range to be [-100, 100]
     bound = 1.0001
     p = 786433
-    half = 100
+    lim = 100
 
     def fixed_prec(x: float) -> int:
-        print(x)
         assert -bound <= x <= bound
-        return round(x / bound * half)
+        return round(x / bound * lim)
 
     X_encoded = np.vectorize(fixed_prec)(X)
     print(X_encoded)
@@ -114,10 +116,10 @@ if __name__ == "__main__":
     print("arith", time.monotonic() - start)
     d, c, ac = arithmetizations[0]
     print(d, c)
-    start = time.monotonic()
-    ac.eliminate_subexpressions()
-    print("cse", time.monotonic() - start)
-    print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
+    # start = time.monotonic()
+    # ac.eliminate_subexpressions()
+    # print("cse", time.monotonic() - start)
+    # print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
 
     ac.generate_code("logistic_regression_helib.cpp", measure_time=True, decrypt_outputs=True)
     ac.generate_code_openfhe("logistic_regression_openfhe.cpp", measure_time=True, decrypt_outputs=True)
@@ -130,10 +132,10 @@ if __name__ == "__main__":
     ac = circuit.arithmetize()
     print("arith", time.monotonic() - start)
     print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
-    start = time.monotonic()
-    ac.eliminate_subexpressions()
-    print("cse", time.monotonic() - start)
-    print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
+    # start = time.monotonic()
+    # ac.eliminate_subexpressions()
+    # print("cse", time.monotonic() - start)
+    # print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
 
     ac.generate_code("logistic_regression_helib_iz.cpp", measure_time=True, decrypt_outputs=True)
     ac.generate_code_openfhe("logistic_regression_openfhe_iz.cpp", measure_time=True, decrypt_outputs=True)

@@ -43,13 +43,13 @@ if __name__ == "__main__":
     start2 = time.monotonic()
     d, c, ac = arithmetic_circuits[0]
     print("Pre CSE", d, c)
-    ac.eliminate_subexpressions()
-    print("CSE:", time.monotonic() - start2)
-    print(
-            "post CSE",
-            ac.multiplicative_depth(),
-            ac.multiplicative_cost(cost_of_squaring),
-        )
+    # ac.eliminate_subexpressions()
+    # print("CSE:", time.monotonic() - start2)
+    # print(
+    #         "post CSE",
+    #         ac.multiplicative_depth(),
+    #         ac.multiplicative_cost(cost_of_squaring),
+    #     )
     params = ac.generate_code("mean.cpp", measure_time=True, decrypt_outputs=True)
     params = ac.generate_code_openfhe("mean_bfv.cpp", measure_time=True, decrypt_outputs=True)
     print(params)
@@ -62,13 +62,13 @@ if __name__ == "__main__":
     start2 = time.monotonic()
     d, c, ac = arithmetic_circuits[0]
     print("Pre CSE", d, c)
-    ac.eliminate_subexpressions()
-    print("CSE:", time.monotonic() - start2)
-    print(
-            "post CSE",
-            ac.multiplicative_depth(),
-            ac.multiplicative_cost(cost_of_squaring),
-        )
+    # ac.eliminate_subexpressions()
+    # print("CSE:", time.monotonic() - start2)
+    # print(
+    #         "post CSE",
+    #         ac.multiplicative_depth(),
+    #         ac.multiplicative_cost(cost_of_squaring),
+    #     )
     params = ac.generate_code("variance.cpp", measure_time=True, decrypt_outputs=True)
     params = ac.generate_code_openfhe("variance_bfv.cpp", measure_time=True, decrypt_outputs=True)
     print(params)
