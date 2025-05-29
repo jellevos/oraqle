@@ -206,11 +206,13 @@ helib_preamble1 = """
 #include <chrono>
 
 #include <helib/helib.h>
+
+typedef helib::Ptxt<helib::BGV> ptxt_t;
+typedef helib::Ctxt ctxt_t;
+
 """
 
 helib_preamble2 = """
-typedef helib::Ptxt<helib::BGV> ptxt_t;
-typedef helib::Ctxt ctxt_t;
 
 std::map<std::string, int> input_map;
 
@@ -702,7 +704,24 @@ class ArithmeticCircuit(Circuit):
             # Prepend headers to chunks
             file.write(helib_preamble1)
             program = self.generate_program()
+
+            # Already write how we are going to encrypt the inputs so we can relabel the inputs
+            encrypt = ""
+            inputs = [
+                instruction
+                for instruction in program._instructions
+                if isinstance(instruction, InputInstruction)
+            ]
+            for index, input in enumerate(inputs):
+                # Relabel the inputs
+                name = input._name
+                encrypt += f'\tstd::vector<long> vec_{name}(1, extract_input("{name}"));\n\tptxt_t ptxt_{name}(context, vec_{name});\n\tctxt_t ciph_{index}(public_key);\n\tpublic_key.Encrypt(ciph_{index}, ptxt_{name});\n'
+                input._name = str(index)
+
             calling_code, functions = program.generate_code_chunked(decrypt_outputs, chunk_size=chunk_size)
+            for func_name, _ in functions:
+                file.write(f'#include "{chunkname_prefix}_{func_name}.hpp"\n')
+            file.write("\n")
             file.write(calling_code)
             file.write(helib_preamble2)
             stack_size = program._stack_size
@@ -715,23 +734,12 @@ class ArithmeticCircuit(Circuit):
             file.write("\n")
 
             # Encrypt the inputs
-            inputs = [
-                instruction
-                for instruction in program._instructions
-                if isinstance(instruction, InputInstruction)
-            ]
             file.write("\t// Encrypt the inputs\n")
-            for index, input in enumerate(inputs):
-                # Relabel the inputs
-                name = input._name
-                file.write(
-                    f'\tstd::vector<long> vec_{name}(1, extract_input("{name}"));\n\tptxt_t ptxt_{name}(context, vec_{name});\n\tctxt_t ciph_{index}(public_key);\n\tpublic_key.Encrypt(ciph_{index}, ptxt_{name});\n'
-                )
-                input._name = str(index)
+            file.write(encrypt)
             file.write("\n")
-            file.write("\tstd::vector<ctxt_t>& ciphertexts = {{")
+            file.write("\tstd::vector<ctxt_t> ciphertexts = {")
             file.write(", ".join(f"ciph_{j}" for j in range(len(inputs))))
-            file.write("}};\n")
+            file.write("};\n")
 
             # If timing is enabled, start the timer
             if measure_time:
@@ -744,9 +752,11 @@ class ArithmeticCircuit(Circuit):
 
             # Write the actual instructions
             file.write("\t// Perform the actual circuit\n")
-            file.write("\tstd::vector<ctxt_t>& stack = {{")
-            file.write(", ".join(f"stack_{j}" for j in range(stack_size)))
-            file.write("}};\n")
+            file.write("\tstd::vector<ctxt_t> stack;\n")
+            file.write(f"\tstack.reserve({stack_size});\n")
+            file.write("\tfor (int i = 0; i < 7; ++i) {\n")
+            file.write("\t\tstack.emplace_back(public_key);\n")
+            file.write("\t}\n")
             file.write("\tevaluate_program(ciphertexts, stack);\n")
             file.write("\n")
 
@@ -775,6 +785,12 @@ class ArithmeticCircuit(Circuit):
             with open(f"{chunkname_prefix}_{chunk_name}.cpp", "w", encoding="utf8") as file:
                 file.write(f'#include "{chunkname_prefix}_common.h"\n\n')
                 file.write(function_code)
+
+        # Write the chunk header files
+        for chunk_name, function_code in functions:
+            with open(f"{chunkname_prefix}_{chunk_name}.hpp", "w", encoding="utf8") as file:
+                file.write(f'#include "{chunkname_prefix}_common.h"\n\n')
+                file.write(function_code.splitlines()[0][:-2] + ";\n")
 
         # Include the sources in CMakeLists.txt by writing to additional_commands.cmake
         with open("additional_commands.cmake", "w", encoding="utf8") as file:

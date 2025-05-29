@@ -140,12 +140,12 @@ class ConstantAdditionInstruction(ArithmeticInstruction):
 
     def generate_code(self, stack_initialized: List[bool], _decrypt_outputs: bool) -> str:  # noqa: D102
         if self._stack_index == self._input_stack_index:
-            return f"stack_{self._input_stack_index} += int64_t({self._constant});\n"
+            return f"stack_{self._input_stack_index} += {self._constant}L;\n"
 
         code = ""
         if not stack_initialized[self._stack_index]:
             code += "ctxt_t "
-        code += f"stack_{self._stack_index} = stack_{self._input_stack_index};\nstack_{self._stack_index} += int64_t({self._constant});\n"
+        code += f"stack_{self._stack_index} = stack_{self._input_stack_index};\nstack_{self._stack_index} += {self._constant}L;\n"
         stack_initialized[self._stack_index] = True
         return code
     
@@ -179,12 +179,12 @@ class ConstantMultiplicationInstruction(ArithmeticInstruction):
 
     def generate_code(self, stack_initialized: List[bool], _decrypt_outputs: bool) -> str:  # noqa: D102
         if self._stack_index == self._input_stack_index:
-            return f"stack_{self._input_stack_index} *= int64_t({self._constant});\n"
+            return f"stack_{self._input_stack_index} *= {self._constant}L;\n"
 
         code = ""
         if not stack_initialized[self._stack_index]:
             code += "ctxt_t "
-        code += f"stack_{self._stack_index} = stack_{self._input_stack_index};\nstack_{self._stack_index} *= int64_t({self._constant});\n"
+        code += f"stack_{self._stack_index} = stack_{self._input_stack_index};\nstack_{self._stack_index} *= {self._constant}L;\n"
         stack_initialized[self._stack_index] = True
         return code
     
@@ -334,14 +334,14 @@ class ArithmeticProgram:
 
         # Split circuit into chunks (functions)
         for i in range(0, len(self._instructions), chunk_size):
-            stack_initialized = [False] * self._stack_size
+            stack_initialized = [True] * self._stack_size
             chunk = self._instructions[i : i + chunk_size]
 
             code = f"void chunk_{i // chunk_size}(std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {{\n"
             for instruction in chunk:
                 line = instruction.generate_code(stack_initialized, decrypt_outputs)
-                line = re.sub(r'stack_(\d+)', r'stack(\1)', line)
-                line = re.sub(r'ciph_(\d+)', r'ciphertexts(\1)', line)
+                line = re.sub(r'stack_(\d+)', r'stack[\1]', line)
+                line = re.sub(r'ciph_(\d+)', r'ciphertexts[\1]', line)
                 code += line
             code += "}\n"
             functions.append((f"chunk_{i // chunk_size}", code))
