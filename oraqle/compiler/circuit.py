@@ -802,7 +802,7 @@ class ArithmeticCircuit(Circuit):
             file.write("\tfor (int i = 0; i < 7; ++i) {\n")
             file.write("\t\tstack.emplace_back(public_key);\n")
             file.write("\t}\n")
-            file.write("\tevaluate_program(ciphertexts, stack);\n")
+            file.write("\tevaluate_program(context, ciphertexts, stack, secret_key);\n")
             file.write("\n")
 
             # If we perform multiple iterations, close the for loop
@@ -932,7 +932,7 @@ class ArithmeticCircuit(Circuit):
             file.write("\tfor (int i = 0; i < 7; ++i) {\n")
             file.write("\t\tstack.emplace_back();\n")
             file.write("\t}\n")
-            file.write("\tevaluate_program(context, ciphertexts, stack);\n")
+            file.write("\tevaluate_program(context, ciphertexts, stack, keys);\n")
             file.write("\n")
 
             # If we perform multiple iterations, close the for loop
@@ -1055,5 +1055,5 @@ if __name__ == "__main__":
 
     # arithmetic_circuit.generate_code_openfhe("main_openfhe.cpp", iterations=10, measure_time=True)
 
-    #arithmetic_circuit.generate_code_chunked("main.cpp", chunkname_prefix="split", chunk_size=10)
-    arithmetic_circuit.generate_code_chunked_openfhe("main.cpp", chunkname_prefix="split", chunk_size=10)
+    arithmetic_circuit.generate_code_chunked("main.cpp", chunkname_prefix="split", chunk_size=10, decrypt_outputs=True)
+    #arithmetic_circuit.generate_code_chunked_openfhe("main.cpp", chunkname_prefix="split", chunk_size=10, decrypt_outputs=True)

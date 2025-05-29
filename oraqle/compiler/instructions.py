@@ -337,7 +337,7 @@ class ArithmeticProgram:
             stack_initialized = [True] * self._stack_size
             chunk = self._instructions[i : i + chunk_size]
 
-            code = f"void chunk_{i // chunk_size}(std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {{\n"
+            code = f"void chunk_{i // chunk_size}(helib::Context& context, std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack, helib::SecKey& secret_key) {{\n"
             for instruction in chunk:
                 line = instruction.generate_code(stack_initialized, decrypt_outputs)
                 line = re.sub(r'stack_(\d+)', r'stack[\1]', line)
@@ -347,9 +347,9 @@ class ArithmeticProgram:
             functions.append((f"chunk_{i // chunk_size}", code))
 
         # Create one function that calls all the chunks
-        calling_code = "void evaluate_program(std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {\n"
+        calling_code = "void evaluate_program(helib::Context& context, std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack, helib::SecKey& secret_key) {\n"
         for func_name, _ in functions:
-            calling_code += f"    {func_name}(ciphertexts, stack);\n"
+            calling_code += f"    {func_name}(context, ciphertexts, stack, secret_key);\n"
         calling_code += "}\n"
 
         return calling_code, functions
@@ -370,7 +370,7 @@ class ArithmeticProgram:
         for i in range(0, len(self._instructions), chunk_size):
             chunk = self._instructions[i : i + chunk_size]
 
-            code = f"void chunk_{i // chunk_size}(CryptoContext<DCRTPoly>& context, std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {{\n"
+            code = f"void chunk_{i // chunk_size}(CryptoContext<DCRTPoly>& context, std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack, KeyPair<DCRTPoly>& keys) {{\n"
             for instruction in chunk:
                 line = instruction.generate_code_openfhe(stack_initialized, decrypt_outputs)
                 line = re.sub(r'stack_(\d+)', r'stack[\1]', line)
@@ -380,9 +380,9 @@ class ArithmeticProgram:
             functions.append((f"chunk_{i // chunk_size}", code))
 
         # Create one function that calls all the chunks
-        calling_code = "void evaluate_program(CryptoContext<DCRTPoly>& context, std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack) {\n"
+        calling_code = "void evaluate_program(CryptoContext<DCRTPoly>& context, std::vector<ctxt_t>& ciphertexts, std::vector<ctxt_t>& stack, KeyPair<DCRTPoly>& keys) {\n"
         for func_name, _ in functions:
-            calling_code += f"    {func_name}(context, ciphertexts, stack);\n"
+            calling_code += f"    {func_name}(context, ciphertexts, stack, keys);\n"
         calling_code += "}\n"
 
         return calling_code, functions
