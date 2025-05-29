@@ -30,11 +30,11 @@ class ArithmeticLeafNode(FixedNode, ArithmeticNode):
     def multiplicative_size(self) -> int:  # noqa: D102
         return 0
     
-    def multiplications(self) -> Set[int]:  # noqa: D102
-        return set()
+    def multiplications(self, multiplications: Set[int]):  # noqa: D102
+        pass
     
-    def squarings(self) -> Set[int]:  # noqa: D102
-        return set()
+    def squarings(self, squarings: Set[int]):  # noqa: D102
+        pass
 
 
 # TODO: Merge ArithmeticInput and Input using multiple inheritance
@@ -57,6 +57,7 @@ class Input(ArithmeticLeafNode):
         """Initialize an input with the given `name`."""
         super().__init__(gf)
         self._name = name
+        self._already_reset: bool = False
 
     
     def operation(self, operands: List[FieldArray]) -> FieldArray:  # noqa: D102
@@ -120,6 +121,7 @@ class Constant(ArithmeticLeafNode):
         """Initialize a Node with the given `value`."""
         super().__init__(value.__class__)
         self._value = value
+        self._already_reset: bool = False
 
     
     def operation(self, operands: List[FieldArray]) -> FieldArray:  # noqa: D102

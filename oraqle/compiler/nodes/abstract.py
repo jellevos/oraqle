@@ -727,10 +727,21 @@ class ArithmeticNode(Node):
         self._instruction_cache: Optional[int] = None
         self._arithmetic_cache: Optional[ArithmeticNode] = None
         self._parent_count_cache: Optional[int] = None
+        self._added_multiplications: bool = False
+        self._added_squarings: bool = False
+        self._already_reset: bool = False
 
         self._hash = None
 
         already_cleared.add(id(self))
+
+    def reset_multiplications_and_squarings(self):
+        if not self._already_reset:
+            self._added_multiplications: bool = False
+            self._added_squarings: bool = False
+            for operand in self.operands():
+                operand.reset_multiplications_and_squarings()
+            self._already_reset = True
 
     @abstractmethod
     def operands(self) -> List["ArithmeticNode"]:
@@ -754,7 +765,10 @@ class ArithmeticNode(Node):
         Returns:
         The number of multiplications in this subcircuit.
         """
-        return len(self.multiplications())
+        multiplications = set()
+        self.multiplications(multiplications)
+        self.reset_multiplications_and_squarings()
+        return len(multiplications)
 
     def multiplicative_cost(self, cost_of_squaring: float) -> float:
         """Computes the multiplicative cost (number of general multiplications + cost_of_squaring * squarings).
@@ -764,21 +778,26 @@ class ArithmeticNode(Node):
         Returns:
             The number of proper multiplications + the cost of squaring * the number of squarings.
         """
+        multiplications = set()
+        self.multiplications(multiplications)
+        squarings = set()
+        self.squarings(squarings)
+        self.reset_multiplications_and_squarings()
         return (
-            len(self.multiplications())
-            - len(self.squarings())
-            + cost_of_squaring * len(self.squarings())
+            len(multiplications)
+            - len(squarings)
+            + cost_of_squaring * len(squarings)
         )
 
     @abstractmethod
-    def multiplications(self) -> Set[int]:
+    def multiplications(self, multiplications: Set[int]):
         """Returns a set of all the multiplications in this tree of descendants, including itself.
         
         This includes any squarings.
         """
 
     @abstractmethod
-    def squarings(self) -> Set[int]:
+    def squarings(self, squaring: Set[int]):
         """Returns a set of all the squarings in this tree of descendants, including itself."""
 
     def arithmetize(self, strategy: str) -> "ArithmeticNode":  # noqa: D102

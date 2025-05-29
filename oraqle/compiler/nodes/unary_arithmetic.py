@@ -40,6 +40,10 @@ class ConstantAddition(UnivariateNode, ArithmeticNode):
         self._constant = constant
         assert constant != 0
 
+        self._added_multiplications = False
+        self._added_squarings = False
+        self._already_reset: bool = False
+        
         self._depth_cache: Optional[int] = None
 
     
@@ -54,12 +58,18 @@ class ConstantAddition(UnivariateNode, ArithmeticNode):
         return self._depth_cache
 
     
-    def multiplications(self) -> Set[int]:  # noqa: D102
-        return self._node.multiplications()
+    def multiplications(self, multiplications: Set[int]):  # noqa: D102
+        self._already_reset: bool = False
+        if not self._added_multiplications:
+            self._node.multiplications(multiplications)
+            self._added_multiplications = True
 
     
-    def squarings(self) -> Set[int]:  # noqa: D102
-        return self._node.squarings()
+    def squarings(self, squarings: Set[int]):  # noqa: D102
+        self._already_reset: bool = False
+        if not self._added_squarings:
+            self._node.squarings(squarings)
+            self._added_squarings = True
 
     
     def create_instructions(  # noqa: D102
@@ -141,6 +151,10 @@ class ConstantMultiplication(UnivariateNode, ArithmeticNode):
         assert constant != 0
         assert constant != 1
 
+        self._added_multiplications = False
+        self._added_squarings = False
+        self._already_reset: bool = False
+
         self._depth_cache: Optional[int] = None
 
     def _operation_inner(self, input: FieldArray) -> FieldArray:
@@ -154,12 +168,18 @@ class ConstantMultiplication(UnivariateNode, ArithmeticNode):
         return self._depth_cache  # type: ignore
 
     
-    def multiplications(self) -> Set[int]:  # noqa: D102
-        return self._node.multiplications()  # type: ignore
+    def multiplications(self, multiplications: Set[int]):  # noqa: D102
+        self._already_reset: bool = False
+        if not self._added_multiplications:
+            self._node.multiplications(multiplications)
+            self._added_multiplications = True
 
     
-    def squarings(self) -> Set[int]:  # noqa: D102
-        return self._node.squarings()  # type: ignore
+    def squarings(self, squarings: Set[int]):  # noqa: D102
+        self._already_reset: bool = False
+        if not self._added_squarings:
+            self._node.squarings(squarings)
+            self._added_squarings = True
 
     
     def create_instructions(  # noqa: D102

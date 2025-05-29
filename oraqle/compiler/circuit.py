@@ -274,17 +274,27 @@ class ArithmeticCircuit(Circuit):
 
     def multiplicative_size(self) -> int:
         """Returns the multiplicative size (number of multiplications) of the circuit."""
-        multiplications = set().union(*(output.multiplications() for output in self._outputs))
+        multiplications = set()
+        for output in self._outputs:
+            output.multiplications(multiplications)
+        self._clear_cache()
         size = len(multiplications)
 
         return size
 
     def multiplicative_cost(self, cost_of_squaring: float) -> float:
         """Returns the multiplicative cost of the circuit."""
-        multiplications = set().union(*(output.multiplications() for output in self._outputs))
-        squarings = set().union(*(output.squarings() for output in self._outputs))
+        multiplications = set()
+        squarings = set()
+        for output in self._outputs:
+            output.multiplications(multiplications)
+            if cost_of_squaring != 1.0:
+                output.squarings(squarings)
+        self._clear_cache()
+        if cost_of_squaring == 1.0:
+            return len(multiplications)
+        
         cost = len(multiplications) - len(squarings) + cost_of_squaring * len(squarings)
-
         return cost
 
     def generate_program(self) -> ArithmeticProgram:

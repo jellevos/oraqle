@@ -89,9 +89,12 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode):
             Exception: Neither `left` nor `right` is allowed to be a `Constant`.
         """
         super().__init__(left, right, gf)
+        self._added_multiplications: bool = False
+        self._added_squarings: bool = False
 
         self._multiplications: Optional[Set[int]] = None
         self._squarings: Optional[Set[int]] = None
+        self._already_reset: bool = False
         self._depth_cache: Optional[int] = None
 
         if isinstance(left, Constant) or isinstance(right, Constant):
@@ -106,24 +109,24 @@ class CommutativeArithmeticBinaryNode(CommutativeBinaryNode):
 
         return self._depth_cache
 
-    def multiplications(self) -> Set[int]:  # noqa: D102
-        if self._multiplications is None:
-            self._multiplications = set().union(
-                *(operand.multiplications() for operand in self.operands())  # type: ignore
-            )
+    def multiplications(self, multiplications: Set[int]):  # noqa: D102
+        self._already_reset: bool = False
+        if not self._added_multiplications:
             if self._is_multiplication:
-                self._multiplications.add(id(self))
-
-        return self._multiplications
+                multiplications.add(id(self))
+            self._left.multiplications(multiplications)
+            self._right.multiplications(multiplications)
+            self._added_multiplications = True
 
     # TODO: Squaring should probably be a UniveriateNode
-    def squarings(self) -> Set[int]:  # noqa: D102
-        if self._squarings is None:
-            self._squarings = set().union(*(operand.squarings() for operand in self.operands()))  # type: ignore
+    def squarings(self, squarings: Set[int]):  # noqa: D102
+        self._already_reset: bool = False
+        if not self._added_squarings:
             if self._is_multiplication and id(self._left) == id(self._right):
-                self._squarings.add(id(self))
-
-        return self._squarings
+                squarings.add(id(self))
+            self._left.squarings(squarings)
+            self._right.squarings(squarings)
+            self._added_squarings = True
 
     def create_instructions(  # noqa: D102
         self,
