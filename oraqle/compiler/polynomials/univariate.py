@@ -517,7 +517,7 @@ def _estimate_ps(x: ArithmeticNode, coefficients: List[FieldArray], k: int, gf: 
         )
 
         depth = max(monomial.multiplicative_depth(), depth + x.multiplicative_depth())
-        # TODO: cost += monomial.multiplicative_cost(cost_of_squaring)
+        cost += monomial.multiplicative_cost(cost_of_squaring)  # TODO: Consider CSE
 
     return depth, cost
 
