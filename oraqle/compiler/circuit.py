@@ -766,18 +766,18 @@ class ArithmeticCircuit(Circuit):
             file.write(helib_postamble)
 
         # Write a common headers file
-        with open(f"{chunkname_prefix}_common.h"):
+        with open(f"{chunkname_prefix}_common.h", "w", encoding="utf8") as file:
             file.write("#pragma once\n\n")
             file.write(helib_preamble1)
 
         # Write the chunks to different files
         for chunk_name, function_code in functions:
             with open(f"{chunkname_prefix}_{chunk_name}.cpp", "w", encoding="utf8") as file:
-                file.write(f"#include {chunkname_prefix}_common.h\n\n")
+                file.write(f'#include "{chunkname_prefix}_common.h"\n\n')
                 file.write(function_code)
 
         # Include the sources in CMakeLists.txt by writing to additional_commands.cmake
-        with open("additional_commands.cmake"):
+        with open("additional_commands.cmake", "w", encoding="utf8") as file:
             file.write("set(GENERATED_SOURCES\n")
             for chunk_name, _ in functions:
                 file.write(f"\t{chunkname_prefix}_{chunk_name}.cpp\n")
@@ -860,6 +860,8 @@ if __name__ == "__main__":
     y = Input("y", gf)
 
     arithmetic_circuit = Circuit([x < y]).arithmetize()
-    arithmetic_circuit.generate_code("main.cpp", iterations=10, measure_time=True)
+    # arithmetic_circuit.generate_code("main.cpp", iterations=10, measure_time=True)
 
-    arithmetic_circuit.generate_code_openfhe("main_openfhe.cpp", iterations=10, measure_time=True)
+    # arithmetic_circuit.generate_code_openfhe("main_openfhe.cpp", iterations=10, measure_time=True)
+
+    arithmetic_circuit.generate_code_chunked("main.cpp", chunkname_prefix="split", chunk_size=10)
