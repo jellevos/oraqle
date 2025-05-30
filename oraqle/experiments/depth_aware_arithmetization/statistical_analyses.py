@@ -19,13 +19,13 @@ if __name__ == "__main__":
 
     cost_of_squaring = 1.0
 
-    p = 786433
+    p = 6143 #786433
     gf = GF(p) #GF(786433) #GF(12289)  #GF(65537) 786433
 
     distr_mean = 6
     distr_variance = 2
 
-    entry_count = 35747 #71494
+    entry_count = 512 # 35747 #71494
     entries = [random.randint(0, 10) for _ in range(entry_count)]
     inputs = [Input(f"x{i}", gf) for i in range(entry_count)]
     total = sum_(*inputs)
@@ -57,16 +57,16 @@ if __name__ == "__main__":
     folder = "mean_ours_helib"
     os.makedirs(folder, exist_ok=True)
     os.chdir(folder)
-    params = ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    params = ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10)
 
     os.chdir(cd)
 
-    folder = "mean_ours_openfhe"
-    os.makedirs(folder, exist_ok=True)
-    os.chdir(folder)
-    params = ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
-    print(params)
-    os.chdir(cd)
+    # folder = "mean_ours_openfhe"
+    # os.makedirs(folder, exist_ok=True)
+    # os.chdir(folder)
+    # params = ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    # print(params)
+    # os.chdir(cd)
 
     print("--- variance ---")
     start = time.monotonic()
@@ -89,13 +89,13 @@ if __name__ == "__main__":
     folder = "var_ours_helib"
     os.makedirs(folder, exist_ok=True)
     os.chdir(folder)
-    params = ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    params = ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10)
 
     os.chdir(cd)
 
-    folder = "var_ours_openfhe"
-    os.makedirs(folder, exist_ok=True)
-    os.chdir(folder)
-    params = ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
-    print(params)
-    os.chdir(cd)
+    # folder = "var_ours_openfhe"
+    # os.makedirs(folder, exist_ok=True)
+    # os.chdir(folder)
+    # params = ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    # print(params)
+    # os.chdir(cd)

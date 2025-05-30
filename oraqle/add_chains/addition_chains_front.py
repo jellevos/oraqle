@@ -68,7 +68,7 @@ def gen_pareto_front(  # noqa: PLR0912, PLR0913, PLR0917
 
     # Find the cheapest chain (i.e. no depth constraints)
     min_size = size_lower_bound(target) if precomputed_values is None else 1
-    if target > 10000:  # FIXME: Make this tunable
+    if target > 5000:  # FIXME: Make this tunable
         cheapest_chain = None
         print("Skipping optimal chain")
     elif modulus is None:

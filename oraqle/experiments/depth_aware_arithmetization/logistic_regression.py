@@ -27,8 +27,8 @@ if __name__ == "__main__":
 
     # Consider the range to be [-100, 100]
     bound = 1.0001
-    p = 786433
-    lim = 100
+    p = 6143 #10007#  8209  # 10007
+    lim = 10
 
     def fixed_prec(x: float) -> int:
         assert -bound <= x <= bound
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     gf = GF(p)
     inputs = [Input(f"x{i}", gf) for i in range(X.shape[1])]
 
-    dot_product = sum_(*[ConstantMultiplication(inputs[i], gf(int(w) % p)) for i, w in zip(range(X.shape[1]), weights)])
+    dot_product = sum_(*[ConstantMultiplication(inputs[i], gf(int(w) % p)) if int(w) != 1 else inputs[i] for i, w in zip(range(X.shape[1]), weights)])
     logit = dot_product + int(intercept)
     
     # Depth aware
@@ -127,16 +127,16 @@ if __name__ == "__main__":
     folder = "logistic_ours_helib"
     os.makedirs(folder, exist_ok=True)
     os.chdir(folder)
-    ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10)
 
     os.chdir(cd)
 
-    folder = "logistic_ours_openfhe"
-    os.makedirs(folder, exist_ok=True)
-    os.chdir(folder)
-    ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    # folder = "logistic_ours_openfhe"
+    # os.makedirs(folder, exist_ok=True)
+    # os.chdir(folder)
+    # ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
 
-    os.chdir(cd)
+    # os.chdir(cd)
 
     # Previous work
     prediction = IliashenkoZuccaLessThan(logit, Constant(gf(p // 2)), gf)
@@ -156,14 +156,14 @@ if __name__ == "__main__":
     folder = "logistic_iz_helib"
     os.makedirs(folder, exist_ok=True)
     os.chdir(folder)
-    ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10)
 
     os.chdir(cd)
 
-    folder = "logistic_iz_openfhe"
-    os.makedirs(folder, exist_ok=True)
-    os.chdir(folder)
+    # folder = "logistic_iz_openfhe"
+    # os.makedirs(folder, exist_ok=True)
+    # os.chdir(folder)
 
-    ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    # ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
 
-    os.chdir(cd)
+    # os.chdir(cd)

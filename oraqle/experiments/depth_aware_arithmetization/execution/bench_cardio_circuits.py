@@ -33,7 +33,7 @@ if __name__ == "__main__":
     gf = GF(257)
     iterations = 10
 
-    for cost_of_squaring in [0.75]:
+    for cost_of_squaring in [1.00]:
         print(f"--- Cardio risk assessment ({cost_of_squaring}) ---")
         circuit = Circuit([construct_cardio_risk_circuit(gf)])
 

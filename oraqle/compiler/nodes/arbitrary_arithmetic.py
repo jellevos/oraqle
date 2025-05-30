@@ -52,7 +52,7 @@ def _generate_addition_tree(
 
         heappush(
             queue,
-            _PrioritizedItem(max(a.priority, b.priority) + 0.00001, new),  # FIXME: The +0.00001 here is to ensure somewhat balanced sums...
+            _PrioritizedItem(max(a.priority, b.priority), new),  # FIXME: The +0.00001 here is to ensure somewhat balanced sums...
         )
 
     return (queue[0].priority, queue[0].item)
