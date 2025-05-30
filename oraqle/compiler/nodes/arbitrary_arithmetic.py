@@ -52,7 +52,7 @@ def _generate_addition_tree(
 
         heappush(
             queue,
-            _PrioritizedItem(max(a.priority, b.priority), new),
+            _PrioritizedItem(max(a.priority, b.priority) + 0.00001, new),  # FIXME: The +0.00001 here is to ensure somewhat balanced sums...
         )
 
     return (queue[0].priority, queue[0].item)
@@ -137,10 +137,14 @@ class Sum(CommutativeMultiplicityReducibleNode):
                     next(operands).node.to_arithmetic(), self._constant
                 )
 
-            for operand in operands:
-                self._arithmetic_cache = Addition(
-                    self._arithmetic_cache, operand.node.to_arithmetic(), self._gf
-                )
+            # TODO: In the future, make this better balanced
+            summands = [(1, operand.node.to_arithmetic()) for operand in operands]
+            if len(summands) > 0:
+                self._arithmetic_cache = _generate_addition_tree(summands, [1] * len(summands))[1]
+                # for operand in operands:
+                #     self._arithmetic_cache = Addition(
+                #         self._arithmetic_cache, operand.node.to_arithmetic(), self._gf
+                #     )
 
         return self._arithmetic_cache
 

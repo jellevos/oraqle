@@ -44,6 +44,7 @@ class DivideBy(UnivariateNode):
             shifted = ConstantAddition(arithmetized_node, self._gf(correction))
             quantized = shifted - Remainder(shifted, self._divisor)
             for _, _, arithmetized_quantized in quantized.arithmetize_depth_aware(cost_of_squaring):
+                print("deeper", arithmetized_quantized)
                 front.add(ConstantMultiplication(arithmetized_quantized, self._gf(div_inv)))
         return front
 
@@ -71,6 +72,8 @@ class IliashenkoZuccaDivideBy(UnivariateNode):
         p = self._gf.characteristic
         div_inv = mod_pow(self._divisor, p - 2, p)
         arithmetized_node = self._node.arithmetize(strategy).to_arithmetic()
+        # FIXME: The below is necessary to limit recursion depth
+        #arithmetized_node._hash = hash("barrier")  # type: ignore
         shifted = ConstantAddition(arithmetized_node, self._gf(correction))
         quantized = (shifted - IliashenkoZuccaRemainder(shifted, self._divisor)).arithmetize(strategy).to_arithmetic()
         return ConstantMultiplication(quantized, self._gf(div_inv))

@@ -16,7 +16,7 @@ from oraqle.compiler.polynomials.univariate import (
 )
 
 if __name__ == "__main__":
-    sys.setrecursionlimit(15000)
+    sys.setrecursionlimit(150000)
 
     shape_size = 150
 

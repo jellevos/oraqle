@@ -1,6 +1,7 @@
 """Depth-aware arithmetization of a comparison modulo 101."""
 
 import math
+import os
 import random
 import sys
 import time
@@ -14,7 +15,7 @@ from oraqle.compiler.polynomials.univariate import UnivariatePoly
 
 
 if __name__ == "__main__":
-    sys.setrecursionlimit(100000)
+    sys.setrecursionlimit(1000000)
 
     cost_of_squaring = 1.0
 
@@ -35,42 +36,66 @@ if __name__ == "__main__":
     sum_of_squares = sum_(*((inputs[i] - const_mean)**2 for i in range(entry_count))) 
     variance = DivideBy(sum_of_squares, entry_count)
 
-    if False:
-        print("--- mean ---")
-        start = time.monotonic()
-        circuit_mean = Circuit(outputs=[mean])
-        arithmetic_circuits = circuit_mean.arithmetize_depth_aware(cost_of_squaring)
-        print("Arith:", time.monotonic() - start)
-        start2 = time.monotonic()
-        d, c, ac = arithmetic_circuits[0]
-        print("Pre CSE", d, c)
-        # ac.eliminate_subexpressions()
-        # print("CSE:", time.monotonic() - start2)
-        # print(
-        #         "post CSE",
-        #         ac.multiplicative_depth(),
-        #         ac.multiplicative_cost(cost_of_squaring),
-        #     )
-        params = ac.generate_code("mean.cpp", measure_time=True, decrypt_outputs=True)
-        params = ac.generate_code_openfhe("mean_bfv.cpp", measure_time=True, decrypt_outputs=True)
-        print(params)
+    print("--- mean ---")
+    start = time.monotonic()
+    circuit_mean = Circuit(outputs=[mean])
+    arithmetic_circuits = circuit_mean.arithmetize_depth_aware(cost_of_squaring)
+    print("Arith:", time.monotonic() - start)
+    start2 = time.monotonic()
+    d, c, ac = arithmetic_circuits[0]
+    print("Pre CSE", d, c)
+    # ac.eliminate_subexpressions()
+    # print("CSE:", time.monotonic() - start2)
+    # print(
+    #         "post CSE",
+    #         ac.multiplicative_depth(),
+    #         ac.multiplicative_cost(cost_of_squaring),
+    #     )
 
-    if True:
-        print("--- variance ---")
-        start = time.monotonic()
-        circuit_var = Circuit(outputs=[variance])
-        arithmetic_circuits = circuit_var.arithmetize_depth_aware(cost_of_squaring)
-        print("Arith:", time.monotonic() - start)
-        start2 = time.monotonic()
-        d, c, ac = arithmetic_circuits[0]
-        print("Pre CSE", d, c)
-        # ac.eliminate_subexpressions()
-        # print("CSE:", time.monotonic() - start2)
-        # print(
-        #         "post CSE",
-        #         ac.multiplicative_depth(),
-        #         ac.multiplicative_cost(cost_of_squaring),
-        #     )
-        params = ac.generate_code("variance.cpp", measure_time=True, decrypt_outputs=True)
-        params = ac.generate_code_openfhe("variance_bfv.cpp", measure_time=True, decrypt_outputs=True)
-        print(params)
+    cd = os.getcwd()
+
+    folder = "mean_ours_helib"
+    os.makedirs(folder, exist_ok=True)
+    os.chdir(folder)
+    params = ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+
+    os.chdir(cd)
+
+    folder = "mean_ours_openfhe"
+    os.makedirs(folder, exist_ok=True)
+    os.chdir(folder)
+    params = ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    print(params)
+    os.chdir(cd)
+
+    print("--- variance ---")
+    start = time.monotonic()
+    circuit_var = Circuit(outputs=[variance])
+    arithmetic_circuits = circuit_var.arithmetize_depth_aware(cost_of_squaring)
+    print("Arith:", time.monotonic() - start)
+    start2 = time.monotonic()
+    d, c, ac = arithmetic_circuits[0]
+    print("Pre CSE", d, c)
+    # ac.eliminate_subexpressions()
+    # print("CSE:", time.monotonic() - start2)
+    # print(
+    #         "post CSE",
+    #         ac.multiplicative_depth(),
+    #         ac.multiplicative_cost(cost_of_squaring),
+    #     )
+
+    cd = os.getcwd()
+
+    folder = "var_ours_helib"
+    os.makedirs(folder, exist_ok=True)
+    os.chdir(folder)
+    params = ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+
+    os.chdir(cd)
+
+    folder = "var_ours_openfhe"
+    os.makedirs(folder, exist_ok=True)
+    os.chdir(folder)
+    params = ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+    print(params)
+    os.chdir(cd)

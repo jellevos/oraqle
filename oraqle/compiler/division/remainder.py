@@ -77,6 +77,7 @@ class Remainder(UnivariateNode):
         p = self._gf.characteristic
         coefficients = [self._gf(coeff) for coeff in compute_coeffs(p, self._m)]
 
+        print("test")
         for node_depth, _, node in self._node.arithmetize_depth_aware(cost_of_squaring):
             # We do not add the final coefficient, which will be computed later
 

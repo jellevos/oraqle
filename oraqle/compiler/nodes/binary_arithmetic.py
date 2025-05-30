@@ -51,7 +51,10 @@ class CommutativeBinaryNode(BinaryNode):
     def __hash__(self) -> int:
         if self._hash is None:
             left_hash = hash(self._left)
-            right_hash = hash(self._right)
+            if id(self._left) == id(self._right):
+                right_hash = left_hash
+            else:
+                right_hash = hash(self._right)
 
             # Make the hash commutative
             if left_hash < right_hash:

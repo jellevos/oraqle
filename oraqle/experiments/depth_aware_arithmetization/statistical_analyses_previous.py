@@ -1,6 +1,7 @@
 """Depth-aware arithmetization of a comparison modulo 101."""
 
 import math
+import os
 import random
 import sys
 import time
@@ -49,9 +50,22 @@ if __name__ == "__main__":
     #         arithmetic_circuit.multiplicative_depth(),
     #         arithmetic_circuit.multiplicative_cost(cost_of_squaring),
     #     )
-    params = arithmetic_circuit.generate_code("mean.cpp", measure_time=True, decrypt_outputs=True)
-    params = arithmetic_circuit.generate_code_openfhe("mean_bfv.cpp", measure_time=True, decrypt_outputs=True)
+
+    cd = os.getcwd()
+
+    folder = "mean_IZ_helib"
+    os.makedirs(folder, exist_ok=True)
+    os.chdir(folder)
+    params = arithmetic_circuit.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+
+    os.chdir(cd)
+
+    folder = "mean_IZ_openfhe"
+    os.makedirs(folder, exist_ok=True)
+    os.chdir(folder)
+    params = arithmetic_circuit.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
     print(params)
+    os.chdir(cd)
 
     print("--- variance ---")
     start = time.monotonic()
@@ -67,8 +81,22 @@ if __name__ == "__main__":
     #         arithmetic_circuit.multiplicative_depth(),
     #         arithmetic_circuit.multiplicative_cost(cost_of_squaring),
     #     )
-    params = arithmetic_circuit.generate_code("variance.cpp", measure_time=True, decrypt_outputs=True)
-    params = arithmetic_circuit.generate_code_openfhe("variance_bfv.cpp", measure_time=True, decrypt_outputs=True)
+
+    cd = os.getcwd()
+
+    folder = "var_IZ_helib"
+    os.makedirs(folder, exist_ok=True)
+    os.chdir(folder)
+    params = arithmetic_circuit.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True)
+
+    os.chdir(cd)
+
+    folder = "var_IZ_openfhe"
+    os.makedirs(folder, exist_ok=True)
+    os.chdir(folder)
+    params = arithmetic_circuit.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
     print(params)
+
+    os.chdir(cd)
 
 # 619.152179458004
