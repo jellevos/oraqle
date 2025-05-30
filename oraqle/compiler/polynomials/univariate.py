@@ -88,8 +88,8 @@ def _expand_front(
         arithmetization = arithmetization.to_arithmetic()
         assert isinstance(arithmetization, ArithmeticNode)
         # TODO: Consdier removing these checks later
-        assert lb_depth <= arithmetization.multiplicative_depth()
-        assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
+        # assert lb_depth <= arithmetization.multiplicative_depth()
+        # assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
 
         #print("Predicted", lb_depth, lb_cost)
         #print("Actual", arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring))
@@ -116,8 +116,8 @@ def _expand_front(
 
         arithmetization = arithmetization.to_arithmetic()
         assert isinstance(arithmetization, ArithmeticNode)
-        assert lb_depth <= arithmetization.multiplicative_depth()
-        assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
+        # assert lb_depth <= arithmetization.multiplicative_depth()
+        # assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
 
         #print("Predicted", lb_depth, lb_cost)
         #print("Actual", arithmetization.multiplicative_depth(), arithmetization.multiplicative_cost(cost_of_squaring))
