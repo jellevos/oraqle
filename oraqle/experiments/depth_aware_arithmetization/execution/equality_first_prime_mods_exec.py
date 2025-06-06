@@ -127,7 +127,7 @@ def plot_specific_outputs(specific_outputs, specific_outputs_nomod, primes, squa
 
 
 if __name__ == "__main__":
-    run_experiments = False
+    run_experiments = True
 
     if run_experiments:
         multiprocessing.set_start_method("fork")
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
         primes = list(sieve.primerange(300))[:30]  # [:50]
 
-        for sqr_cost in [0.5, 0.75, 1.0]:
+        for sqr_cost in [1.0]: # [0.5, 0.75, 1.0]:
             print(f"Computing for {sqr_cost}")
             experiment_sqr_cost = partial(experiment, squaring_cost=sqr_cost)
             outs = list(pool.map(experiment_sqr_cost, primes))
@@ -144,7 +144,7 @@ if __name__ == "__main__":
             with open(f"equality_experiment_{sqr_cost}_mod.pkl", mode="wb") as file:
                 pickle.dump((primes, outs), file)
 
-        for sqr_cost in [0.5, 0.75, 1.0]:
+        for sqr_cost in [1.0]: #  [0.5, 0.75, 1.0]:
             print(f"Computing for {sqr_cost}")
             experiment_sqr_cost = partial(experiment2, squaring_cost=sqr_cost)
             outs = list(pool.map(experiment_sqr_cost, primes))
@@ -153,39 +153,39 @@ if __name__ == "__main__":
                 pickle.dump((primes, outs), file)
 
     # Visualize
-    with open("equality_experiment_0.5_mod.pkl", "rb") as file:
-        primes_05_mod, outputs_05_mod = pickle.load(file)
-    with open("equality_experiment_0.75_mod.pkl", "rb") as file:
-        primes_075_mod, outputs_075_mod = pickle.load(file)
+    # with open("equality_experiment_0.5_mod.pkl", "rb") as file:
+    #     primes_05_mod, outputs_05_mod = pickle.load(file)
+    # with open("equality_experiment_0.75_mod.pkl", "rb") as file:
+    #     primes_075_mod, outputs_075_mod = pickle.load(file)
     with open("equality_experiment_1.0_mod.pkl", "rb") as file:
         primes_10_mod, outputs_10_mod = pickle.load(file)
 
-    with open("equality_experiment_0.5_nomod.pkl", "rb") as file:
-        primes_05_nomod, outputs_05_nomod = pickle.load(file)
-    with open("equality_experiment_0.75_nomod.pkl", "rb") as file:
-        primes_075_nomod, outputs_075_nomod = pickle.load(file)
+    # with open("equality_experiment_0.5_nomod.pkl", "rb") as file:
+    #     primes_05_nomod, outputs_05_nomod = pickle.load(file)
+    # with open("equality_experiment_0.75_nomod.pkl", "rb") as file:
+    #     primes_075_nomod, outputs_075_nomod = pickle.load(file)
     with open("equality_experiment_1.0_nomod.pkl", "rb") as file:
         primes_10_nomod, outputs_10_nomod = pickle.load(file)
 
     # All the primes should match
     primes = primes_10_mod
-    assert primes == primes_05_mod
-    assert primes == primes_075_mod
-    assert primes == primes_05_nomod
-    assert primes == primes_075_nomod
+    # assert primes == primes_05_mod
+    # assert primes == primes_075_mod
+    # assert primes == primes_05_nomod
+    # assert primes == primes_075_nomod
     assert primes == primes_10_nomod
 
     # All the chains should match (not in theory, but for this visualization they should)
-    assert all(
-        all(x == y for x, y in zip(a[0], b[0])) for a, b in zip(outputs_05_mod, outputs_05_nomod)
-    )
-    assert all(
-        all(x == y for x, y in zip(a[0], b[0])) for a, b in zip(outputs_075_mod, outputs_075_nomod)
-    )
+    # assert all(
+    #     all(x == y for x, y in zip(a[0], b[0])) for a, b in zip(outputs_05_mod, outputs_05_nomod)
+    # )
+    # assert all(
+    #     all(x == y for x, y in zip(a[0], b[0])) for a, b in zip(outputs_075_mod, outputs_075_nomod)
+    # )
     assert all(
         all(x == y for x, y in zip(a[0], b[0])) for a, b in zip(outputs_10_mod, outputs_10_nomod)
     )
 
-    plot_specific_outputs(outputs_05_mod, outputs_05_nomod, primes, squaring_cost=0.5)
-    plot_specific_outputs(outputs_075_mod, outputs_075_nomod, primes, squaring_cost=0.75)
+    # plot_specific_outputs(outputs_05_mod, outputs_05_nomod, primes, squaring_cost=0.5)
+    # plot_specific_outputs(outputs_075_mod, outputs_075_nomod, primes, squaring_cost=0.75)
     plot_specific_outputs(outputs_10_mod, outputs_10_nomod, primes, squaring_cost=1.0)

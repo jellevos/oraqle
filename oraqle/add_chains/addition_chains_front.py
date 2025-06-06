@@ -21,7 +21,6 @@ def chain_depth(
     depths = {1: 0}
     if precomputed_values is not None:
         depths.update(precomputed_values)
-    print(depths)
 
     if modulus is None:
         for x, y in chain:
