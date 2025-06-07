@@ -20,3 +20,7 @@ def test_sum():
         for val_b in range(127):
             expected = gf(val_a) + gf(val_b) + gf(7)
             assert arithmetic_circuit.evaluate({"a": gf(val_a), "b": gf(val_b)}) == expected
+
+
+if __name__ == "__main__":
+    test_sum()

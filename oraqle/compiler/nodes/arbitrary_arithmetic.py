@@ -139,6 +139,7 @@ class Sum(CommutativeMultiplicityReducibleNode):
 
             # TODO: In the future, make this better balanced
             summands = [(1, operand.node.to_arithmetic()) for operand in operands]
+            summands.append((self._arithmetic_cache.multiplicative_depth(), self._arithmetic_cache))
             if len(summands) > 0:
                 self._arithmetic_cache = _generate_addition_tree(summands, [1] * len(summands))[1]
                 # for operand in operands:
