@@ -48,7 +48,7 @@ if __name__ == "__main__":
     folder = "mean_IZ_helib"
     os.makedirs(folder, exist_ok=True)
     os.chdir(folder)
-    params = arithmetic_circuit.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10)
+    params = arithmetic_circuit.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10, overwrite_default_variable_value="std::rand() % 3 + 5")
 
     os.chdir(cd)
 
@@ -65,6 +65,6 @@ if __name__ == "__main__":
     folder = "var_IZ_helib"
     os.makedirs(folder, exist_ok=True)
     os.chdir(folder)
-    params = arithmetic_circuit.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10)
+    params = arithmetic_circuit.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10, overwrite_default_variable_value="std::rand() % 3 + 5")
 
     os.chdir(cd)

@@ -724,6 +724,7 @@ class ArithmeticCircuit(Circuit):
         measure_time: bool = False,
         decrypt_outputs: bool = False,
         chunk_size: int = 1000,
+        overwrite_default_variable_value: Optional[str] = None,
     ) -> Tuple[int, int, int, int]:
         """Generates an HElib implementation of the circuit, but with chunked code (multiple files).
         
@@ -768,7 +769,10 @@ class ArithmeticCircuit(Circuit):
                 file.write(f'#include "{chunkname_prefix}_{func_name}.hpp"\n')
             file.write("\n")
             file.write(calling_code)
-            file.write(helib_preamble2)
+            preamble2 = str(helib_preamble2)
+            if overwrite_default_variable_value:
+                preamble2 = preamble2.replace("-1", overwrite_default_variable_value, 1)
+            file.write(preamble2)
             stack_size = program._stack_size
 
             # Write start of file and parameters
