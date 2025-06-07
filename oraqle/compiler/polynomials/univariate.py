@@ -116,7 +116,6 @@ def _expand_front_with_lb(
 
         arithmetization = arithmetization.to_arithmetic()
         assert isinstance(arithmetization, ArithmeticNode)
-        print(k, lb_depth, arithmetization.multiplicative_depth(), lb_cost, arithmetization.multiplicative_cost(cost_of_squaring), cost_of_squaring)
         assert lb_depth <= arithmetization.multiplicative_depth()
         assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
 
@@ -178,7 +177,6 @@ def _expand_front_with_lb_and_est(
         arithmetization = arithmetization.to_arithmetic()
         assert isinstance(arithmetization, ArithmeticNode)
         # TODO: Consdier removing these checks later
-        print(k, lb_depth, arithmetization.multiplicative_depth(), lb_cost, arithmetization.multiplicative_cost(cost_of_squaring), cost_of_squaring)
         assert lb_depth <= arithmetization.multiplicative_depth()
         assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
 
@@ -209,7 +207,6 @@ def _expand_front_with_lb_and_est(
 
         arithmetization = arithmetization.to_arithmetic()
         assert isinstance(arithmetization, ArithmeticNode)
-        print(k, lb_depth, arithmetization.multiplicative_depth(), lb_cost, arithmetization.multiplicative_cost(cost_of_squaring), cost_of_squaring)
         assert lb_depth <= arithmetization.multiplicative_depth()
         assert lb_cost <= arithmetization.multiplicative_cost(cost_of_squaring)
 
@@ -393,17 +390,14 @@ class UnivariatePoly(UnivariateNode):
         all_constructions = {}
 
         for _, _, x in self._node.arithmetize_depth_aware(cost_of_squaring):
-            print("PS")
             optimal_k = math.sqrt(2 * len(self._coefficients))
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
             _expand_front_with_lb_and_est(_eval_poly, _lower_bounds_ps, _estimate_ps, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, all_constructions, 'ps', cost_of_squaring)
 
-            print("DQ")
             optimal_k = math.sqrt(len(self._coefficients))  # FIXME: Use the exact optimal k (this is not a great approximation)
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
             _expand_front_with_lb(_eval_poly_divide_conquer, _lower_bounds_divide_conquer, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, all_constructions, 'dc', cost_of_squaring)
 
-            print("BSGS")
             optimal_k = math.sqrt(len(self._coefficients))
             bound = min(math.ceil(PS_METHOD_FACTOR_K * optimal_k), len(self._coefficients))
             _expand_front_with_lb(_eval_poly_alternative, _lower_bounds_alternative, x, self._coefficients, range(1, bound), self._gf, front, all_precomputed_powers, all_constructions, 'bg', cost_of_squaring)
@@ -1012,6 +1006,7 @@ def _lower_bounds_divide_conquer(x: ArithmeticNode, coefficients: List[FieldArra
 
     depth = x.multiplicative_depth() + math.ceil(math.log2(k)) + p
     cost -= len(never_used_precomps)
+    cost -= 1
 
     return depth, cost
 
