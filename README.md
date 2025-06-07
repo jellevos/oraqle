@@ -3,7 +3,11 @@
     <b>A secure computation compiler</b>
 </p>
 
-The oraqle compiler lets you generate arithmetic circuits from high-level Python code. It also lets you generate code using HElib.
+The oraqle compiler lets you generate arithmetic circuits from high-level Python code. It also lets you generate code using HElib. This repository contains the oraqle compiler as well as experiments for the paper on depth-aware arithmetization and the paper describing the oraqle compiler.
+
+**For the experiments, please check these folders:**
+- Depth-aware arithmetization: `oraqle/experiments/depth_aware_arithmetization`
+- Oraqle compiler: `oraqle/experiments/oraqle_spotlight`
 
 This repository uses a fork of fhegen as a dependency and adapts some of the code from [fhegen](https://github.com/Crypto-TII/fhegen), which was written by Johannes Mono, Chiara Marcolla, Georg Land, Tim Güneysu, and Najwa Aaraj. You can read their theoretical work at: https://eprint.iacr.org/2022/706.
 

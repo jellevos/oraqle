@@ -12,7 +12,7 @@ if __name__ == "__main__":
     iterations = 10
     perform_runs = False
 
-    for p in [29, 43, 61, 101, 131, 163, 107]:
+    for p in [29, 43, 61, 101, 131]:
         gf = GF(p)
 
         x = Input("x", gf)
