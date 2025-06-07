@@ -19,19 +19,18 @@ if __name__ == "__main__":
 
     cost_of_squaring = 1.0
 
-    p = 6143 #786433
-    gf = GF(p) #GF(786433) #GF(12289)  #GF(65537) 786433
+    p = 6143
+    gf = GF(p)
 
     distr_mean = 6
     distr_variance = 2
 
-    entry_count = 512 #35747 #71494
-    entries = [random.randint(0, 10) for _ in range(entry_count)]
+    entry_count = 512
     inputs = [Input(f"x{i}", gf) for i in range(entry_count)]
     total = sum_(*inputs)
     mean = IliashenkoZuccaDivideBy(total, entry_count)
 
-    const_mean = distr_mean #round(sum(entries) / entry_count)
+    const_mean = distr_mean
     print(const_mean)
     sum_of_squares = sum_(*((inputs[i] - const_mean)**2 for i in range(entry_count))) 
     variance = IliashenkoZuccaDivideBy(sum_of_squares, entry_count)
@@ -42,14 +41,7 @@ if __name__ == "__main__":
     arithmetic_circuit = circuit_mean.arithmetize("best-effort")
     print("Arith:", time.monotonic() - start)
     start2 = time.monotonic()
-    print("Pre CSE", arithmetic_circuit.multiplicative_depth(), arithmetic_circuit.multiplicative_cost(cost_of_squaring))
-    # arithmetic_circuit.eliminate_subexpressions()
-    # print("CSE:", time.monotonic() - start2)
-    # print(
-    #         "post CSE",
-    #         arithmetic_circuit.multiplicative_depth(),
-    #         arithmetic_circuit.multiplicative_cost(cost_of_squaring),
-    #     )
+    print("Properties:", arithmetic_circuit.multiplicative_depth(), arithmetic_circuit.multiplicative_cost(cost_of_squaring))
 
     cd = os.getcwd()
 
@@ -60,27 +52,13 @@ if __name__ == "__main__":
 
     os.chdir(cd)
 
-    # folder = "mean_IZ_openfhe"
-    # os.makedirs(folder, exist_ok=True)
-    # os.chdir(folder)
-    # params = arithmetic_circuit.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
-    # print(params)
-    # os.chdir(cd)
-
     print("--- variance ---")
     start = time.monotonic()
     circuit_var = Circuit(outputs=[variance])
     arithmetic_circuit = circuit_var.arithmetize("best-effort")
     print("Arith:", time.monotonic() - start)
     start2 = time.monotonic()
-    print("Pre CSE", arithmetic_circuit.multiplicative_depth(), arithmetic_circuit.multiplicative_cost(cost_of_squaring))
-    # arithmetic_circuit.eliminate_subexpressions()
-    # print("CSE:", time.monotonic() - start2)
-    # print(
-    #         "post CSE",
-    #         arithmetic_circuit.multiplicative_depth(),
-    #         arithmetic_circuit.multiplicative_cost(cost_of_squaring),
-    #     )
+    print("Properties:", arithmetic_circuit.multiplicative_depth(), arithmetic_circuit.multiplicative_cost(cost_of_squaring))
 
     cd = os.getcwd()
 
@@ -90,13 +68,3 @@ if __name__ == "__main__":
     params = arithmetic_circuit.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10)
 
     os.chdir(cd)
-
-    # folder = "var_IZ_openfhe"
-    # os.makedirs(folder, exist_ok=True)
-    # os.chdir(folder)
-    # params = arithmetic_circuit.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
-    # print(params)
-
-    # os.chdir(cd)
-
-# 619.152179458004

@@ -117,10 +117,6 @@ if __name__ == "__main__":
     print("arith", time.monotonic() - start)
     d, c, ac = arithmetizations[0]
     print(d, c)
-    # start = time.monotonic()
-    # ac.eliminate_subexpressions()
-    # print("cse", time.monotonic() - start)
-    # print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
 
     cd = os.getcwd()
 
@@ -131,13 +127,6 @@ if __name__ == "__main__":
 
     os.chdir(cd)
 
-    # folder = "logistic_ours_openfhe"
-    # os.makedirs(folder, exist_ok=True)
-    # os.chdir(folder)
-    # ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
-
-    # os.chdir(cd)
-
     # Previous work
     prediction = IliashenkoZuccaLessThan(logit, Constant(gf(p // 2)), gf)
 
@@ -146,10 +135,6 @@ if __name__ == "__main__":
     ac = circuit.arithmetize()
     print("arith", time.monotonic() - start)
     print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
-    # start = time.monotonic()
-    # ac.eliminate_subexpressions()
-    # print("cse", time.monotonic() - start)
-    # print(ac.multiplicative_depth(), ac.multiplicative_cost(1.0))
 
     cd = os.getcwd()
 
@@ -159,11 +144,3 @@ if __name__ == "__main__":
     ac.generate_code_chunked("main.cpp", "split", measure_time=True, decrypt_outputs=True, iterations=10)
 
     os.chdir(cd)
-
-    # folder = "logistic_iz_openfhe"
-    # os.makedirs(folder, exist_ok=True)
-    # os.chdir(folder)
-
-    # ac.generate_code_chunked_openfhe("main.cpp", "split", measure_time=True, decrypt_outputs=True)
-
-    # os.chdir(cd)
