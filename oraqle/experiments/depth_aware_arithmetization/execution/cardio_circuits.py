@@ -9,7 +9,7 @@ from oraqle.circuits.cardio import (
 from oraqle.compiler.circuit import Circuit
 
 if __name__ == "__main__":
-    gf = GF(65537)
+    gf = GF(257)
 
     for cost_of_squaring in [0.5, 0.75, 1.0]:
         print(f"--- Cardio risk assessment ({cost_of_squaring}) ---")
